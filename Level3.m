@@ -26,7 +26,9 @@ FC2H6 = 200;			% [	kta ]
 M_C2H6 = 28.05;			% [ g / mol ]
 
 % Unit conversions 
-KT_TO_MT = 1000;		% [ kt / MT ]
+MT_PER_KT = 1000;		% [ kt / MT ]
+G_PER_KT = 10^9;		% [ g / kt ]
+GJ_PER_KJ = 10^6;		% [ GJ / kJ ]
 
 % Economic | Chemicals
 VALUE_ETHANE = 200;		% [ $ / MT ]
@@ -47,15 +49,15 @@ COST_CO2 = 125;				% [ $ / MT ]
 COST_WASTESTREAM = NaN;		% Ulrich and Vasudevan
 
 % Thermodynamics | Enthalpy of combustion of gas at standard conditions
-enthalpy_prop_combustion = 2219.2;		% [ kJ / mol ]
+ENTHALPY_PROPANE = 2219.2;		% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
-enthalpy_but_combustion = 2877.5;		% [ kJ / mol ]
+ENTHALPY_BUTANE = 2877.5;		% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
 % Molar Mass
-M_propane = 44.0956;		% [ g / mol ]
+MOLMASS_PROPANE = 44.0956;		% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
-M_butane = 58.1222;
+MOLMASS_BUTANE = 58.1222;
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
 
@@ -82,10 +84,9 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 % FUNCTIONS | ECONOMICS____________________________________________________
 
 % Inputs are in [ kta ] outputs are in [ $ ]
-value_ethane = @(P_ethane) P_ethane * KT_TO_MT * VALUE_ETHANE;
-value_ethylene = @(P_ethylene) P_ethylene * KT_TO_MT * VALUE_ETHYLENE;
-value_h2_chem = @(P_h2_chem) P_h2_chem * KT_TO_MT * VALUE_H2_CHEM;
-
+value_ethane = @(P_ethane) P_ethane * MT_PER_KT * VALUE_ETHANE;
+value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
+value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
 
 % SCRIPT___________________________________________________________________
 
@@ -146,8 +147,12 @@ end
 function value = LPG_value(P_propane, P_butane)
 	% ASSUMPTION : VALUE OF LPG IS JUST SUM VALUE OF PROPANE + BUTANE BEING
 	% COMBUSTED
-	prop_val = P_propane;
-	
+	% kt * (g / kt) * (mol / g) * (kJ / mol) * (GJ / KJ) * ($ / GJ)
+	prop_val = P_propane * KT_TO_G * (1 / MOLMASS_PROPANE) * ...
+							ENTHALPY_PROPANE * GJ_PER_KJ * VALUE_C3H6_FUEL;
+	but_val = P_butane * KT_TO_G * (1 / MOLMASS_BUTANE) * ...
+						ENTHALPY_BUTANE * GJ_PER_KJ * VALUE_C4H8_FUEL;
+	value = prop_val + but_val;
 end
 
 
