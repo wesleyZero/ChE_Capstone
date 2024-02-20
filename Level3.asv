@@ -5,17 +5,19 @@ clc; clear; close all;
 % Plotting 
 S1_MIN = 0.05;
 S1_MAX = 0.95;
-S1_POINTS = 4;
+S1_POINTS = 40;
 
 S2_MIN = 0.05;
 S2_MAX = 0.95;
-S2_POINTS = 4;
+S2_POINTS = 40;
 
 INVALID_FLOW = 0;
 
-cont_plt_opt = [ ...
+cont_plt_opt = { ...
 	'S_1 Selectivity', ...
-	'S_2 Selectivity']
+	'S_2 Selectivity', ...
+	'Ethylene Flowrate [kta]',...
+	'P_ethylene_VS_S1_S2.jpg'};
 
 % Design params
 FC2H6 = 200;	% [	kta ]
@@ -25,6 +27,15 @@ M_C2H6 = 28.05;	% [ g / mol ]
 
 % Unit conversions 
 metricTons_to_kiloton = 1000;
+
+% Economic | Expenses
+cost_ethane = 200;		% [ $ / MT ]
+
+% Economic | Products
+value_ethylene = 900;	% [ $ / MT ]
+value_H2_fuel = 3;		% [ $ / GJ ]
+value_
+
 
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
 
@@ -54,11 +65,7 @@ flowrates_valid = @( flowrates ) ...
 s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
 s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
 [s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
-
-% ethylene_flowrates = meshgrid(s1_domain, s2_domain);
-ethylene_flowrates = s1_mesh.^2 + s2_mesh.^3;
-
-plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt)
+ethylene_flowrates = s1_mesh + s2_mesh;			% Just placeholder values
 
 i = 1;
 for s1 = s1_domain
@@ -82,19 +89,52 @@ for s1 = s1_domain
 			ethylene_flowrates(i) = INVALID_FLOW;
 		end 
 		i = i + 1;
-
 	end 
 end 
 
-% HELPER FUNCTIONS_________________________________________________________
+plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt);
+
+
+
+% HELPER FUNCTIONS | PLOTTING______________________________________________
 
 function z = plot_contour(x, y, z, options)
 	% Unpack options 
-	x_label = options(1);
-	y_label = options(2)
+	x_label = options{1};
+	y_label = options{2};
+	plt_title = options{3};
+	plt_saveName = options{4};
+
 	hold on 
-	contourf(x, y, z)
-	xlabel('S1')
-	
+	contourf(x, y, z, "ShowText","on");
+	xlabel(x_label);
+	ylabel(y_label);
+	title(plt_title);
+	saveas(gcf, plt_saveName);
 	hold off
 end
+
+function value = ethane_value(P_ethane)
+	% inputs
+	%		P_ethane [kta]
+	% output
+	%		value [$ USD]
+
+	
+end 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -28,6 +28,23 @@ M_C2H6 = 28.05;	% [ g / mol ]
 % Unit conversions 
 metricTons_to_kiloton = 1000;
 
+% Economic | Chemicals
+value_ethane = 200;		% [ $ / MT ]
+value_ethylene = 900;	% [ $ / MT ]
+
+% Economic | Fuel
+value_H2_fuel = 3;		% [ $ / GJ ]
+value_CH4_fuel = 3;		% [ $ / GJ ]
+value_C3H6_fuel = 3;	% [ $ / GJ ]
+value_C4H8_fuel = 3;	% [ $ / GJ ]
+value_NatGas_fuel = 3;	% [ $ / GJ ]
+value_2FuelOil = 4.5;	% [ $ / US Gallon ]
+
+% Economics | Enviormental
+
+
+
+
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
 
 A = @(s1, s2)...
@@ -105,7 +122,14 @@ function z = plot_contour(x, y, z, options)
 	hold off
 end
 
-% function value = LPG_value()
+function value = ethane_value(P_ethane)
+	% inputs
+	%		P_ethane [kta]
+	% output
+	%		value [$ USD]
+
+	
+end 
 
 
 
