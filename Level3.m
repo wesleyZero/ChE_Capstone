@@ -5,13 +5,18 @@ clc; clear; close all;
 % Plotting 
 S1_MIN = 0.05;
 S1_MAX = 0.95;
-S1_POINTS = 4;
+S1_POINTS = 40;
 
 S2_MIN = 0.05;
 S2_MAX = 0.95;
-S2_POINTS = 4;
+S2_POINTS = 40;
 
 INVALID_FLOW = 0;
+
+cont_plt_opt = { ...
+	'S_1 Selectivity', ...
+	'S_2 Selectivity', ...
+	'Ethylene Flowrate vs Selectivities [kta]'};
 
 % Design params
 FC2H6 = 200;	% [	kta ]
@@ -33,7 +38,7 @@ b = [0;		0;		FC2H6];
 % FLOWRATE FUNCTIONS_______________________________________________________
 
 P_H2 = @(xi_1)			xi_1;
-P_CH4 = @(xi_2)			xi_2;		% Verify with squad about this equation
+P_CH4 = @(xi_2)			xi_2;
 P_C2H4 = @(xi_1, xi_3)	xi_1 - xi_3;
 P_C3H8 = @(xi_2)		xi_2;
 P_C4H10 = @(xi_3)		xi_3;
@@ -50,11 +55,11 @@ flowrates_valid = @( flowrates ) ...
 s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
 s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
 [s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
+ethylene_flowrates = s1_mesh + s2_mesh;
 
-% ethylene_flowrates = meshgrid(s1_domain, s2_domain);
-ethylene_flowrates = s1_mesh.^2 + s2_mesh.^3;
-
-plot_contour(ethylene_flowrates, s1_mesh, s2_mesh)
+ % ethylene_flowrates = s1_mesh.^2 + s2_mesh.^3;
+% 
+ plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt)
 
 i = 1;
 for s1 = s1_domain
@@ -73,22 +78,30 @@ for s1 = s1_domain
 		flowrates = [ p_h2, p_ch4, p_c2h4, p_c3h8, p_c4h10 ];
 
 		if (flowrates_valid(flowrates))
-			disp("valid")
 			ethylene_flowrates(i) = p_c2h4;
 		else
 			ethylene_flowrates(i) = INVALID_FLOW;
 		end 
 		i = i + 1;
-
 	end 
 end 
 
+plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt)
+
+
+
 % HELPER FUNCTIONS_________________________________________________________
 
-function z = plot_contour(z, x, y)
-	hold on 
-	contourf(z, x, y)
+function z = plot_contour(x, y, z, options)
+	% Unpack options 
+	x_label = options{1};
+	y_label = options{2};
+	plt_title = options{3};
 
-	clabel(x, y)
+	hold on 
+	contourf(x, y, z, "ShowText","on");
+	xlabel(x_label);
+	ylabel(y_label);
+	title(plt_title);
 	hold off
 end
