@@ -47,7 +47,7 @@ M_C2H6 = 28.05;			% [ g / mol ]
 % Unit conversions 
 MT_PER_KT = 1000;		% [ kt / MT ]
 G_PER_KT = 10^9;		% [ g / kt ]
-GJ_PER_KJ = 10^6;		% [ GJ / kJ ]
+GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 
 % Economic | Chemicals
 VALUE_ETHANE = 200;		% [ $ / MT ]
@@ -144,7 +144,7 @@ for s1 = s1_domain
 
 			profit(i) = profit(i) + value_ethylene(p_c2h4);
 			profit(i) = profit(i) + value_h2_chem(p_h2);
-% 			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
+			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
 
 			% Costs incurred
 			profit(i) = profit(i) - cost_C02(flowrates);
@@ -175,7 +175,7 @@ function z = plot_contour(x, y, z, options)
 	hold on 
 	figure
     [C, h] = contourf(x, y, z); % Create filled contours
-    clabel(C, h, 'FontSize', 10, 'Color', 'k', 'LabelSpacing', 400); % Customize label properties
+    clabel(C, h, 'FontSize', 10, 'Color', 'k', 'LabelSpacing', 200); % Customize label properties
 	xlabel(x_label);
 	ylabel(y_label);
 	title(plt_title);
