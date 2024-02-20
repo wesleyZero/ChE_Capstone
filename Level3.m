@@ -1,6 +1,20 @@
 clc; clear; close all; 
 
 % CONSTANTS________________________________________________________________
+global S1_MIN S1_MAX S1_POINTS;
+global S2_MIN S2_MAX S2_POINTS;
+global INVALID_FLOWRATE;
+global Fethyl_S1S2_plotOpt;
+global FC2H6;
+global M_C2H6;
+global MT_PER_KT G_PER_KT GJ_PER_KJ;
+global VALUE_ETHANE VALUE_ETHYLENE VALUE_H2_CHEM;
+global COST_STEAM;
+global VALUE_H2_FUEL VALUE_CH4_FUEL VALUE_C3H6_FUEL VALUE_C4H8_FUEL;
+global VALUE_NATGAS_FUEL VALUE_NUM2OIL_FUEL;
+global COST_CO2 COST_WASTESTREAM;
+global ENTHALPY_PROPANE ENTHALPY_BUTANE;
+global MOLMASS_PROPANE MOLMASS_BUTANE;
 
 % Plotting 
 S1_MIN = 0.05;
@@ -13,7 +27,7 @@ S2_POINTS = 40;
 
 INVALID_FLOWRATE = 0;
 
-cont_plt_opt = { ...
+Fethyl_S1S2_plotOpt = { ...
 	'S_1 Selectivity', ...
 	'S_2 Selectivity', ...
 	'Ethylene Flowrate [kta]',...
@@ -95,7 +109,8 @@ value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
 s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
 s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
 [s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
-ethylene_flowrates = s1_mesh + s2_mesh;			% Just placeholder values
+ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
+profit = (s1_mesh + s2_mesh) .* 0;	
 
 i = 1;
 for s1 = s1_domain
@@ -115,14 +130,25 @@ for s1 = s1_domain
 
 		if (flowrates_valid(flowrates))
 			ethylene_flowrates(i) = p_c2h4;
+
+			% Value Created 
+			profit(i) = profit(i) + value_ethylene(p_c2h4);
+			profit(i) = profit(i) + value_h2_chem(p_h2);
+			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
+
+			% Costs incurred
+			profit(i) = profit(i) - cost_C02(flowrates);
 		else
+			profit(i) = INVALID_FLOWRATE;
 			ethylene_flowrates(i) = INVALID_FLOWRATE;
 		end 
+
+		
 		i = i + 1;
 	end 
 end 
 
-plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt);
+plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, Fethyl_S1S2_plotOpt);
 disp("Function completed running")
 
 % HELPER FUNCTIONS | PLOTTING______________________________________________
@@ -135,6 +161,7 @@ function z = plot_contour(x, y, z, options)
 	plt_saveName = options{4};
 
 	hold on 
+	figure
 	contourf(x, y, z, "ShowText","on");
 	xlabel(x_label);
 	ylabel(y_label);
@@ -144,15 +171,22 @@ function z = plot_contour(x, y, z, options)
 end
 
 
-function value = LPG_value(P_propane, P_butane)
+function value = value_LPG(P_propane, P_butane)
 	% ASSUMPTION : VALUE OF LPG IS JUST SUM VALUE OF PROPANE + BUTANE BEING
 	% COMBUSTED
 	% kt * (g / kt) * (mol / g) * (kJ / mol) * (GJ / KJ) * ($ / GJ)
-	prop_val = P_propane * KT_TO_G * (1 / MOLMASS_PROPANE) * ...
+	global G_PER_KT MOLMASS_PROPANE ENTHALPY_PROPANE GJ_PER_KJ ...
+		VALUE_C3H6_FUEL MOLMASS_BUTANE ENTHALPY_BUTANE VALUE_C4H8_FUEL;
+
+	prop_val = P_propane * G_PER_KT * (1 / MOLMASS_PROPANE) * ...
 							ENTHALPY_PROPANE * GJ_PER_KJ * VALUE_C3H6_FUEL;
-	but_val = P_butane * KT_TO_G * (1 / MOLMASS_BUTANE) * ...
+	but_val = P_butane * G_PER_KT * (1 / MOLMASS_BUTANE) * ...
 						ENTHALPY_BUTANE * GJ_PER_KJ * VALUE_C4H8_FUEL;
 	value = prop_val + but_val;
+end
+
+function cost = cost_C02(flowrates)
+	cost = 0;
 end
 
 
