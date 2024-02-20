@@ -35,16 +35,16 @@ VALUE_H2_CHEM = 1400;	% [ $ / MT ]
 COST_STEAM = NaN;		% table 6.5 doherty
 
 % Economic | Fuel
-VALUE_H2_FUEL = 3;		% [ $ / GJ ]
-VALUE_CH = 3;		% [ $ / GJ ]
-value_C3H6_fuel = 3;	% [ $ / GJ ]
-value_C4H8_fuel = 3;	% [ $ / GJ ]
-value_NatGas_fuel = 3;	% [ $ / GJ ]
-value_2FuelOil = 4.5;	% [ $ / US Gallon ]
+VALUE_H2_FUEL = 3;			% [ $ / GJ ]
+VALUE_CH4_FUEL = 3;			% [ $ / GJ ]
+VALUE_C3H6_FUEL = 3;		% [ $ / GJ ]
+VALUE_C4H8_FUEL = 3;		% [ $ / GJ ]
+VALUE_NATGAS_FUEL = 3;		% [ $ / GJ ]
+VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 
 % Economics | Enviormental
-cost_CO2 = 125;			% [ $ / MT ]
-cost_waste = NaN;		% Ulrich and Vasudevan
+COST_CO2 = 125;				% [ $ / MT ]
+COST_WASTESTREAM = NaN;		% Ulrich and Vasudevan
 
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
 
@@ -69,7 +69,9 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 % FUNCTIONS | ECONOMICS____________________________________________________
 
 % Inputs are in [ kta ] outputs are in [ $ ]
-VALUE_ETHANE = @(P_ethane) P_ethane * KT_TO_MT * VALUE_ETHANE;
+value_ethane = @(P_ethane) P_ethane * KT_TO_MT * VALUE_ETHANE;
+value_ethylene = @(P_ethylene) P_ethylene * KT_TO_MT * VALUE_ETHYLENE;
+value_h2_chem = @(P_h2_chem) P_h2_chem * KT_TO_MT * VALUE_H2_CHEM;
 
 % SCRIPT___________________________________________________________________
 
@@ -125,6 +127,9 @@ function z = plot_contour(x, y, z, options)
 	hold off
 end
 
+function value = LPG_value(P_propane, P_butane)
+	
+end
 
 
 

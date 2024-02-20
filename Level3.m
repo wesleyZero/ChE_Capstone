@@ -46,6 +46,19 @@ VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 COST_CO2 = 125;				% [ $ / MT ]
 COST_WASTESTREAM = NaN;		% Ulrich and Vasudevan
 
+% Thermodynamics | Enthalpy of combustion of gas at standard conditions
+enthalpy_prop_combustion = 2219.2;		% [ kJ / mol ]
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
+enthalpy_but_combustion = 2877.5;		% [ kJ / mol ]
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+
+% Molar Mass
+M_propane = 44.0956;		% [ g / mol ]
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
+M_butane = 58.1222;
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+
+
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
 
 A = @(s1, s2)...
@@ -72,6 +85,7 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 value_ethane = @(P_ethane) P_ethane * KT_TO_MT * VALUE_ETHANE;
 value_ethylene = @(P_ethylene) P_ethylene * KT_TO_MT * VALUE_ETHYLENE;
 value_h2_chem = @(P_h2_chem) P_h2_chem * KT_TO_MT * VALUE_H2_CHEM;
+
 
 % SCRIPT___________________________________________________________________
 
@@ -108,6 +122,7 @@ for s1 = s1_domain
 end 
 
 plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt);
+disp("Function completed running")
 
 % HELPER FUNCTIONS | PLOTTING______________________________________________
 
@@ -127,6 +142,13 @@ function z = plot_contour(x, y, z, options)
 	hold off
 end
 
+
+function value = LPG_value(P_propane, P_butane)
+	% ASSUMPTION : VALUE OF LPG IS JUST SUM VALUE OF PROPANE + BUTANE BEING
+	% COMBUSTED
+	prop_val = P_propane;
+	
+end
 
 
 
