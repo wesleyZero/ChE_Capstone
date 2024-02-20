@@ -49,9 +49,12 @@ flowrates_valid = @( flowrates ) ...
 % potential for different reaction conditions 
 s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
 s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
-ethylene_flowrates = meshgrid(s1_domain, s2_domain);
+[s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
 
-plot_contour(ethylene_flowrates, s1_domain, s2_domain)
+% ethylene_flowrates = meshgrid(s1_domain, s2_domain);
+ethylene_flowrates = s1_mesh.^2 + s2_mesh.^3;
+
+plot_contour(ethylene_flowrates, s1_mesh, s2_mesh)
 
 i = 1;
 for s1 = s1_domain
@@ -84,6 +87,8 @@ end
 
 function z = plot_contour(z, x, y)
 	hold on 
-	countour(z, x, y)
+	contourf(z, x, y)
+
+	clabel(x, y)
 	hold off
 end
