@@ -1,6 +1,7 @@
 clc; clear; close all; 
 
 % CONSTANTS________________________________________________________________
+
 global S1_MIN S1_MAX S1_POINTS;
 global S2_MIN S2_MAX S2_POINTS;
 global INVALID_FLOWRATE;
@@ -16,18 +17,16 @@ global COST_CO2 COST_WASTESTREAM;
 global ENTHALPY_PROPANE ENTHALPY_BUTANE;
 global MOLMASS_PROPANE MOLMASS_BUTANE;
 global PROFIT_S1S2_OPT;
+global STEAM_COSTS;
 
 % Plotting 
 S1_MIN = 0.05;
 S1_MAX = 0.95;
 S1_POINTS = 40;
-
 S2_MIN = 0.05;
 S2_MAX = 0.95;
 S2_POINTS = 40;
-
 INVALID_FLOWRATE = 0;
-
 Fethyl_S1S2_plotOpt = { ...
 	'S_1 Selectivity', ...
 	'S_2 Selectivity', ...
@@ -38,6 +37,7 @@ PROFIT_S1S2_OPT = { ...
 	'S_2 Selectivity', ...
 	'Annual Profit [$ MM USD]',...
 	'P_ethylene_VS_S1_S2.jpg'}; 
+
 % Design params
 FC2H6 = 200;			% [	kta ]
 
@@ -53,7 +53,17 @@ GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 VALUE_ETHANE = 200;		% [ $ / MT ]
 VALUE_ETHYLENE = 900;	% [ $ / MT ]
 VALUE_H2_CHEM = 1400;	% [ $ / MT ]
-COST_STEAM = NaN;		% table 6.5 doherty
+
+% Economic | Steam 
+% [psia Temp[C] $/kg kJ/kg
+COST_STEAM = [
+    30  121		2.38  2213;
+    50  138		3.17  2159;
+    100 165		4.25  2067;
+    200 194		5.32  1960;
+    500 242		6.74  1755;
+    750 266		7.37  1634
+];
 
 % Economic | Fuel
 VALUE_H2_FUEL = 3;			% [ $ / GJ ]
@@ -73,11 +83,14 @@ ENTHALPY_PROPANE = 2219.2;		% [ kJ / mol ]
 ENTHALPY_BUTANE = 2877.5;		% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
-% Molar Mass
+% Chemical | Molar Mass
 MOLMASS_PROPANE = 44.0956;		% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 MOLMASS_BUTANE = 58.1222;
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+
+% Chemical | Combustion
+
 
 
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
@@ -147,7 +160,9 @@ for s1 = s1_domain
 			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
 
 			% Costs incurred
-			profit(i) = profit(i) - cost_C02(flowrates);
+			fuels = 1 : 10; % Placeholder value
+			profit(i) = profit(i) - cost_C02(fuels);
+			profit(i) = profit(i) - cost_steam(flowrates);
 		else
 			profit(i) = INVALID_FLOWRATE;
 			ethylene_flowrates(i) = INVALID_FLOWRATE;
@@ -183,9 +198,6 @@ function z = plot_contour(x, y, z, options)
 	hold off
 end
 
-
-
-
 function value = value_LPG(P_propane, P_butane)
 	% ASSUMPTION : VALUE OF LPG IS JUST SUM VALUE OF PROPANE + BUTANE BEING
 	% COMBUSTED
@@ -200,10 +212,23 @@ function value = value_LPG(P_propane, P_butane)
 	value = prop_val + but_val;
 end
 
-function cost = cost_C02(flowrates)
-	cost = 0;
+function cost = cost_C02(fuels)
+	p_h2 = fuels(1);				% [ kta ]
+	p_methane = fuels(2);			% [ kta ]
+	p_propane = fuels(3);			% [ kta ]
+	p_butane = fuels(4);			% [ kta ]
+	GJ_natural_gas = fuels(5);		% [ GJ ]
+	gallons_2fuel_oil = fuels(6);	% [ gallons ]
+
+
+	cost = 0; 
+	
+	
 end
 
+function cost = cost_steam(flowrates)
+	cost = 0 
+end
 
 
 
