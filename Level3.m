@@ -16,7 +16,8 @@ INVALID_FLOW = 0;
 cont_plt_opt = { ...
 	'S_1 Selectivity', ...
 	'S_2 Selectivity', ...
-	'Ethylene Flowrate vs Selectivities [kta]'};
+	'Ethylene Flowrate [kta]',...
+	'P_ethylene_VS_S1_S2.jpg'};
 
 % Design params
 FC2H6 = 200;	% [	kta ]
@@ -55,11 +56,7 @@ flowrates_valid = @( flowrates ) ...
 s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
 s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
 [s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
-ethylene_flowrates = s1_mesh + s2_mesh;
-
- % ethylene_flowrates = s1_mesh.^2 + s2_mesh.^3;
-% 
- plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt)
+ethylene_flowrates = s1_mesh + s2_mesh;			% Just placeholder values
 
 i = 1;
 for s1 = s1_domain
@@ -86,22 +83,42 @@ for s1 = s1_domain
 	end 
 end 
 
-plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt)
+plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt);
 
 
 
-% HELPER FUNCTIONS_________________________________________________________
+% HELPER FUNCTIONS | PLOTTING______________________________________________
 
 function z = plot_contour(x, y, z, options)
 	% Unpack options 
 	x_label = options{1};
 	y_label = options{2};
 	plt_title = options{3};
+	plt_saveName = options{4};
 
 	hold on 
 	contourf(x, y, z, "ShowText","on");
 	xlabel(x_label);
 	ylabel(y_label);
 	title(plt_title);
+	saveas(gcf, plt_saveName);
 	hold off
 end
+
+% function value = LPG_value()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
