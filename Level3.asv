@@ -26,8 +26,8 @@ FC2H6 = 200;			% [	kta ]
 M_C2H6 = 28.05;			% [ g / mol ]
 
 % Unit conversions 
-KT_PER_MT = 1000;		% [ kt / MT ]
-G_PER_KT = 10^9;			% [ g / kt ]
+MT_PER_KT = 1000;		% [ kt / MT ]
+G_PER_KT = 10^9;		% [ g / kt ]
 GJ_PER_KJ = 10^6;		% [ GJ / kJ ]
 
 % Economic | Chemicals
@@ -84,10 +84,9 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 % FUNCTIONS | ECONOMICS____________________________________________________
 
 % Inputs are in [ kta ] outputs are in [ $ ]
-value_ethane = @(P_ethane) P_ethane * KT_PER_MT * VALUE_ETHANE;
-value_ethylene = @(P_ethylene) P_ethylene * KT_PER_MT * VALUE_ETHYLENE;
-value_h2_chem = @(P_h2_chem) P_h2_chem * KT_PER_MT * VALUE_H2_CHEM;
-
+value_ethane = @(P_ethane) P_ethane * MT_PER_KT * VALUE_ETHANE;
+value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
+value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
 
 % SCRIPT___________________________________________________________________
 
@@ -149,8 +148,11 @@ function value = LPG_value(P_propane, P_butane)
 	% ASSUMPTION : VALUE OF LPG IS JUST SUM VALUE OF PROPANE + BUTANE BEING
 	% COMBUSTED
 	% kt * (g / kt) * (mol / g) * (kJ / mol) * (GJ / KJ) * ($ / GJ)
-	prop_val = P_propane * KT_TO_G * (1 / MOLMASS_PROPANE) * ENTHALPY_PROPANE * 
-	
+	prop_val = P_propane * KT_TO_G * (1 / MOLMASS_PROPANE) * ...
+							ENTHALPY_PROPANE * GJ_PER_KJ * VALUE_C3H6_FUEL;
+	but_val = P_butane * KT_TO_G * (1 / MOLMASS_BUTANE) * ...
+						ENTHALPY_BUTANE * GJ_PER_KJ * VALUE_C4H8_FUEL;
+	value = prop_val + but_val;
 end
 
 
