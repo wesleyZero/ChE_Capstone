@@ -15,6 +15,7 @@ global VALUE_NATGAS_FUEL VALUE_NUM2OIL_FUEL;
 global COST_CO2 COST_WASTESTREAM;
 global ENTHALPY_PROPANE ENTHALPY_BUTANE;
 global MOLMASS_PROPANE MOLMASS_BUTANE;
+global PROFIT_S1S2_OPT;
 
 % Plotting 
 S1_MIN = 0.05;
@@ -32,7 +33,11 @@ Fethyl_S1S2_plotOpt = { ...
 	'S_2 Selectivity', ...
 	'Ethylene Flowrate [kta]',...
 	'P_ethylene_VS_S1_S2.jpg'};
-
+PROFIT_S1S2_OPT = { ...
+	'S_1 Selectivity', ...
+	'S_2 Selectivity', ...
+	'Annual Profit [$ MM USD]',...
+	'P_ethylene_VS_S1_S2.jpg'}; 
 % Design params
 FC2H6 = 200;			% [	kta ]
 
@@ -132,9 +137,14 @@ for s1 = s1_domain
 			ethylene_flowrates(i) = p_c2h4;
 
 			% Value Created 
+			disp("product h2 LPG")			
+			value_ethylene(p_c2h4)
+			value_h2_chem(p_h2)
+			value_LPG(p_c3h8, p_c4h10)
+
 			profit(i) = profit(i) + value_ethylene(p_c2h4);
 			profit(i) = profit(i) + value_h2_chem(p_h2);
-			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
+% 			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
 
 			% Costs incurred
 			profit(i) = profit(i) - cost_C02(flowrates);
@@ -148,7 +158,9 @@ for s1 = s1_domain
 	end 
 end 
 
+profit = profit ./ 10^6; % Convert to Millions of dollars 
 plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, Fethyl_S1S2_plotOpt);
+plot_contour(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
 disp("Function completed running")
 
 % HELPER FUNCTIONS | PLOTTING______________________________________________
@@ -162,13 +174,16 @@ function z = plot_contour(x, y, z, options)
 
 	hold on 
 	figure
-	contourf(x, y, z, "ShowText","on");
+    [C, h] = contourf(x, y, z); % Create filled contours
+    clabel(C, h, 'FontSize', 10, 'Color', 'k', 'LabelSpacing', 400); % Customize label properties
 	xlabel(x_label);
 	ylabel(y_label);
 	title(plt_title);
 	saveas(gcf, plt_saveName);
 	hold off
 end
+
+
 
 
 function value = value_LPG(P_propane, P_butane)
