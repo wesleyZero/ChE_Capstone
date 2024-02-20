@@ -11,7 +11,7 @@ S2_MIN = 0.05;
 S2_MAX = 0.95;
 S2_POINTS = 40;
 
-INVALID_FLOW = 0;
+INVALID_FLOWRATE = 0;
 
 cont_plt_opt = { ...
 	'S_1 Selectivity', ...
@@ -20,30 +20,31 @@ cont_plt_opt = { ...
 	'P_ethylene_VS_S1_S2.jpg'};
 
 % Design params
-FC2H6 = 200;	% [	kta ]
+FC2H6 = 200;			% [	kta ]
 
 % Molar mass
-M_C2H6 = 28.05;	% [ g / mol ]
+M_C2H6 = 28.05;			% [ g / mol ]
 
 % Unit conversions 
-metricTons_to_kiloton = 1000;
+KT_TO_MT = 1000;		% [ kt / MT ]
 
 % Economic | Chemicals
-value_ethane = 200;		% [ $ / MT ]
-value_ethylene = 900;	% [ $ / MT ]
+VALUE_ETHANE = 200;		% [ $ / MT ]
+VALUE_ETHYLENE = 900;	% [ $ / MT ]
+VALUE_H2_CHEM = 1400;	% [ $ / MT ]
+COST_STEAM = NaN;		% table 6.5 doherty
 
 % Economic | Fuel
-value_H2_fuel = 3;		% [ $ / GJ ]
-value_CH4_fuel = 3;		% [ $ / GJ ]
-value_C3H6_fuel = 3;	% [ $ / GJ ]
-value_C4H8_fuel = 3;	% [ $ / GJ ]
-value_NatGas_fuel = 3;	% [ $ / GJ ]
-value_2FuelOil = 4.5;	% [ $ / US Gallon ]
+VALUE_H2_FUEL = 3;			% [ $ / GJ ]
+VALUE_CH4_FUEL = 3;			% [ $ / GJ ]
+VALUE_C3H6_FUEL = 3;		% [ $ / GJ ]
+VALUE_C4H8_FUEL = 3;		% [ $ / GJ ]
+VALUE_NATGAS_FUEL = 3;		% [ $ / GJ ]
+VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 
 % Economics | Enviormental
-
-
-
+COST_CO2 = 125;				% [ $ / MT ]
+COST_WASTESTREAM = NaN;		% Ulrich and Vasudevan
 
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
 
@@ -53,7 +54,7 @@ A = @(s1, s2)...
      1		,2		,1	];
 b = [0;		0;		FC2H6];
 
-% FLOWRATE FUNCTIONS_______________________________________________________
+% FUNCTIONS | FLOWRATE_____________________________________________________
 
 P_H2 = @(xi_1)			xi_1;
 P_CH4 = @(xi_2)			xi_2;
@@ -61,10 +62,16 @@ P_C2H4 = @(xi_1, xi_3)	xi_1 - xi_3;
 P_C3H8 = @(xi_2)		xi_2;
 P_C4H10 = @(xi_3)		xi_3;
 
-% VALIDATION FUNCTIONS_____________________________________________________
+% FUNCTIONS | VALIDATION___________________________________________________
 
-flowrates_valid = @( flowrates ) ...
-			all(flowrates >= 0);
+flowrates_valid = @( flowrates ) all(flowrates >= 0);
+
+% FUNCTIONS | ECONOMICS____________________________________________________
+
+% Inputs are in [ kta ] outputs are in [ $ ]
+value_ethane = @(P_ethane) P_ethane * KT_TO_MT * VALUE_ETHANE;
+value_ethylene = @(P_ethylene) P_ethylene * KT_TO_MT * VALUE_ETHYLENE;
+value_h2_chem = @(P_h2_chem) P_h2_chem * KT_TO_MT * VALUE_H2_CHEM;
 
 % SCRIPT___________________________________________________________________
 
@@ -94,15 +101,13 @@ for s1 = s1_domain
 		if (flowrates_valid(flowrates))
 			ethylene_flowrates(i) = p_c2h4;
 		else
-			ethylene_flowrates(i) = INVALID_FLOW;
+			ethylene_flowrates(i) = INVALID_FLOWRATE;
 		end 
 		i = i + 1;
 	end 
 end 
 
 plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, cont_plt_opt);
-
-
 
 % HELPER FUNCTIONS | PLOTTING______________________________________________
 
@@ -122,14 +127,7 @@ function z = plot_contour(x, y, z, options)
 	hold off
 end
 
-function value = ethane_value(P_ethane)
-	% inputs
-	%		P_ethane [kta]
-	% output
-	%		value [$ USD]
 
-	
-end 
 
 
 
