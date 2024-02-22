@@ -3,7 +3,7 @@ global S1_MIN S1_MAX S1_POINTS;
 global S2_MIN S2_MAX S2_POINTS;
 global INVALID_FLOWRATE;
 global Fethyl_S1S2_plotOpt;
-global FC2H6;
+global F_ETHYLENE;
 global M_C2H6;
 global MT_PER_KT G_PER_KT GJ_PER_KJ;
 global VALUE_ETHANE VALUE_ETHYLENE VALUE_H2_CHEM;
@@ -20,6 +20,12 @@ global STEAM_30C STEAM_50C STEAM_100C STEAM_200C STEAM_500C STEAM_750C;
 
 % DESIGN PARAMETERS_____________________________________________________________
 STEAM_TO_FEED_RATIO = 0.6; %0.6 to 1.0
+
+% Note: The primary units of this script are ... 
+% Mass			kta
+% Energy		GJ
+% Pressure 		Bar
+% Temperature 	Celcius
 
 % CONSTANTS________________________________________________________________
 
@@ -43,7 +49,7 @@ PROFIT_S1S2_OPT = { ...
 	'P_ethylene_VS_S1_S2.jpg'}; 
 
 % Design params
-FC2H6 = 200;			% [	kta ]
+F_ETHYLENE = 200;			% [	kta ]
 
 % Molar mass
 M_C2H6 = 28.05;			% [ g / mol ]
@@ -53,6 +59,8 @@ MT_PER_KT = 1000;		% [ kt / MT ]
 G_PER_KT = 10^9;		% [ g / kt ]
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 KG_PER_KT = 10^3;		% [ kg / MT ]
+KJ_PER_GJ = 10^-6;		% [ kJ / GJ ]
+MT_PER_G = 10^6;		% [ MT / g ]
 
 % Economic | Chemicals
 VALUE_ETHANE = 200;		% [ $ / MT ]
@@ -78,10 +86,6 @@ VALUE_C4H8_FUEL = 3;		% [ $ / GJ ]
 VALUE_NATGAS_FUEL = 3;		% [ $ / GJ ]
 VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 
-% Economics | Enviormental
-COST_CO2 = 125;				% [ $ / MT ]
-COST_WASTESTREAM = NaN;		% Ulrich and Vasudevan
-
 
 % Thermodynamics | Heats of Formation (at 25C)
 HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol K ] reference Temp = std
@@ -104,20 +108,39 @@ ENTHALPY_RXN_2 = HEAT_FORMATION_METHANE + HEAT_FORMATION_PROPANE ...
 ENTHALPY_RXN_3 = HEAT_FORMATION_ETHANE - HEAT_FORMATION_ETHANE ...
 										- HEAT_FORMATION_ETHYLENE;
 
-
 % Thermodynamics | Enthalpy of combustion of gas at standard conditions
+ENTHALPY_METHANE = 890;					% [ kJ / mol ]	
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1
 ENTHALPY_PROPANE = 2219.2;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 ENTHALPY_BUTANE = 2877.5;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
-	
+
+% Chemical | Combustion Stochiometery 
+CO2_TO_METHANE_COMBUSTION_STOICH = 1;
+CO2_TO_PROPANE_COMBUSTION_STOICH = 3;
+CO2_TO_BUTANE_COMBUSTION_STOICH = 4;
+
+% Economics | Enviormental
+TAX_CO2_PER_MT = 125;				% [ $ / MT ]
+TAX_CO2_PER_GJ_METHANE = KJ_PER_GJ * (1 / ENTHALPY_METHANE) * CO2_TO_METHANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
+TAX_CO2_PER_GJ_PROPANE = KJ_PER_GJ * (1 / ENTHALPY_PROPANE) * CO2_TO_PROPANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
+TAX_CO2_PER_GJ_BUTANE = KJ_PER_GJ * (1 / ENTHALPY_BUTANE) * CO2_TO_BUTANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
+
+% Economics | Post-Tax Value of different fuel sources
+EFFECTIVE_VALUE_METHANE_FUEL = VALUE_H2_FUEL - TAX_CO2_PER_GJ_METHANE;
+EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_C3H6_FUEL - TAX_CO2_PER_GJ_PROPANE;
+EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_C4H8_FUEL - TAX_CO2_PER_GJ_BUTANE;
+
 % Chemical | Molar Mass
 MOLMASS_PROPANE = 44.0956;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 MOLMASS_BUTANE = 58.1222;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+MOLMASS_ETHANE = 30.0690;				% [ g / mol ]
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840
 
 % Chemical | Steam Choice indicies
 STEAM_COST_ROW = 3;
@@ -141,7 +164,7 @@ A = @(s1, s2)...
 	[s1-1	,s1		,s1+1;
      s2		,s2-1	,s2;
      1		,2		,1	];
-b = [0;		0;		FC2H6];
+b = [0;		0;		F_ETHYLENE];
 
 % FUNCTIONS | FLOWRATE_____________________________________________________
 
@@ -168,7 +191,10 @@ cost_steam = @(F_steam, steam_rate) F_steam * KG_PER_KT * steam_rate;
 % cost_feed = @(F_ethane) F_ethane * VALUE_ETHANE
 
 % FUNCTIONS | THEROMODYNAMICS______________________________________________
-heat_ethane = @(F_ethane, T0, Tf) F_ethane * HEAT_CAPACITY_ETHANE * (Tf - T0);
+% Input: [ kta ] Output: [ GJ ]
+% kta * (g / kta) * (mol / g) * (kJ / mol K) * (kJ / mol) * (GJ / kJ)
+heat_ethane = @(F_ethane, T0, Tf) F_ethane * G_PER_KT * (1 / MOLMASS_ETHANE) * HEAT_CAPACITY_ETHANE * GJ_PER_KJ * (Tf - T0);
+% Input: [ kta ] 	Output: [ GJ ]
 heat_rxn1 = @(xi_1) xi_1 * ENTHALPY_RXN_1;
 heat_rxn2 = @(xi_2) xi_2 * ENTHALPY_RXN_2;
 heat_rxn3 = @(xi_3) xi_3 * ENTHALPY_RXN_3; 
@@ -217,8 +243,8 @@ for s1 = s1_domain
 			heat_flux = heat_flux + heat_rxn(xi)
 % 
 % 			% Use the heat flux to calculate the fuel cost	
-% 			combusted_fuel_flow_rates = fuel_combustion(heat_flux, flowrates)
-			combusted_fuel_flow_rates = flowrates * 0;
+			combusted_fuel_flow_rates = fuel_combustion(heat_flux, flowrates)
+			% combusted_fuel_flow_rates = flowrates * 0;
 % 
 			% Determine how much of the product streams were combusted to keep the reactor isothermal	
 			% Assume: no hydrogen is combusted
@@ -234,7 +260,7 @@ for s1 = s1_domain
 % 			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
 % 			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
 % 			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
-% 			
+% % 			
 			% COSTS INCURRED
 % 			profit(i) = profit(i) - tax_C02(combusted_fuel_flowrates);
 			
@@ -295,6 +321,15 @@ end
 % function cost = kkam(flowrates)
 % 	cost = 0;
 % end
+
+function combusted_fuel_flowrates = fuel_combustion(heat_flux, flowrates)
+	% Longest Chain Hydrocarbons are cheapest to combust
+	remaining_heat_flux = 0;
+
+
+	combusted_fuel_flowrates = flowrates * 0;
+
+end
 
 function heat = heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor)
 
