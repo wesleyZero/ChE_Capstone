@@ -214,7 +214,7 @@ for s1 = s1_domain
 			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
 			heat_flux = heat_flux + heat_ethane(P_ethylene, T_ethane_feed, T_reactor);
 % 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor); 
-			heat_flux = heat_flux + heat_rxn(xi);
+			heat_flux = heat_flux + heat_rxn(xi)
 % 
 % 			% Use the heat flux to calculate the fuel cost	
 % 			combusted_fuel_flow_rates = fuel_combustion(heat_flux, flowrates)
@@ -222,9 +222,9 @@ for s1 = s1_domain
 % 
 			% Determine how much of the product streams were combusted to keep the reactor isothermal	
 			% Assume: no hydrogen is combusted
-% 			combusted_methane = combusted_fuel_flow_rates(METHANE)
-% 			combusted_propane = combusted_fuel_flow_rates(PROPANE)
-% 			combusted_butane = combusted_fuel_flow_rates(BUTANE)
+			combusted_methane = combusted_fuel_flow_rates(METHANE);
+			combusted_propane = combusted_fuel_flow_rates(PROPANE);
+			combusted_butane = combusted_fuel_flow_rates(BUTANE);
 % 
 % 			% VALUE CREATED | Primary Products
 			profit(i) = profit(i) + value_ethylene(P_ethylene);
