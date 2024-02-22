@@ -130,9 +130,8 @@ STEAM_750C = 6;
 HYDROGEN = 1; 
 METHANE = 2;
 ETHYLENE = 3;
-ETHANE = 4;
-PROPANE = 5;
-BUTANE = 6;
+PROPANE = 4;
+BUTANE = 5;
 
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
 
@@ -203,39 +202,40 @@ for s1 = s1_domain
 			% Store all etylene polymer output in a DS so it can be plotted
 			ethylene_flowrates(i) = P_ethylene;
 
-			% Calculate the heat flux needed to keep reactor isothermal 
-			heat_flux = 0;
-			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
-			heat_flux = heat_flux + heat_ethane(P_ethylene, T_ethane_feed, T_reactor)
-			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor); 
-			heat_flux = heat_flux + heat_rxn(xi)
-
-			% Use the heat flux to calculate the fuel cost	
-			combusted_fuel_flow_rates = fuel_combustion(heat_flux, flowrates)
-
+% 			% Calculate the heat flux needed to keep reactor isothermal 
+% 			heat_flux = 0;
+% 			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
+% 			heat_flux = heat_flux + heat_ethane(P_ethylene, T_ethane_feed, T_reactor)
+% 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor); 
+% 			heat_flux = heat_flux + heat_rxn(xi)
+% 
+% 			% Use the heat flux to calculate the fuel cost	
+% 			combusted_fuel_flow_rates = fuel_combustion(heat_flux, flowrates)
+			combusted_fuel_flow_rates = flowrates * 0;
+% 
 			% Determine how much of the product streams were combusted to keep the reactor isothermal	
 			% Assume: no hydrogen is combusted
-			combusted_methane = combusted_fuel_flow_rates(METHANE)
-			combusted_propane = combusted_fuel_flow_rates(PROPANE)
-			combusted_butane = combusted_fuel_flow_rates(BUTANE)
-
-			% VALUE CREATED | Primary Products
+% 			combusted_methane = combusted_fuel_flow_rates(METHANE)
+% 			combusted_propane = combusted_fuel_flow_rates(PROPANE)
+% 			combusted_butane = combusted_fuel_flow_rates(BUTANE)
+% 
+% 			% VALUE CREATED | Primary Products
 			profit(i) = profit(i) + value_ethylene(P_ethylene);
 			profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
 
 			% VALUE CREATED | Non-combusted fuels 
-			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
-			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
-			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
-			
+% 			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
+% 			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
+% 			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
+% 			
 			% COSTS INCURRED
-			profit(i) = profit(i) - tax_C02(combusted_fuel_flowrates);
-			profit(i) = profit(i) - cost_steam(F_steam);
-			profit(i) = profit(i) - cost_feed(F_ethane);
-			profit(i) = profit(i) - cost_natural_gas_fuel(heatflux, combusted_fuel_flow_rates);
-			% Assume no #2 Fuel Oil is used
-			F_waste = 0; % ??????????????????????????
-			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
+% 			profit(i) = profit(i) - tax_C02(combusted_fuel_flowrates);
+% 			profit(i) = profit(i) - cost_steam(F_steam);
+% 			profit(i) = profit(i) - cost_feed(F_ethane);
+% 			profit(i) = profit(i) - cost_natural_gas_fuel(heatflux, combusted_fuel_flow_rates);
+% 			% Assume no #2 Fuel Oil is used
+% 			F_waste = 0; % ??????????????????????????
+% 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
 
 		else
 			profit(i) = INVALID_FLOWRATE;
