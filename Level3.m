@@ -1,4 +1,4 @@
-clc; clear; close all; 
+clc; clear; close all;
 
 % CONSTANTS________________________________________________________________
 
@@ -18,6 +18,8 @@ global ENTHALPY_PROPANE ENTHALPY_BUTANE;
 global MOLMASS_PROPANE MOLMASS_BUTANE;
 global PROFIT_S1S2_OPT;
 global HEAT_CAPACITY_ETHANE;
+global HEAT_FORMATION_ETHANE;
+
 % global STEAM_COSTS;
 
 % Plotting 
@@ -78,22 +80,43 @@ VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 COST_CO2 = 125;				% [ $ / MT ]
 COST_WASTESTREAM = NaN;		% Ulrich and Vasudevan
 
-% Thermodynamics | Enthalpy of combustion of gas at standard conditions
-ENTHALPY_PROPANE = 2219.2;		% [ kJ / mol ]
-	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
-ENTHALPY_BUTANE = 2877.5;		% [ kJ / mol ]
-	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
-HEAT_CAPACITY_ETHANE = 74.48;	% [ J / mol K ] 
+
+% Thermodynamics | Heats of Formation (at 25C)
+HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol K ] reference Temp = std
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
+HEAT_FORMATION_METHANE = -74.87;		% [ kJ / mol K ] reference Temp = std
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1
+HEAT_FORMATION_ETHYLENE = 52.47;		% [ kJ / mol K ] reference Temp = std 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74851&Mask=1
+HEAT_FORMATION_HYDROGEN = 0; 			% [ kJ / mol K ] reference Temp = std 
+HEAT_FORMATION_PROPANE = -104.7;		% [ kJ / mol K ] reference Temp = std 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
+HEAT_FORMATION_BUTANE = -125.6;			% [ kJ / mol K ] reference Temp = std 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+
+% Thermodynamics | Enthalpy of Reactions
+ENTHALPY_RXN_1 = HEAT_FORMATION_HYDROGEN + HEAT_FORMATION_ETHYLENE ...
+										- HEAT_FORMATION_ETHANE;
+ENTHALPY_RXN_2 = HEAT_FORMATION_METHANE + HEAT_FORMATION_PROPANE ...
+										- 2 * HEAT_FORMATION_ETHANE; 
+ENTHALPY_RXN_3 = HEAT_FORMATION_ETHANE - HEAT_FORMATION_ETHANE ...
+										- HEAT_FORMATION_ETHYLENE;
+
+
+% Thermodynamics | Enthalpy of combustion of gas at standard conditions
+ENTHALPY_PROPANE = 2219.2;				% [ kJ / mol ]
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
+ENTHALPY_BUTANE = 2877.5;				% [ kJ / mol ]
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
+	
 
 % Chemical | Molar Mass
-MOLMASS_PROPANE = 44.0956;		% [ g / mol ]
+MOLMASS_PROPANE = 44.0956;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
-MOLMASS_BUTANE = 58.1222;
+MOLMASS_BUTANE = 58.1222;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
-
-% Chemical | Combustion
-
 
 
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
@@ -123,6 +146,11 @@ value_ethane = @(P_ethane) P_ethane * MT_PER_KT * VALUE_ETHANE;
 value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
 value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
 
+% FUNCTIONS | THEROMODYNAMICS______________________________________________
+heat_ethane = @(F_ethane, T0, Tf) F_ethane * HEAT_CAPACITY_ETHANE * (Tf - T0);
+
+
+
 % SCRIPT___________________________________________________________________
 
 % Iterates through each value of selectivities S1 and S2 to find the economic
@@ -132,6 +160,8 @@ s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
 [s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
 ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
 profit = (s1_mesh + s2_mesh) .* 0;	
+T_reactor = 800;				% [ C ] 
+T_ethane_feed = 25;				% [ C ]
 
 i = 1;
 for s1 = s1_domain
@@ -157,12 +187,18 @@ for s1 = s1_domain
 			profit(i) = profit(i) + value_h2_chem(p_h2);
 			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
 
+			% Calculate the heat flux needed to keep reactor isothermal 
+			% as well as heat the feed streams to the op temperature
+			heat_flux = 0;
+			heat_flux = heat_ethane(p_c2h4, T_ethane_feed, T_reactor);
+			
+
+
 			% Costs incurred
 			fuels = 1 : 10; % Placeholder value
-			
 			profit(i) = profit(i) - value_ethane(p_c2h4);	% feed cost
-			profit(i) = profit(i) - tax_C02(F_CO2);
-			profit(i) = profit(i) - cost_steam(flowrates);
+% 			profit(i) = profit(i) - tax_C02(F_CO2);
+% 			profit(i) = profit(i) - cost_steam(flowrates);
 		else
 			profit(i) = INVALID_FLOWRATE;
 			ethylene_flowrates(i) = INVALID_FLOWRATE;
@@ -210,29 +246,10 @@ function value = value_LPG(P_propane, P_butane)
 	value = prop_val + but_val;
 end
 
-% function cost = value_C02(fuels)
-% 	p_h2 = fuels(1);				% [ kta ]
-% 	p_methane = fuels(2);			% [ kta ]
-% 	p_propane = fuels(3);			% [ kta ]
-% 	p_butane = fuels(4);			% [ kta ]
-% 	GJ_natural_gas = fuels(5);		% [ GJ ]
-% 	gallons_2fuel_oil = fuels(6);	% [ gallons ]
-% 	
-% 
-% 
-% 	cost = 0; 
-% 	
-% 	
-% end
-
 function cost = cost_steam(flowrates)
 	cost = 0;
 end
 
-function heat = heat_flux()
-
-	heat = 0
-end 
 
 
 
