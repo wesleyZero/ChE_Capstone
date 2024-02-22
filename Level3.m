@@ -7,7 +7,7 @@ global FC2H6;
 global M_C2H6;
 global MT_PER_KT G_PER_KT GJ_PER_KJ;
 global VALUE_ETHANE VALUE_ETHYLENE VALUE_H2_CHEM;
-global COST_STEAM;
+global COST_RATES_STEAM;
 global VALUE_H2_FUEL VALUE_CH4_FUEL VALUE_C3H6_FUEL VALUE_C4H8_FUEL;
 global VALUE_NATGAS_FUEL VALUE_NUM2OIL_FUEL;
 global COST_CO2 COST_WASTESTREAM;
@@ -19,7 +19,7 @@ global HEAT_FORMATION_ETHANE;
 global STEAM_30C STEAM_50C STEAM_100C STEAM_200C STEAM_500C STEAM_750C;
 
 % DESIGN PARAMETERS_____________________________________________________________
-STEAM_TO_FEED_RATIO = 10;
+STEAM_TO_FEED_RATIO = 0.6; %0.6 to 1.0
 
 % CONSTANTS________________________________________________________________
 
@@ -52,6 +52,7 @@ M_C2H6 = 28.05;			% [ g / mol ]
 MT_PER_KT = 1000;		% [ kt / MT ]
 G_PER_KT = 10^9;		% [ g / kt ]
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
+KG_PER_KT = 10^3;		% [ kg / MT ]
 
 % Economic | Chemicals
 VALUE_ETHANE = 200;		% [ $ / MT ]
@@ -60,7 +61,7 @@ VALUE_H2_CHEM = 1400;	% [ $ / MT ]
 
 % Economic | Steam 
 % psia Temp[C] $/kg kJ/kg
-COST_STEAM = [
+COST_RATES_STEAM = [
     30  121		2.38  2213;
     50  138		3.17  2159;
     100 165		4.25  2067;
@@ -119,6 +120,7 @@ MOLMASS_BUTANE = 58.1222;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
 % Chemical | Steam Choice indicies
+STEAM_COST_ROW = 3;
 STEAM_30C = 1;
 STEAM_50C = 2;
 STEAM_100C = 3;
@@ -149,7 +151,7 @@ P_ETHYLENE = @(xi_1, xi_3)		xi_1 - xi_3;
 P_PROPANE = @(xi_2)				xi_2;
 P_BUTANE = @(xi_3)				xi_3;
 
-F_ETHANE = @(xi_1, xi_2, xi_3)	xi_1 + 2 * xi_2 * xi_3;
+F_ETHANE = @(xi_1, xi_2, xi_3)	xi_1 + 2 * xi_2 + xi_3;
 
 % FUNCTIONS | VALIDATION___________________________________________________
 
@@ -161,6 +163,9 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 value_ethane = @(P_ethane) P_ethane * MT_PER_KT * VALUE_ETHANE;
 value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
 value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
+
+cost_steam = @(F_steam, steam_rate) F_steam * KG_PER_KT * steam_rate;
+% cost_feed = @(F_ethane) F_ethane * VALUE_ETHANE
 
 % FUNCTIONS | THEROMODYNAMICS______________________________________________
 heat_ethane = @(F_ethane, T0, Tf) F_ethane * HEAT_CAPACITY_ETHANE * (Tf - T0);
@@ -199,15 +204,17 @@ for s1 = s1_domain
 		flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
 	
 		if (flowrates_valid(flowrates))
+
+
 			% Store all etylene polymer output in a DS so it can be plotted
 			ethylene_flowrates(i) = P_ethylene;
 
 % 			% Calculate the heat flux needed to keep reactor isothermal 
-% 			heat_flux = 0;
-% 			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
-% 			heat_flux = heat_flux + heat_ethane(P_ethylene, T_ethane_feed, T_reactor)
+			heat_flux = 0;
+			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
+			heat_flux = heat_flux + heat_ethane(P_ethylene, T_ethane_feed, T_reactor);
 % 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor); 
-% 			heat_flux = heat_flux + heat_rxn(xi)
+			heat_flux = heat_flux + heat_rxn(xi);
 % 
 % 			% Use the heat flux to calculate the fuel cost	
 % 			combusted_fuel_flow_rates = fuel_combustion(heat_flux, flowrates)
@@ -230,8 +237,9 @@ for s1 = s1_domain
 % 			
 			% COSTS INCURRED
 % 			profit(i) = profit(i) - tax_C02(combusted_fuel_flowrates);
-% 			profit(i) = profit(i) - cost_steam(F_steam);
-% 			profit(i) = profit(i) - cost_feed(F_ethane);
+			
+			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50C));
+			profit(i) = profit(i) - value_ethane(F_ethane);
 % 			profit(i) = profit(i) - cost_natural_gas_fuel(heatflux, combusted_fuel_flow_rates);
 % 			% Assume no #2 Fuel Oil is used
 % 			F_waste = 0; % ??????????????????????????
@@ -284,9 +292,9 @@ end
 % 	value = prop_val + but_val;
 % end
 
-function cost = cost_steam(flowrates)
-	cost = 0;
-end
+% function cost = kkam(flowrates)
+% 	cost = 0;
+% end
 
 function heat = heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor)
 
