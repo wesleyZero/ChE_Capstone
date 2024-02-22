@@ -17,7 +17,8 @@ global COST_CO2 COST_WASTESTREAM;
 global ENTHALPY_PROPANE ENTHALPY_BUTANE;
 global MOLMASS_PROPANE MOLMASS_BUTANE;
 global PROFIT_S1S2_OPT;
-global STEAM_COSTS;
+global HEAT_CAPACITY_ETHANE;
+% global STEAM_COSTS;
 
 % Plotting 
 S1_MIN = 0.05;
@@ -55,7 +56,7 @@ VALUE_ETHYLENE = 900;	% [ $ / MT ]
 VALUE_H2_CHEM = 1400;	% [ $ / MT ]
 
 % Economic | Steam 
-% [psia Temp[C] $/kg kJ/kg
+% psia Temp[C] $/kg kJ/kg
 COST_STEAM = [
     30  121		2.38  2213;
     50  138		3.17  2159;
@@ -82,6 +83,8 @@ ENTHALPY_PROPANE = 2219.2;		% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 ENTHALPY_BUTANE = 2877.5;		% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+HEAT_CAPACITY_ETHANE = 74.48;	% [ J / mol K ] 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
 
 % Chemical | Molar Mass
 MOLMASS_PROPANE = 44.0956;		% [ g / mol ]
@@ -150,25 +153,20 @@ for s1 = s1_domain
 			ethylene_flowrates(i) = p_c2h4;
 
 			% Value Created 
-			disp("product h2 LPG")			
-			value_ethylene(p_c2h4)
-			value_h2_chem(p_h2)
-			value_LPG(p_c3h8, p_c4h10)
-
 			profit(i) = profit(i) + value_ethylene(p_c2h4);
 			profit(i) = profit(i) + value_h2_chem(p_h2);
 			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
 
 			% Costs incurred
 			fuels = 1 : 10; % Placeholder value
-			profit(i) = profit(i) - cost_C02(fuels);
+			
+			profit(i) = profit(i) - value_ethane(p_c2h4);	% feed cost
+			profit(i) = profit(i) - tax_C02(F_CO2);
 			profit(i) = profit(i) - cost_steam(flowrates);
 		else
 			profit(i) = INVALID_FLOWRATE;
 			ethylene_flowrates(i) = INVALID_FLOWRATE;
 		end 
-
-		
 		i = i + 1;
 	end 
 end 
@@ -212,23 +210,29 @@ function value = value_LPG(P_propane, P_butane)
 	value = prop_val + but_val;
 end
 
-function cost = cost_C02(fuels)
-	p_h2 = fuels(1);				% [ kta ]
-	p_methane = fuels(2);			% [ kta ]
-	p_propane = fuels(3);			% [ kta ]
-	p_butane = fuels(4);			% [ kta ]
-	GJ_natural_gas = fuels(5);		% [ GJ ]
-	gallons_2fuel_oil = fuels(6);	% [ gallons ]
-
-
-	cost = 0; 
-	
-	
-end
+% function cost = value_C02(fuels)
+% 	p_h2 = fuels(1);				% [ kta ]
+% 	p_methane = fuels(2);			% [ kta ]
+% 	p_propane = fuels(3);			% [ kta ]
+% 	p_butane = fuels(4);			% [ kta ]
+% 	GJ_natural_gas = fuels(5);		% [ GJ ]
+% 	gallons_2fuel_oil = fuels(6);	% [ gallons ]
+% 	
+% 
+% 
+% 	cost = 0; 
+% 	
+% 	
+% end
 
 function cost = cost_steam(flowrates)
-	cost = 0 
+	cost = 0;
 end
+
+function heat = heat_flux()
+
+	heat = 0
+end 
 
 
 
