@@ -1,7 +1,4 @@
 clc; clear; close all;
-
-% CONSTANTS________________________________________________________________
-
 global S1_MIN S1_MAX S1_POINTS;
 global S2_MIN S2_MAX S2_POINTS;
 global INVALID_FLOWRATE;
@@ -19,8 +16,12 @@ global MOLMASS_PROPANE MOLMASS_BUTANE;
 global PROFIT_S1S2_OPT;
 global HEAT_CAPACITY_ETHANE;
 global HEAT_FORMATION_ETHANE;
+global STEAM_30C STEAM_50C STEAM_100C STEAM_200C STEAM_500C STEAM_750C;
 
-% global STEAM_COSTS;
+% DESIGN PARAMETERS_____________________________________________________________
+STEAM_TO_FEED_RATIO = 10;
+
+% CONSTANTS________________________________________________________________
 
 % Plotting 
 S1_MIN = 0.05;
@@ -111,13 +112,27 @@ ENTHALPY_BUTANE = 2877.5;				% [ kJ / mol ]
 HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
 	
-
 % Chemical | Molar Mass
 MOLMASS_PROPANE = 44.0956;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 MOLMASS_BUTANE = 58.1222;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
+% Chemical | Steam Choice indicies
+STEAM_30C = 1;
+STEAM_50C = 2;
+STEAM_100C = 3;
+STEAM_200C = 4;
+STEAM_500C = 5;
+STEAM_750C = 6;
+
+% Flow rate Indicies | For the flowrates(i) array
+HYDROGEN = 1; 
+METHANE = 2;
+ETHYLENE = 3;
+ETHANE = 4;
+PROPANE = 5;
+BUTANE = 6;
 
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
 
@@ -129,11 +144,13 @@ b = [0;		0;		FC2H6];
 
 % FUNCTIONS | FLOWRATE_____________________________________________________
 
-P_H2 = @(xi_1)			xi_1;
-P_CH4 = @(xi_2)			xi_2;
-P_C2H4 = @(xi_1, xi_3)	xi_1 - xi_3;
-P_C3H8 = @(xi_2)		xi_2;
-P_C4H10 = @(xi_3)		xi_3;
+P_HYDROGEN = @(xi_1)			xi_1;
+P_METHANE = @(xi_2)				xi_2;
+P_ETHYLENE = @(xi_1, xi_3)		xi_1 - xi_3;
+P_PROPANE = @(xi_2)				xi_2;
+P_BUTANE = @(xi_3)				xi_3;
+
+F_ETHANE = @(xi_1, xi_2, xi_3)	xi_1 + 2 * xi_2 * xi_3;
 
 % FUNCTIONS | VALIDATION___________________________________________________
 
@@ -148,8 +165,10 @@ value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
 
 % FUNCTIONS | THEROMODYNAMICS______________________________________________
 heat_ethane = @(F_ethane, T0, Tf) F_ethane * HEAT_CAPACITY_ETHANE * (Tf - T0);
-
-
+heat_rxn1 = @(xi_1) xi_1 * ENTHALPY_RXN_1;
+heat_rxn2 = @(xi_2) xi_2 * ENTHALPY_RXN_2;
+heat_rxn3 = @(xi_3) xi_3 * ENTHALPY_RXN_3; 
+heat_rxn = @(xi) heat_rxn1(xi(1)) + heat_rxn2(xi(2)) + heat_rxn3(xi(3)); 
 
 % SCRIPT___________________________________________________________________
 
@@ -160,7 +179,8 @@ s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
 [s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
 ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
 profit = (s1_mesh + s2_mesh) .* 0;	
-T_reactor = 800;				% [ C ] 
+T_reactor = 800;				% [ C ]
+P_reactor = 3;					% [ Bar ]
 T_ethane_feed = 25;				% [ C ]
 
 i = 1;
@@ -171,34 +191,52 @@ for s1 = s1_domain
 		xi = A(s1, s2) \ b;
 
 		% Calculate the flow rates of each species
-		p_h2 = P_H2(xi(1));
-		p_ch4 = P_CH4(xi(2));
-		p_c2h4 = P_C2H4(xi(1), xi(3));
-		p_c3h8 = P_C3H8(xi(2));
-		p_c4h10 = P_C4H10(xi(3));
-		
-		flowrates = [ p_h2, p_ch4, p_c2h4, p_c3h8, p_c4h10 ];
-
+		P_hydrogen = P_HYDROGEN(xi(1));
+		P_methane = P_METHANE(xi(2));
+		P_ethylene = P_ETHYLENE(xi(1), xi(3));
+		P_propane = P_PROPANE(xi(2));
+		P_butane = P_BUTANE(xi(3));	
+		F_ethane = F_ETHANE(xi(1), xi(2), xi(3));
+		flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
+	
 		if (flowrates_valid(flowrates))
-			ethylene_flowrates(i) = p_c2h4;
-
-			% Value Created 
-			profit(i) = profit(i) + value_ethylene(p_c2h4);
-			profit(i) = profit(i) + value_h2_chem(p_h2);
-			profit(i) = profit(i) + value_LPG(p_c3h8, p_c4h10);
+			% Store all etylene polymer output in a DS so it can be plotted
+			ethylene_flowrates(i) = P_ethylene;
 
 			% Calculate the heat flux needed to keep reactor isothermal 
-			% as well as heat the feed streams to the op temperature
 			heat_flux = 0;
-			heat_flux = heat_ethane(p_c2h4, T_ethane_feed, T_reactor);
+			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
+			heat_flux = heat_flux + heat_ethane(P_ethylene, T_ethane_feed, T_reactor)
+			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor); 
+			heat_flux = heat_flux + heat_rxn(xi)
+
+			% Use the heat flux to calculate the fuel cost	
+			combusted_fuel_flow_rates = fuel_combustion(heat_flux, flowrates)
+
+			% Determine how much of the product streams were combusted to keep the reactor isothermal	
+			% Assume: no hydrogen is combusted
+			combusted_methane = combusted_fuel_flow_rates(METHANE)
+			combusted_propane = combusted_fuel_flow_rates(PROPANE)
+			combusted_butane = combusted_fuel_flow_rates(BUTANE)
+
+			% VALUE CREATED | Primary Products
+			profit(i) = profit(i) + value_ethylene(P_ethylene);
+			profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
+
+			% VALUE CREATED | Non-combusted fuels 
+			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
+			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
+			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
 			
+			% COSTS INCURRED
+			profit(i) = profit(i) - tax_C02(combusted_fuel_flowrates);
+			profit(i) = profit(i) - cost_steam(F_steam);
+			profit(i) = profit(i) - cost_feed(F_ethane);
+			profit(i) = profit(i) - cost_natural_gas_fuel(heatflux, combusted_fuel_flow_rates);
+			% Assume no #2 Fuel Oil is used
+			F_waste = 0; % ??????????????????????????
+			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
 
-
-			% Costs incurred
-			fuels = 1 : 10; % Placeholder value
-			profit(i) = profit(i) - value_ethane(p_c2h4);	% feed cost
-% 			profit(i) = profit(i) - tax_C02(F_CO2);
-% 			profit(i) = profit(i) - cost_steam(flowrates);
 		else
 			profit(i) = INVALID_FLOWRATE;
 			ethylene_flowrates(i) = INVALID_FLOWRATE;
@@ -232,25 +270,29 @@ function z = plot_contour(x, y, z, options)
 	hold off
 end
 
-function value = value_LPG(P_propane, P_butane)
-	% ASSUMPTION : VALUE OF LPG IS JUST SUM VALUE OF PROPANE + BUTANE BEING
-	% COMBUSTED
-	% kt * (g / kt) * (mol / g) * (kJ / mol) * (GJ / KJ) * ($ / GJ)
-	global G_PER_KT MOLMASS_PROPANE ENTHALPY_PROPANE GJ_PER_KJ ...
-		VALUE_C3H6_FUEL MOLMASS_BUTANE ENTHALPY_BUTANE VALUE_C4H8_FUEL;
+% function value = value_LPG(P_propane, P_butane)
+% 	% ASSUMPTION : VALUE OF LPG IS JUST SUM VALUE OF PROPANE + BUTANE BEING
+% 	% COMBUSTED
+% 	% kt * (g / kt) * (mol / g) * (kJ / mol) * (GJ / KJ) * ($ / GJ)
+% 	global G_PER_KT MOLMASS_PROPANE ENTHALPY_PROPANE GJ_PER_KJ ...
+% 		VALUE_C3H6_FUEL MOLMASS_BUTANE ENTHALPY_BUTANE VALUE_C4H8_FUEL;
 
-	prop_val = P_propane * G_PER_KT * (1 / MOLMASS_PROPANE) * ...
-							ENTHALPY_PROPANE * GJ_PER_KJ * VALUE_C3H6_FUEL;
-	but_val = P_butane * G_PER_KT * (1 / MOLMASS_BUTANE) * ...
-						ENTHALPY_BUTANE * GJ_PER_KJ * VALUE_C4H8_FUEL;
-	value = prop_val + but_val;
-end
+% 	prop_val = P_propane * G_PER_KT * (1 / MOLMASS_PROPANE) * ...
+% 							ENTHALPY_PROPANE * GJ_PER_KJ * VALUE_C3H6_FUEL;
+% 	but_val = P_butane * G_PER_KT * (1 / MOLMASS_BUTANE) * ...
+% 						ENTHALPY_BUTANE * GJ_PER_KJ * VALUE_C4H8_FUEL;
+% 	value = prop_val + but_val;
+% end
 
 function cost = cost_steam(flowrates)
 	cost = 0;
 end
 
+function heat = heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor)
 
+	heat = 0;
+
+end
 
 
 
