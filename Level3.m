@@ -19,7 +19,9 @@ global HEAT_FORMATION_ETHANE;
 global STEAM_30C STEAM_50C STEAM_100C STEAM_200C STEAM_500C STEAM_750C;
 global HYDROGEN METHANE ETHYLENE PROPANE BUTANE;
 global ENTHALPY_METHANE ENTHALPY_PROPANE ENTHALPY_BUTANE HEAT_CAPACITY_ETHANE;
-
+global EFFECTIVE_VALUE_NAT_GAS_FUEL;
+global KT_PER_G KG_PER_KT KJ_PER_GJ MT_PER_G ENTHALPY_NAT_GAS MOLMASS_ETHANE...
+	MOLMASS_ETHYLENE MOLMASS_NATGAS;
 
 
 % DESIGN PARAMETERS_____________________________________________________________
@@ -52,16 +54,16 @@ PROFIT_S1S2_OPT = { ...
 	'Annual Profit [$ MM USD]',...
 	'P_ethylene_VS_S1_S2.jpg'}; 
 
-
 % Molar mass
 M_C2H6 = 28.05;			% [ g / mol ]
 
 % Unit conversions 
 MT_PER_KT = 1000;		% [ kt / MT ]
 G_PER_KT = 10^9;		% [ g / kt ]
+KT_PER_G = 10^-9;		% [ kt / g ] 
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 KG_PER_KT = 10^3;		% [ kg / MT ]
-KJ_PER_GJ = 10^-6;		% [ kJ / GJ ]
+KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
 MT_PER_G = 10^6;		% [ MT / g ]
 
 % Economic | Chemicals
@@ -89,6 +91,10 @@ MOLMASS_ETHANE = 30.0690;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840
 MOLMASS_ETHYLENE = 28.0532;				% [ g / mol ];
 	% Source = https://webbook.nist.gov/cgi/cbook.cgi?ID=74-85-1&Type=IR-SPEC&Index=QUANT-IR,20
+MOLMASS_NATGAS = 16.04;					% [ g / mol ];
+	% ASSUMING NATURAL GAS IS ALL METHANE
+
+
 
 % Economic | Fuel
 VALUE_H2_FUEL = 3;			% [ $ / GJ ]
@@ -119,6 +125,9 @@ ENTHALPY_PROPANE = 2219.2;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 ENTHALPY_BUTANE = 2877.5;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+ENTHALPY_NAT_GAS = 890; % Natural gas is mostly methane 
+
+% Thermodynamics | Heat capacities 
 HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
 
@@ -126,10 +135,10 @@ HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K
 CO2_TO_METHANE_COMBUSTION_STOICH = 1;
 CO2_TO_PROPANE_COMBUSTION_STOICH = 3;
 CO2_TO_BUTANE_COMBUSTION_STOICH = 4;
+C02_TO_NATGAS_COMBUSTION_STOICH = 1; % Is this correct ?? 
 
 % Design params
 P_ETHYLENE_DES = 200;			% [	kta ]
-% F_ETHYLENE_MOLS = F_ETHYLENE * G_PER_KT * (1 / MOLMASS_ETHYLENE);
 
 % CONSTANTS | FXNS OF CONSTANTS__________________________________________________
 
@@ -146,11 +155,14 @@ TAX_CO2_PER_MT = 125;				% [ $ / MT ]
 TAX_CO2_PER_GJ_METHANE = KJ_PER_GJ * (1 / ENTHALPY_METHANE) * CO2_TO_METHANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
 TAX_CO2_PER_GJ_PROPANE = KJ_PER_GJ * (1 / ENTHALPY_PROPANE) * CO2_TO_PROPANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
 TAX_CO2_PER_GJ_BUTANE = KJ_PER_GJ * (1 / ENTHALPY_BUTANE) * CO2_TO_BUTANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
+TAX_CO2_PER_GJ_NATGAS = 0;
 
 % Economics | Post-Tax Value of different fuel sources
-EFFECTIVE_VALUE_METHANE_FUEL = VALUE_H2_FUEL - TAX_CO2_PER_GJ_METHANE;
-EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_C3H6_FUEL - TAX_CO2_PER_GJ_PROPANE;
-EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_C4H8_FUEL - TAX_CO2_PER_GJ_BUTANE;
+EFFECTIVE_VALUE_METHANE_FUEL = VALUE_H2_FUEL + TAX_CO2_PER_GJ_METHANE;
+EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_C3H6_FUEL + TAX_CO2_PER_GJ_PROPANE;
+EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_C4H8_FUEL + TAX_CO2_PER_GJ_BUTANE;
+EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
+% EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
 
 % Chemical | Steam Choice indicies
 STEAM_COST_ROW = 3;
@@ -213,7 +225,6 @@ value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
 value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
 
 cost_steam = @(F_steam, steam_rate) F_steam * KG_PER_KT * steam_rate;
-% cost_feed = @(F_ethane) F_ethane * VALUE_ETHANE
 
 % FUNCTIONS | THEROMODYNAMICS______________________________________________
 % Input: [ kta ] Output: [ GJ ]
@@ -234,17 +245,18 @@ s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
 s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
 [s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
 ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
-profit = (s1_mesh + s2_mesh) .* 0;	
-T_reactor = 800;				% [ C ]
-P_reactor = 3;					% [ Bar ]
-T_ethane_feed = 25;				% [ C ]
-
 hydrogen_flowrates = (s1_mesh + s2_mesh) .* 0;
 methane_flowrates = (s1_mesh + s2_mesh) .* 0;
 ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
 propane_flowrates = (s1_mesh + s2_mesh) .* 0;
 butane_flowrates = (s1_mesh + s2_mesh) .* 0;
 ethane_flowrates = (s1_mesh + s2_mesh) .* 0;
+profit = (s1_mesh + s2_mesh) .* 0;
+
+% Reactor Conditions
+T_reactor = 800;				% [ C ]
+P_reactor = 3;					% [ Bar ]
+T_ethane_feed = 25;				% [ C ]
 
 i = 1;
 for s1 = s1_domain
@@ -263,9 +275,8 @@ for s1 = s1_domain
 		flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
 	
 		if (flowrates_valid(flowrates))
-
-
-			% Store all etylene polymer output in a DS so it can be plotted
+		
+			% Store for plotting 
 			ethylene_flowrates(i) = P_ethylene;
 			hydrogen_flowrates(i) = P_HYDROGEN(xi(1));
 			methane_flowrates(i) = P_METHANE(xi(2));
@@ -274,29 +285,27 @@ for s1 = s1_domain
 			butane_flowrates(i) = P_BUTANE(xi(3));
 			ethane_flowrates(i) = F_ETHANE(xi(1), xi(2), xi(3));
 
-% 			% Calculate the heat flux needed to keep reactor isothermal 
+ 			% Calculate the heat flux needed to keep reactor isothermal 
 			heat_flux = 0;
 			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
 			heat_flux = heat_flux + heat_ethane(P_ethylene, T_ethane_feed, T_reactor);
 % 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor); 
 			heat_flux = heat_flux + heat_rxn(xi);
 
-
-			cost_of_heating_ethane = heat_ethane(P_ethylene, T_ethane_feed, T_reactor) * 3
-			cost_of_heating_reaction = heat_rxn(xi) * 3
-% 
 % 			% Use the heat flux to calculate the fuel cost	
 			[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, flowrates);
-			heat_flux_remaining
-% 			cost_of_num2Fuel = heat_flux_remaining * 30 
-			% combusted_fuel_flow_rates = flowrates * 0;
-% 
+			heat_flux_remaining; 
+
+			% Calculate how much natural gas you needed to combust
+			F_natural_gas = natgas_combustion(heat_flux_remaining)
+
+ 
 			% Determine how much of the product streams were combusted to keep the reactor isothermal	
 			% Assume: no hydrogen is combusted
-			combusted_methane = combusted_fuel_flow_rates(METHANE);
-			combusted_propane = combusted_fuel_flow_rates(PROPANE);
-			combusted_butane = combusted_fuel_flow_rates(BUTANE);
-% 
+% 			combusted_methane = combusted_fuel_flow_rates(METHANE);
+% 			combusted_propane = combusted_fuel_flow_rates(PROPANE);
+% 			combusted_butane = combusted_fuel_flow_rates(BUTANE);
+
 % 			% VALUE CREATED | Primary Products
 			profit(i) = profit(i) + value_ethylene(P_ethylene);
 			profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
@@ -305,13 +314,12 @@ for s1 = s1_domain
 % 			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
 % 			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
 % 			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
-% % 			
+			
 			% COSTS INCURRED
-% 			profit(i) = profit(i) - tax_C02(combusted_fuel_flowrates);
+			profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
 			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50C));
 			profit(i) = profit(i) - value_ethane(F_ethane);
-			profit(i) = profit(i) - cost_natural_gas_fuel(heat_flux_remaining);
-% 			% Assume no #2 Fuel Oil is used
+			profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
 % 			F_waste = 0; % ??????????????????????????
 % 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
 
@@ -330,8 +338,6 @@ disp("Function completed running")
 
 plot_3D(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
 
-methane_flowrates
-propane_flowrates = propane_flowrates * 0;
 % Prepare the array of flow rate matrices
 flowRatesArray = {hydrogen_flowrates, methane_flowrates, ethylene_flowrates, propane_flowrates, butane_flowrates, ethane_flowrates};
 
@@ -441,14 +447,28 @@ end
 
 function cost = tax_C02(combusted_flowrates, heatflux_left)
 	
+	cost = 0
+	% Calculate the cost per kt (in tax) of each combusted fuel
+
+	% Calculate the cost of the remaining natural gas C02 tax
+
+	
 
 end
 
 function cost = cost_natural_gas_fuel(heat_flux_remaining)
-
-	cost = heat_flux_remaining * 30;
-
+	global EFFECTIVE_VALUE_NAT_GAS_FUEL;
+	cost = heat_flux_remaining * EFFECTIVE_VALUE_NAT_GAS_FUEL;
 end 
+
+function F_natural_gas = natgas_combustion(heat_flux_remaining)
+	global KJ_PER_GJ ENTHALPY_NAT_GAS KT_PER_G MOLMASS_NATGAS;
+	% output should be in kta, input is in GJ 
+
+	%					GJ				* (kJ / GJ) * (mol / kJ) *			(g / mol) *				(kt / g)
+	F_natural_gas = heat_flux_remaining * KJ_PER_GJ * (1/ENTHALPY_NAT_GAS) * (MOLMASS_NATGAS) * KT_PER_G;
+
+end
 
 
 function plotFlowRatesForRow(row, flowRatesArray)
