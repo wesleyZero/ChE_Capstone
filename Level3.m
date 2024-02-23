@@ -22,7 +22,9 @@ global ENTHALPY_METHANE ENTHALPY_PROPANE ENTHALPY_BUTANE HEAT_CAPACITY_ETHANE;
 global EFFECTIVE_VALUE_NAT_GAS_FUEL;
 global KT_PER_G KG_PER_KT KJ_PER_GJ MT_PER_G ENTHALPY_NAT_GAS MOLMASS_ETHANE...
 	MOLMASS_ETHYLENE MOLMASS_NATGAS;
-
+global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
+	MT_CO2_PER_KT_NATURALGAS;
+global TAX_CO2_PER_MT;
 
 % DESIGN PARAMETERS_____________________________________________________________
 STEAM_TO_FEED_RATIO = 0.6; %0.6 to 1.0
@@ -64,7 +66,7 @@ KT_PER_G = 10^-9;		% [ kt / g ]
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 KG_PER_KT = 10^3;		% [ kg / MT ]
 KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
-MT_PER_G = 10^6;		% [ MT / g ]
+MT_PER_G = 10^-6;		% [ MT / g ]
 
 % Economic | Chemicals
 VALUE_ETHANE = 200;		% [ $ / MT ]
@@ -83,6 +85,8 @@ COST_RATES_STEAM = [
 ];
 
 % Chemical | Molar Mass
+MOLMASS_METHANE = 16.04;					% [ g / mol ];
+
 MOLMASS_PROPANE = 44.0956;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 MOLMASS_BUTANE = 58.1222;				% [ g / mol ]
@@ -93,7 +97,7 @@ MOLMASS_ETHYLENE = 28.0532;				% [ g / mol ];
 	% Source = https://webbook.nist.gov/cgi/cbook.cgi?ID=74-85-1&Type=IR-SPEC&Index=QUANT-IR,20
 MOLMASS_NATGAS = 16.04;					% [ g / mol ];
 	% ASSUMING NATURAL GAS IS ALL METHANE
-
+MOLMASS_CO2 = 44.01;% [ g / mol ];
 
 
 % Economic | Fuel
@@ -179,6 +183,15 @@ METHANE = 2;
 ETHYLENE = 3;
 PROPANE = 4;
 BUTANE = 5;
+
+% Chemistry | MT of C02 per KT of Fuel used 
+MT_CO2_PER_KT_METHANE = G_PER_KT * (1/MOLMASS_METHANE) *...
+	CO2_TO_METHANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G;
+MT_CO2_PER_KT_PROPANE = G_PER_KT * (1/MOLMASS_PROPANE) *...
+	CO2_TO_PROPANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G;
+MT_CO2_PER_KT_BUTANE = G_PER_KT * (1/MOLMASS_BUTANE) *...
+	CO2_TO_BUTANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G;
+MT_CO2_PER_KT_NATURALGAS = MT_CO2_PER_KT_METHANE;
 
 % SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
 
@@ -295,11 +308,11 @@ for s1 = s1_domain
 % 			% Use the heat flux to calculate the fuel cost	
 			[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, flowrates);
 			heat_flux_remaining; 
+			combusted_fuel_flow_rates
 
 			% Calculate how much natural gas you needed to combust
 			F_natural_gas = natgas_combustion(heat_flux_remaining)
 
- 
 			% Determine how much of the product streams were combusted to keep the reactor isothermal	
 			% Assume: no hydrogen is combusted
 % 			combusted_methane = combusted_fuel_flow_rates(METHANE);
@@ -445,14 +458,28 @@ function heat = heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor)
 
 end
 
-function cost = tax_C02(combusted_flowrates, heatflux_left)
-	
-	cost = 0
-	% Calculate the cost per kt (in tax) of each combusted fuel
+function cost = tax_C02(combusted_flowrates, F_natural_gas)
+	global HYDROGEN METHANE ETHYLENE PROPANE BUTANE TAX_CO2_PER_MT;
+	global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
+	MT_CO2_PER_KT_NATURALGAS;
 
+	cost = 0;
+	% Calculate the cost per kt (in tax) of each combusted fuel
+	combusted_flowrates;
+	methane = combusted_flowrates(METHANE);
+	propane = combusted_flowrates(PROPANE);
+	butane = combusted_flowrates(BUTANE);
+
+	mt_c02 = methane * MT_CO2_PER_KT_METHANE;
+	mt_c02 = mt_c02 + propane * MT_CO2_PER_KT_PROPANE;
+	mt_c02 = mt_c02 + butane * MT_CO2_PER_KT_BUTANE;
+	mt_c02 = mt_c02 + F_natural_gas * MT_CO2_PER_KT_NATURALGAS;
+
+	cost = mt_c02 * TAX_CO2_PER_MT;
+	
 	% Calculate the cost of the remaining natural gas C02 tax
 
-	
+
 
 end
 
