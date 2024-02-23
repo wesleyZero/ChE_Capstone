@@ -328,6 +328,13 @@ for s1 = s1_domain
 % 			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
 % 			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
 			
+			% Costs Debugging output 
+			disp("costs")
+			tax_C02(combusted_fuel_flow_rates, F_natural_gas)
+			cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50C))
+			value_ethane(F_ethane)
+			cost_natural_gas_fuel(F_natural_gas)
+
 			% COSTS INCURRED
 			profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
 			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50C));
