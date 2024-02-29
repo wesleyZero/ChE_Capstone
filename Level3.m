@@ -33,6 +33,7 @@ global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 % Pressure 		Bar
 % Temperature 	Celcius
 % Moles			Gigamoles ???
+% Value			Millions of Dollars ($ MM)
 
 % [ __ ] THIS MEANS DIMENSIONLESS UNITS
 
@@ -69,18 +70,19 @@ PROFIT_S1S2_OPT = { ...
 
 % CONSTANTS | UNITS________________________________________________________
 
+% Mass
 MT_PER_KT = 10^3;		% [ MT / kt ]
 
 G_PER_KT = 10^9;		% [ g / kt ]
 KT_PER_G = 10^-9;		% [ kt / g ] 
 
-GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
-KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
-
 KG_PER_KT = 10^6;		% [ kg / MT ]
 
 MT_PER_G = 10^-6;		% [ MT / g ]
 
+% Energy
+GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
+KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
 
 % CONSTANTS | CHEMICAL_____________________________________________________
 
@@ -108,7 +110,11 @@ C02_TO_NATGAS_COMBUSTION_STOICH = 1; % Is this correct ??
 
 % CONSTANTS | THERMODYNAMICS_______________________________________________
 
-% Thermodynamics | Heats of Formation (at 25C)
+% Heat capacities 
+HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
+
+% Heats of Formation (at 25C)
 HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol  ] reference Temp = std
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
 HEAT_FORMATION_METHANE = -74.87;		% [ kJ / mol  ] reference Temp = std
@@ -121,20 +127,18 @@ HEAT_FORMATION_PROPANE = -104.7;		% [ kJ / mol  ] reference Temp = std
 HEAT_FORMATION_BUTANE = -125.6;			% [ kJ / mol  ] reference Temp = std 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
-% Thermodynamics | Enthalpy of combustion of gas at standard conditions
+% Enthalpy of combustion (std conditions)
 ENTHALPY_METHANE = 890;					% [ kJ / mol ]	
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1
 ENTHALPY_PROPANE = 2219.2;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 ENTHALPY_BUTANE = 2877.5;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
-ENTHALPY_NAT_GAS = 890; % Natural gas is mostly methane 
+ENTHALPY_NAT_GAS = 890; 
+	% Source : ???
+	% Natural gas is mostly methane, so assumed to be 100% methane in the calcs
 
-% Thermodynamics | Heat capacities 
-HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
-	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
-
-% Thermodynamics | Enthalpy of Reactions
+% Enthalpy of Reactions [ kJ / extent rxn]
 ENTHALPY_RXN_1 = HEAT_FORMATION_HYDROGEN + HEAT_FORMATION_ETHYLENE ...
 										- HEAT_FORMATION_ETHANE;
 ENTHALPY_RXN_2 = HEAT_FORMATION_METHANE + HEAT_FORMATION_PROPANE ...
@@ -144,12 +148,12 @@ ENTHALPY_RXN_3 = HEAT_FORMATION_ETHANE - HEAT_FORMATION_ETHANE ...
 
 % CONSTANTS | ECONOMICS____________________________________________________
 
-% Economic | Chemicals
+%  Chemicals
 VALUE_ETHANE = 200;		% [ $ / MT ]
 VALUE_ETHYLENE = 900;	% [ $ / MT ]
 VALUE_H2_CHEM = 1400;	% [ $ / MT ]
 
-% Economic | Steam 
+% Steam 
 %  psia Temp[C] $/kg  kJ/kg
 COST_RATES_STEAM = [
     30  121		2.38  2213;
@@ -180,19 +184,20 @@ VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 
 % Economics | Enviormental
 TAX_CO2_PER_MT = 125;				% [ $ / MT ]
-TAX_CO2_PER_GJ_METHANE = KJ_PER_GJ * (1 / ENTHALPY_METHANE) * CO2_TO_METHANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
-TAX_CO2_PER_GJ_PROPANE = KJ_PER_GJ * (1 / ENTHALPY_PROPANE) * CO2_TO_PROPANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
-TAX_CO2_PER_GJ_BUTANE = KJ_PER_GJ * (1 / ENTHALPY_BUTANE) * CO2_TO_BUTANE_COMBUSTION_STOICH * MT_PER_G * TAX_CO2_PER_MT;
-TAX_CO2_PER_GJ_NATGAS = 0;
+% [$]	= 1GJ(basis) * (KJ / GJ)   * (mol gas / KJ) *           (mol CO2 / mol gas)          *  (g / mol C02)*(MT / g) * ($ / MT)
+TAX_CO2_PER_GJ_METHANE = KJ_PER_GJ * (1 / ENTHALPY_METHANE) * CO2_TO_METHANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
+TAX_CO2_PER_GJ_PROPANE = KJ_PER_GJ * (1 / ENTHALPY_PROPANE) * CO2_TO_PROPANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
+TAX_CO2_PER_GJ_BUTANE = KJ_PER_GJ * (1 / ENTHALPY_BUTANE) * CO2_TO_BUTANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
+TAX_CO2_PER_GJ_NATGAS = TAX_CO2_PER_GJ_METHANE; % ???
 
-% Economics | Post-Tax Value of different fuel sources
+% Economics | Post-Tax Value of different fuel sources 
+% I DONT THINK I ACTUALLY USE THESE IN THE CODE, JUST TO CHECK THE RELATIVE COSTS
 EFFECTIVE_VALUE_METHANE_FUEL = VALUE_H2_FUEL + TAX_CO2_PER_GJ_METHANE;
 EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_C3H6_FUEL + TAX_CO2_PER_GJ_PROPANE;
 EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_C4H8_FUEL + TAX_CO2_PER_GJ_BUTANE;
 EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
 % EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
-
-
+	% Not using number 2 fuel bc its too expensive 
 
 % Flow rate Indicies | For the flowrates(i) array
 HYDROGEN = 1; 
@@ -202,6 +207,7 @@ PROPANE = 4;
 BUTANE = 5;
 
 % Chemistry | MT of C02 per KT of Fuel used 
+% (MT CO2) = (1KT gas basis) * (g / KT) * (mol gas/ g gas) * (mol CO2 / mol gas) * (g CO2 / mol CO2) * (MT / g) 
 MT_CO2_PER_KT_METHANE = G_PER_KT * (1/MOLMASS_METHANE) *...
 	CO2_TO_METHANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G;
 MT_CO2_PER_KT_PROPANE = G_PER_KT * (1/MOLMASS_PROPANE) *...
