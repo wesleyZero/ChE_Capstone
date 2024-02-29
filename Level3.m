@@ -27,18 +27,20 @@ global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
 global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 
-% DESIGN PARAMETERS_____________________________________________________________
-STEAM_TO_FEED_RATIO = 0.6; %0.6 to 1.0
-
 % Note: The primary units of this script are ... 
 % Mass			kta
 % Energy		GJ
 % Pressure 		Bar
 % Temperature 	Celcius
 
-% CONSTANTS | HARD CODED________________________________________________________
+% DESIGN PARAMETERS_____________________________________________________________
+STEAM_TO_FEED_RATIO = 0.6; %0.6 to 1.0
 
-% Plotting 
+% Design params
+P_ETHYLENE_DES = 200;			% [	kta ]
+
+% CONSTANTS | PLOTTING_____________________________________________________
+ 
 S1_MIN = 0.05;
 S1_MAX = 0.95;
 S1_POINTS = 40;
@@ -57,39 +59,28 @@ PROFIT_S1S2_OPT = { ...
 	'Annual Profit [$ MM USD]',...
 	'P_ethylene_VS_S1_S2.jpg'}; 
 
-% Molar mass
-M_C2H6 = 28.05;			% [ g / mol ]
+% CONSTANTS | UNITS________________________________________________________
 
-% Unit conversions 
-MT_PER_KT = 1000;		% [ kt / MT ]
+MT_PER_KT = 10^3;		% [ MT / kt ]
+
 G_PER_KT = 10^9;		% [ g / kt ]
 KT_PER_G = 10^-9;		% [ kt / g ] 
+
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
-KG_PER_KT = 10^3;		% [ kg / MT ]
 KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
+
+KG_PER_KT = 10^6;		% [ kg / MT ]
+
 MT_PER_G = 10^-6;		% [ MT / g ]
 
-% Economic | Chemicals
-VALUE_ETHANE = 200;		% [ $ / MT ]
-VALUE_ETHYLENE = 900;	% [ $ / MT ]
-VALUE_H2_CHEM = 1400;	% [ $ / MT ]
 
-% Economic | Steam 
-% psia Temp[C] $/kg kJ/kg
-COST_RATES_STEAM = [
-    30  121		2.38  2213;
-    50  138		3.17  2159;
-    100 165		4.25  2067;
-    200 194		5.32  1960;
-    500 242		6.74  1755;
-    750 266		7.37  1634
-];
-STEAM_PRESSURE_COL = 2;
-STEAM_TEMP_COL = 1;
+% CONSTANTS | CHEMICAL_____________________________________________________
 
 % Chemical | Molar Mass
-MOLMASS_METHANE = 16.04;					% [ g / mol ];
-
+MOLMASS_METHANE = 16.04;				% [ g / mol ];
+	% Source : ?? 
+MOLMASS_CO2 = 44.01;					% [ g / mol ];
+	% Source : ??
 MOLMASS_PROPANE = 44.0956;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 MOLMASS_BUTANE = 58.1222;				% [ g / mol ]
@@ -100,17 +91,14 @@ MOLMASS_ETHYLENE = 28.0532;				% [ g / mol ];
 	% Source = https://webbook.nist.gov/cgi/cbook.cgi?ID=74-85-1&Type=IR-SPEC&Index=QUANT-IR,20
 MOLMASS_NATGAS = 16.04;					% [ g / mol ];
 	% ASSUMING NATURAL GAS IS ALL METHANE
-MOLMASS_CO2 = 44.01;% [ g / mol ];
 
+% Chemical | Combustion Stochiometery 
+CO2_TO_METHANE_COMBUSTION_STOICH = 1;
+CO2_TO_PROPANE_COMBUSTION_STOICH = 3;
+CO2_TO_BUTANE_COMBUSTION_STOICH = 4;
+C02_TO_NATGAS_COMBUSTION_STOICH = 1; % Is this correct ?? 
 
-% Economic | Fuel
-VALUE_H2_FUEL = 3;			% [ $ / GJ ]
-VALUE_CH4_FUEL = 3;			% [ $ / GJ ]
-VALUE_C3H6_FUEL = 3;		% [ $ / GJ ]
-VALUE_C4H8_FUEL = 3;		% [ $ / GJ ]
-VALUE_NATGAS_FUEL = 3;		% [ $ / GJ ]
-VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
-
+% CONSTANTS | THERMODYNAMICS_______________________________________________
 
 % Thermodynamics | Heats of Formation (at 25C)
 HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol  ] reference Temp = std
@@ -138,17 +126,6 @@ ENTHALPY_NAT_GAS = 890; % Natural gas is mostly methane
 HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
 
-% Chemical | Combustion Stochiometery 
-CO2_TO_METHANE_COMBUSTION_STOICH = 1;
-CO2_TO_PROPANE_COMBUSTION_STOICH = 3;
-CO2_TO_BUTANE_COMBUSTION_STOICH = 4;
-C02_TO_NATGAS_COMBUSTION_STOICH = 1; % Is this correct ?? 
-
-% Design params
-P_ETHYLENE_DES = 200;			% [	kta ]
-
-% CONSTANTS | FXNS OF CONSTANTS__________________________________________________
-
 % Thermodynamics | Enthalpy of Reactions
 ENTHALPY_RXN_1 = HEAT_FORMATION_HYDROGEN + HEAT_FORMATION_ETHYLENE ...
 										- HEAT_FORMATION_ETHANE;
@@ -156,6 +133,42 @@ ENTHALPY_RXN_2 = HEAT_FORMATION_METHANE + HEAT_FORMATION_PROPANE ...
 										- 2 * HEAT_FORMATION_ETHANE; 
 ENTHALPY_RXN_3 = HEAT_FORMATION_ETHANE - HEAT_FORMATION_ETHANE ...
 										- HEAT_FORMATION_ETHYLENE;
+
+% CONSTANTS | ECONOMICS____________________________________________________
+
+% Economic | Chemicals
+VALUE_ETHANE = 200;		% [ $ / MT ]
+VALUE_ETHYLENE = 900;	% [ $ / MT ]
+VALUE_H2_CHEM = 1400;	% [ $ / MT ]
+
+% Economic | Steam 
+%  psia Temp[C] $/kg  kJ/kg
+COST_RATES_STEAM = [
+    30  121		2.38  2213;
+    50  138		3.17  2159;
+    100 165		4.25  2067;
+    200 194		5.32  1960;
+    500 242		6.74  1755;
+    750 266		7.37  1634
+];
+% Accessing the Steam P,T Data 
+	STEAM_PRESSURE_COL = 2;
+	STEAM_TEMP_COL = 1;
+	STEAM_COST_ROW = 3;
+	STEAM_30PSIA = 1;
+	STEAM_50PSIA = 2;
+	STEAM_100PSIA = 3;
+	STEAM_200PSIA = 4;
+	STEAM_500PSIA = 5;
+	STEAM_750PSIA = 6;
+
+% Economic | Fuel
+VALUE_H2_FUEL = 3;			% [ $ / GJ ]
+VALUE_CH4_FUEL = 3;			% [ $ / GJ ]
+VALUE_C3H6_FUEL = 3;		% [ $ / GJ ]
+VALUE_C4H8_FUEL = 3;		% [ $ / GJ ]
+VALUE_NATGAS_FUEL = 3;		% [ $ / GJ ]
+VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 
 % Economics | Enviormental
 TAX_CO2_PER_MT = 125;				% [ $ / MT ]
@@ -171,14 +184,7 @@ EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_C4H8_FUEL + TAX_CO2_PER_GJ_BUTANE;
 EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
 % EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
 
-% Chemical | Steam Choice indicies
-STEAM_COST_ROW = 3;
-STEAM_30PSIA = 1;
-STEAM_50PSIA = 2;
-STEAM_100PSIA = 3;
-STEAM_200PSIA = 4;
-STEAM_500PSIA = 5;
-STEAM_750PSIA = 6;
+
 
 % Flow rate Indicies | For the flowrates(i) array
 HYDROGEN = 1; 
@@ -202,7 +208,7 @@ MT_CO2_PER_KT_NATURALGAS = MT_CO2_PER_KT_METHANE;
 % 	[s1-1	,s1		,s1+1;
 %      s2		,s2-1	,s2;
 %      1		,2		,1	];
-% b = [0;		0;		P_ETHYLENE];
+% b = [0;		0;		P_ETHYLENE_DES];
 
 % writing the last equation to hold the Product instead of the feed
 % constant
