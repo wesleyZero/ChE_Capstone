@@ -106,7 +106,8 @@ MOLMASS_NATGAS = 16.04;					% [ g / mol ];
 CO2_TO_METHANE_COMBUSTION_STOICH = 1;
 CO2_TO_PROPANE_COMBUSTION_STOICH = 3;
 CO2_TO_BUTANE_COMBUSTION_STOICH = 4;
-C02_TO_NATGAS_COMBUSTION_STOICH = 1; % Is this correct ?? 
+C02_TO_NATGAS_COMBUSTION_STOICH = 1;
+	% Natural gas is asuumed to be entirely methane
 
 % CONSTANTS | THERMODYNAMICS_______________________________________________
 
@@ -326,17 +327,17 @@ for s1 = s1_domain
  			% Calculate the heat flux needed to keep reactor isothermal 
 			heat_flux = 0;
 			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
-			heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR);
- 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR); 
-			heat_flux = heat_flux + heat_rxn(xi);
+			heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR)
+ 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) 
+			heat_flux = heat_flux + heat_rxn(xi)
 
 % 			% Use the heat flux to calculate the fuel cost	
 			[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, flowrates);
-			heat_flux_remaining; 
-			combusted_fuel_flow_rates;
+			heat_flux_remaining
+			combusted_fuel_flow_rates
 
 			% Calculate how much natural gas you needed to combust
-			F_natural_gas = natgas_combustion(heat_flux_remaining);
+			F_natural_gas = natgas_combustion(heat_flux_remaining)
 
 			% Determine how much of the product streams were combusted to keep the reactor isothermal	
 			% Assume: no hydrogen is combusted
@@ -346,7 +347,9 @@ for s1 = s1_domain
 
 % 			% VALUE CREATED | Primary Products
 			profit(i) = profit(i) + value_ethylene(P_ethylene);
+			profit(i)
 			profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
+			profit(i)
 
 			% VALUE CREATED | Non-combusted fuels 
 % 			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
@@ -355,14 +358,14 @@ for s1 = s1_domain
 			
 			% Costs Debugging output 
 			%disp("costs")
-			tax_C02(combusted_fuel_flow_rates, F_natural_gas);
-			cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA))
-			value_ethane(F_ethane);
-			cost_natural_gas_fuel(F_natural_gas);
+			tax_C02(combusted_fuel_flow_rates, F_natural_gas)
+			%cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA))
+			value_ethane(F_ethane)
+			cost_natural_gas_fuel(F_natural_gas)
 
 			% COSTS INCURRED
 			profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
-			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
+			%profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
 			profit(i) = profit(i) - value_ethane(F_ethane);
 			profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
 % 			F_waste = 0; % ??????????????????????????
@@ -385,8 +388,6 @@ plot_3D(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
 
 % Prepare the array of flow rate matrices
 flowRatesArray = {hydrogen_flowrates, methane_flowrates, ethylene_flowrates, propane_flowrates, butane_flowrates, ethane_flowrates};
-
-s2_domain
 
 % Call the function with the desired row
 plotFlowRatesForRow(4, flowRatesArray); % To plot the first row across all matrices
