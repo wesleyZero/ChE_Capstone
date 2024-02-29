@@ -36,12 +36,15 @@ global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 % Value			Millions of Dollars ($ MM)
 
 % [ __ ] THIS MEANS DIMENSIONLESS UNITS
+% Notes
 
 % DESIGN PARAMETERS________________________________________________________
 STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
 
 % Design params
 P_ETHYLENE_DES = 200;			% [	kta ]
+% (mol / yr)   = (kt / yr)        (g / kt) *  ( mol / g) 
+P_ETHYLENE_DES = P_ETHYLENE_DES * G_PER_KT * (1 / MOLMASS_ETHYLENE);	
 
 % Reactor Conditions
 TEMP_RXTR = 800;				% [ C ]
@@ -84,9 +87,14 @@ MT_PER_G = 10^-6;		% [ MT / g ]
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
 
+% Value
+MMDOLLA_PER_DOLLA = 10^-6;	% [ $ MM / $]
+DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
+
 % CONSTANTS | CHEMICAL_____________________________________________________
 
 % Chemical | Molar Mass
+MOLMASS_HYDROGEN = 1.008;				% [ g / mol ];
 MOLMASS_METHANE = 16.04;				% [ g / mol ];
 	% Source : ?? 
 MOLMASS_CO2 = 44.01;					% [ g / mol ];
@@ -135,7 +143,7 @@ ENTHALPY_PROPANE = 2219.2;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 ENTHALPY_BUTANE = 2877.5;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
-ENTHALPY_NAT_GAS = 890; 
+ENTHALPY_NAT_GAS = ENTHALPY_METHANE; 
 	% Source : ???
 	% Natural gas is mostly methane, so assumed to be 100% methane in the calcs
 
@@ -154,7 +162,7 @@ VALUE_ETHYLENE = 900;	% [ $ / MT ]
 VALUE_H2_CHEM = 1400;	% [ $ / MT ]
 
 % Steam 
-%  psia Temp[C] $/kg  kJ/kg
+% [ psia Temp[C] $/kg  kJ/kg ]
 COST_RATES_STEAM = [
     30  121		2.38  2213;
     50  138		3.17  2159;
@@ -184,7 +192,8 @@ VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 
 % Economics | Enviormental
 TAX_CO2_PER_MT = 125;				% [ $ / MT ]
-% [$]	= 1GJ(basis) * (KJ / GJ)   * (mol gas / KJ) *           (mol CO2 / mol gas)          *  (g / mol C02)*(MT / g) * ($ / MT)
+
+% [$ / GJ]	= 1GJ(basis) * (KJ / GJ)   * (mol gas / KJ) *           (mol CO2 / mol gas)          *  (g / mol C02)*(MT / g) * ($ / MT)
 TAX_CO2_PER_GJ_METHANE = KJ_PER_GJ * (1 / ENTHALPY_METHANE) * CO2_TO_METHANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
 TAX_CO2_PER_GJ_PROPANE = KJ_PER_GJ * (1 / ENTHALPY_PROPANE) * CO2_TO_PROPANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
 TAX_CO2_PER_GJ_BUTANE = KJ_PER_GJ * (1 / ENTHALPY_BUTANE) * CO2_TO_BUTANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
@@ -198,12 +207,10 @@ EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_C4H8_FUEL + TAX_CO2_PER_GJ_BUTANE;
 EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
 % EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
 	% Not using number 2 fuel bc its too expensive 
-
-
-
 % Chemistry | MT of C02 per KT of Fuel used 
-% (MT CO2) = (1KT gas basis) * (g / KT) * (mol gas/ g gas) * (mol CO2 / mol gas) * (g CO2 / mol CO2) * (MT / g) 
+% (MT CO2) = 1KT(basis) * (g / KT) * (mol gas/ g gas) * 
 MT_CO2_PER_KT_METHANE = G_PER_KT * (1/MOLMASS_METHANE) *...
+	...	% (mol CO2 / mol gas) * 		(g CO2 / mol CO2) * (MT / g) 
 	CO2_TO_METHANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G;
 MT_CO2_PER_KT_PROPANE = G_PER_KT * (1/MOLMASS_PROPANE) *...
 	CO2_TO_PROPANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G;
@@ -211,7 +218,7 @@ MT_CO2_PER_KT_BUTANE = G_PER_KT * (1/MOLMASS_BUTANE) *...
 	CO2_TO_BUTANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G;
 MT_CO2_PER_KT_NATURALGAS = MT_CO2_PER_KT_METHANE;
 
-% SYSTEM OF EQUARTIONS (EXTENT OF RXN)_____________________________________
+% FUNCTIONS | MATRIX (EXTENT OF RXN)_______________________________________
 
 % A = @(s1, s2)...
 % 	[s1-1	,s1		,s1+1;
@@ -222,10 +229,12 @@ MT_CO2_PER_KT_NATURALGAS = MT_CO2_PER_KT_METHANE;
 % writing the last equation to hold the Product instead of the feed
 % constant
 A = @(s1, s2)...
-	[s1-1	,s1		,s1+1;
-     s2		,s2-1	,s2;
-     1		,0		,-1	];
-b = [0;		0;		P_ETHYLENE_DES];
+	[s1-1	,s1		,s1+1	;
+     s2		,s2-1	,s2		;
+     1		,0		,-1		];
+b = [	0;	
+		0;		
+		P_ETHYLENE_DES	];
 
 % % Isaiahs recommendation
 % A = @(s1, s2)...
@@ -238,14 +247,21 @@ b = [0;		0;		P_ETHYLENE_DES];
 
 % FUNCTIONS | FLOWRATE_____________________________________________________
 
-% UNITS?????
-P_HYDROGEN = @(xi_1)			xi_1;
-P_METHANE = @(xi_2)				xi_2;
-P_ETHYLENE = @(xi_1, xi_3)		xi_1 - xi_3;
-P_PROPANE = @(xi_2)				xi_2;
-P_BUTANE = @(xi_3)				xi_3;
+% (kta)	   =                        (mol / yr)
+P_HYDROGEN = @(xi_1)				xi_1 * ...
+	... % (g / mol)       * (kt / g) 
+		MOLMASS_HYDROGEN * KT_PER_G;
+P_METHANE = @(xi_2)					xi_2 * ...
+			MOLMASS_METHANE * KT_PER_G;
+P_ETHYLENE = @(xi_1, xi_3)			(xi_1 - xi_3) * ...
+			MOLMASS_ETHYLENE * KT_PER_G;
+P_PROPANE = @(xi_2)					xi_2 * ...
+			MOLMASS_PROPANE * KT_PER_G;
+P_BUTANE = @(xi_3)					xi_3 * ...
+			MOLMASS_BUTANE * KT_PER_G;
 
-F_ETHANE = @(xi_1, xi_2, xi_3)	xi_1 + xi_2 + xi_3;
+F_ETHANE = @(xi_1, xi_2, xi_3)		(xi_1 + xi_2 + xi_3) * ...
+			MOLMASS_ETHANE * KT_PER_G;
 
 % FUNCTIONS | VALIDATION___________________________________________________
 
@@ -266,10 +282,10 @@ cost_steam = @(F_steam, steam_rate) F_steam * KG_PER_KT * steam_rate;
 heat_ethane = @(F_ethane, T0, Tf) F_ethane * G_PER_KT * (1 / MOLMASS_ETHANE) * HEAT_CAPACITY_ETHANE * GJ_PER_KJ * (Tf - T0);
 
 % Input: [ kta ] 	Output: [ GJ ]
-% (GJ)  =          (???) * (kJ / mol)
-heat_rxn1 = @(xi_1) xi_1 * ENTHALPY_RXN_1 ;
-heat_rxn2 = @(xi_2) xi_2 * ENTHALPY_RXN_2;
-heat_rxn3 = @(xi_3) xi_3 * ENTHALPY_RXN_3 ;
+% (GJ)  =          (???) * (kJ / mol) *   (GJ / kJ)
+heat_rxn1 = @(xi_1) xi_1 * ENTHALPY_RXN_1 * GJ_PER_KJ;
+heat_rxn2 = @(xi_2) xi_2 * ENTHALPY_RXN_2 * GJ_PER_KJ;
+heat_rxn3 = @(xi_3) xi_3 * ENTHALPY_RXN_3 * GJ_PER_KJ;
 heat_rxn = @(xi) heat_rxn1(xi(1)) + heat_rxn2(xi(2)) + heat_rxn3(xi(3)); 
 
 % SCRIPT___________________________________________________________________
@@ -303,19 +319,26 @@ for s1 = s1_domain
 		% Solve for extents of reaction
 		xi = A(s1, s2) \ b;
 
-		% Calculate the flow rates of each species
+		% Calculate the flow rates of each species (kta)
 		P_hydrogen = P_HYDROGEN(xi(1));
 		P_methane = P_METHANE(xi(2));
 		P_ethylene = P_ETHYLENE(xi(1), xi(3));
 		P_propane = P_PROPANE(xi(2));
-		P_butane = P_BUTANE(xi(3));	
+		P_butane = P_BUTANE(xi(3));
+
 		F_ethane = F_ETHANE(xi(1), xi(2), xi(3));
+
 		flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
 	
 		if (flowrates_valid(flowrates))
-		
-			% Store for plotting 
-			ethylene_flowrates(i) = P_ethylene;
+			% debugging
+			if s1 + s2 > 0.3
+				flowrates
+				xi
+			end
+
+			% Store for plotting (kta)
+			ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
 			hydrogen_flowrates(i) = P_HYDROGEN(xi(1));
 			methane_flowrates(i) = P_METHANE(xi(2));
 			ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
@@ -331,7 +354,7 @@ for s1 = s1_domain
 			heat_flux = heat_flux + heat_rxn(xi)
 
 % 			% Use the heat flux to calculate the fuel cost	
-			[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, flowrates);
+			[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, flowrates)
 			heat_flux_remaining
 			combusted_fuel_flow_rates
 
@@ -379,6 +402,7 @@ for s1 = s1_domain
 end 
 
 profit = profit ./ 10^6; % Convert to Millions of dollars 
+ethylene_flowrates( 
 plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, Fethyl_S1S2_plotOpt);
 plot_contour(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
 disp("Function completed running")
