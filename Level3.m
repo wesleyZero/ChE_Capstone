@@ -6,9 +6,9 @@ global Fethyl_S1S2_plotOpt;
 % global P_ETHYLENE;
 global M_C2H6;
 global MT_PER_KT G_PER_KT GJ_PER_KJ;
-global VALUE_ETHANE VALUE_ETHYLENE VALUE_H2_CHEM;
+global VALUE_ETHANE VALUE_ETHYLENE VALUE_HYDROGEN_CHEM;
 global COST_RATES_STEAM;
-global VALUE_H2_FUEL VALUE_CH4_FUEL VALUE_C3H6_FUEL VALUE_C4H8_FUEL;
+global VALUE_HYDROGEN_FUEL VALUE_METHANE_FUEL VALUE_PROPANE_FUEL VALUE_BUTANE_FUEL;
 global VALUE_NATGAS_FUEL VALUE_NUM2OIL_FUEL;
 global COST_CO2 COST_WASTESTREAM;
 global ENTHALPY_PROPANE ENTHALPY_BUTANE;
@@ -157,9 +157,9 @@ ENTHALPY_RXN_3 = HEAT_FORMATION_ETHANE - HEAT_FORMATION_ETHANE ...
 % CONSTANTS | ECONOMICS____________________________________________________
 
 %  Chemicals
-VALUE_ETHANE = 200;		% [ $ / MT ]
-VALUE_ETHYLENE = 900;	% [ $ / MT ]
-VALUE_H2_CHEM = 1400;	% [ $ / MT ]
+VALUE_ETHANE = 200;				% [ $ / MT ]
+VALUE_ETHYLENE = 900;			% [ $ / MT ]
+VALUE_HYDROGEN_CHEM = 1400;		% [ $ / MT ]
 
 % Steam 
 % [ psia Temp[C] $/kg  kJ/kg ]
@@ -183,10 +183,10 @@ COST_RATES_STEAM = [
 	STEAM_750PSIA = 6;
 
 % Economic | Fuel
-VALUE_H2_FUEL = 3;			% [ $ / GJ ]
-VALUE_CH4_FUEL = 3;			% [ $ / GJ ]
-VALUE_C3H6_FUEL = 3;		% [ $ / GJ ]
-VALUE_C4H8_FUEL = 3;		% [ $ / GJ ]
+VALUE_HYDROGEN_FUEL = 3;			% [ $ / GJ ]
+VALUE_METHANE_FUEL = 3;			% [ $ / GJ ]
+VALUE_PROPANE_FUEL = 3;		% [ $ / GJ ]
+VALUE_BUTANE_FUEL = 3;		% [ $ / GJ ]
 VALUE_NATGAS_FUEL = 3;		% [ $ / GJ ]
 VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
 
@@ -201,12 +201,13 @@ TAX_CO2_PER_GJ_NATGAS = TAX_CO2_PER_GJ_METHANE; % ???
 
 % Economics | Post-Tax Value of different fuel sources 
 % I DONT THINK I ACTUALLY USE THESE IN THE CODE, JUST TO CHECK THE RELATIVE COSTS
-EFFECTIVE_VALUE_METHANE_FUEL = VALUE_H2_FUEL + TAX_CO2_PER_GJ_METHANE;
-EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_C3H6_FUEL + TAX_CO2_PER_GJ_PROPANE;
-EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_C4H8_FUEL + TAX_CO2_PER_GJ_BUTANE;
+EFFECTIVE_VALUE_METHANE_FUEL = VALUE_HYDROGEN_FUEL + TAX_CO2_PER_GJ_METHANE;
+EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_PROPANE_FUEL + TAX_CO2_PER_GJ_PROPANE;
+EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_BUTANE_FUEL + TAX_CO2_PER_GJ_BUTANE;
 EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
 % EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
 	% Not using number 2 fuel bc its too expensive 
+
 % Chemistry | MT of C02 per KT of Fuel used 
 % (MT CO2) = 1KT(basis) * (g / KT) * (mol gas/ g gas) * 
 MT_CO2_PER_KT_METHANE = G_PER_KT * (1/MOLMASS_METHANE) *...
@@ -272,7 +273,10 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 % ($) =                    (kta) *   (MT / KT) * ($ / MT)
 value_ethane = @(P_ethane) P_ethane * MT_PER_KT * VALUE_ETHANE;
 value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
-value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
+value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_HYDROGEN_CHEM;
+value_methane = @(P_methane) P_methane * MT_PER_KT * VALUE_METHANE_FUEL;
+value_propane = @(P_propane) P_propane * MT_PER_KT * VALUE_PROPANE_FUEL;
+value_butane = @(P_butane) P_butane * MT_PER_KT * VALUE_BUTANE_FUEL;
 
 % ($) = 							(kta) *  (kg / kt) * ($ / kg)
 cost_steam = @(F_steam, steam_rate) F_steam * KG_PER_KT * steam_rate;
@@ -331,11 +335,6 @@ for s1 = s1_domain
 		flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
 	
 		if (flowrates_valid(flowrates))
-			% debugging
-			if s1 + s2 > 0.3
-				flowrates
-				xi
-			end
 
 			% Store for plotting (kta)
 			ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
@@ -349,41 +348,30 @@ for s1 = s1_domain
  			% Calculate the heat flux needed to keep reactor isothermal 
 			heat_flux = 0;
 			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
-			heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR)
- 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) 
-			heat_flux = heat_flux + heat_rxn(xi)
+			heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR);
+ 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
+			heat_flux = heat_flux + heat_rxn(xi);
 
 % 			% Use the heat flux to calculate the fuel cost	
-			[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, flowrates)
-			heat_flux_remaining
-			combusted_fuel_flow_rates
+			[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, flowrates);
 
 			% Calculate how much natural gas you needed to combust
-			F_natural_gas = natgas_combustion(heat_flux_remaining)
+			F_natural_gas = natgas_combustion(heat_flux_remaining);
 
 			% Determine how much of the product streams were combusted to keep the reactor isothermal	
 			% Assume: no hydrogen is combusted
-% 			combusted_methane = combusted_fuel_flow_rates(METHANE);
-% 			combusted_propane = combusted_fuel_flow_rates(PROPANE);
-% 			combusted_butane = combusted_fuel_flow_rates(BUTANE);
+			combusted_methane = combusted_fuel_flow_rates(METHANE);
+			combusted_propane = combusted_fuel_flow_rates(PROPANE);
+			combusted_butane = combusted_fuel_flow_rates(BUTANE);
 
 % 			% VALUE CREATED | Primary Products
 			profit(i) = profit(i) + value_ethylene(P_ethylene);
-			profit(i)
 			profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
-			profit(i)
 
 			% VALUE CREATED | Non-combusted fuels 
-% 			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
-% 			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
-% 			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
-			
-			% Costs Debugging output 
-			%disp("costs")
-			tax_C02(combusted_fuel_flow_rates, F_natural_gas)
-			%cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA))
-			value_ethane(F_ethane)
-			cost_natural_gas_fuel(F_natural_gas)
+			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
+			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
+			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
 
 			% COSTS INCURRED
 			profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
@@ -428,7 +416,7 @@ function z = plot_contour(x, y, z, options)
 	hold on 
 	figure
     [C, h] = contourf(x, y, z); % Create filled contours
-    clabel(C, h, 'FontSize', 10, 'Color', 'k', 'LabelSpacing', 200); % Customize label properties
+    clabel(C, h,  'FontSize', 10, 'Color', 'k', 'LabelSpacing', 200); % Customize label properties
 	xlabel(x_label);
 	ylabel(y_label);
 	title(plt_title);
