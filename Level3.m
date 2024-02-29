@@ -3,14 +3,11 @@ global S1_MIN S1_MAX S1_POINTS;
 global S2_MIN S2_MAX S2_POINTS;
 global INVALID_FLOWRATE;
 global Fethyl_S1S2_plotOpt;
-% global P_ETHYLENE;
-global M_C2H6;
 global MT_PER_KT G_PER_KT GJ_PER_KJ;
 global VALUE_ETHANE VALUE_ETHYLENE VALUE_HYDROGEN_CHEM;
 global COST_RATES_STEAM;
 global VALUE_HYDROGEN_FUEL VALUE_METHANE_FUEL VALUE_PROPANE_FUEL VALUE_BUTANE_FUEL;
 global VALUE_NATGAS_FUEL VALUE_NUM2OIL_FUEL;
-global COST_CO2 COST_WASTESTREAM;
 global ENTHALPY_PROPANE ENTHALPY_BUTANE;
 global MOLMASS_PROPANE MOLMASS_BUTANE;
 global PROFIT_S1S2_OPT;
@@ -19,7 +16,6 @@ global HEAT_FORMATION_ETHANE;
 global STEAM_30PSIA STEAM_50PSIA STEAM_100PSIA STEAM_200PSIA STEAM_500PSIA STEAM_750PSIA;
 global HYDROGEN METHANE ETHYLENE PROPANE BUTANE;
 global ENTHALPY_METHANE ENTHALPY_PROPANE ENTHALPY_BUTANE HEAT_CAPACITY_ETHANE;
-global EFFECTIVE_VALUE_NAT_GAS_FUEL;
 global KT_PER_G KG_PER_KT KJ_PER_GJ MT_PER_G ENTHALPY_NAT_GAS MOLMASS_ETHANE...
 	MOLMASS_ETHYLENE MOLMASS_NATGAS;
 global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
@@ -95,6 +91,7 @@ DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
 
 % Chemical | Molar Mass
 MOLMASS_HYDROGEN = 1.008;				% [ g / mol ];
+	% Source : ?? 
 MOLMASS_METHANE = 16.04;				% [ g / mol ];
 	% Source : ?? 
 MOLMASS_CO2 = 44.01;					% [ g / mol ];
@@ -114,7 +111,7 @@ MOLMASS_NATGAS = 16.04;					% [ g / mol ];
 CO2_TO_METHANE_COMBUSTION_STOICH = 1;
 CO2_TO_PROPANE_COMBUSTION_STOICH = 3;
 CO2_TO_BUTANE_COMBUSTION_STOICH = 4;
-C02_TO_NATGAS_COMBUSTION_STOICH = 1;
+C02_TO_NATGAS_COMBUSTION_STOICH = CO2_TO_METHANE_COMBUSTION_STOICH;
 	% Natural gas is asuumed to be entirely methane
 
 % CONSTANTS | THERMODYNAMICS_______________________________________________
@@ -124,16 +121,16 @@ HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
 
 % Heats of Formation (at 25C)
-HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol  ] reference Temp = std
+HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol ] reference Temp = std
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
-HEAT_FORMATION_METHANE = -74.87;		% [ kJ / mol  ] reference Temp = std
+HEAT_FORMATION_METHANE = -74.87;		% [ kJ / mol ] reference Temp = std
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1
 HEAT_FORMATION_ETHYLENE = 52.47;		% [ kJ / mol ] reference Temp = std 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74851&Mask=1
-HEAT_FORMATION_HYDROGEN = 0; 			% [ kJ / mol  ] reference Temp = std 
-HEAT_FORMATION_PROPANE = -104.7;		% [ kJ / mol  ] reference Temp = std 
+HEAT_FORMATION_HYDROGEN = 0; 			% [ kJ / mol ] reference Temp = std 
+HEAT_FORMATION_PROPANE = -104.7;		% [ kJ / mol ] reference Temp = std 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
-HEAT_FORMATION_BUTANE = -125.6;			% [ kJ / mol  ] reference Temp = std 
+HEAT_FORMATION_BUTANE = -125.6;			% [ kJ / mol ] reference Temp = std 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
 % Enthalpy of combustion (std conditions)
@@ -201,10 +198,10 @@ TAX_CO2_PER_GJ_NATGAS = TAX_CO2_PER_GJ_METHANE; % ???
 
 % Economics | Post-Tax Value of different fuel sources 
 % I DONT THINK I ACTUALLY USE THESE IN THE CODE, JUST TO CHECK THE RELATIVE COSTS
-EFFECTIVE_VALUE_METHANE_FUEL = VALUE_HYDROGEN_FUEL + TAX_CO2_PER_GJ_METHANE;
-EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_PROPANE_FUEL + TAX_CO2_PER_GJ_PROPANE;
-EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_BUTANE_FUEL + TAX_CO2_PER_GJ_BUTANE;
-EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
+% EFFECTIVE_VALUE_METHANE_FUEL = VALUE_HYDROGEN_FUEL + TAX_CO2_PER_GJ_METHANE;
+% EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_PROPANE_FUEL + TAX_CO2_PER_GJ_PROPANE;
+% EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_BUTANE_FUEL + TAX_CO2_PER_GJ_BUTANE;
+% EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
 % EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
 	% Not using number 2 fuel bc its too expensive 
 
@@ -221,14 +218,6 @@ MT_CO2_PER_KT_NATURALGAS = MT_CO2_PER_KT_METHANE;
 
 % FUNCTIONS | MATRIX (EXTENT OF RXN)_______________________________________
 
-% A = @(s1, s2)...
-% 	[s1-1	,s1		,s1+1;
-%      s2		,s2-1	,s2;
-%      1		,2		,1	];
-% b = [0;		0;		P_ETHYLENE_DES];
-
-% writing the last equation to hold the Product instead of the feed
-% constant
 A = @(s1, s2)...
 	[s1-1	,s1		,s1+1	;
      s2		,s2-1	,s2		;
@@ -236,15 +225,6 @@ A = @(s1, s2)...
 b = [	0;	
 		0;		
 		P_ETHYLENE_DES	];
-
-% % Isaiahs recommendation
-% A = @(s1, s2)...
-% 	[s1-1	,s1		,s1+1;
-%      s2		,s2-1	,s2;
-%      1		,1		,1	];
-% b = [0;		0;		P_ETHYLENE_DES];
-
-% WHAT THE FUCK ARE THE UNITS GOING INTO AND OUT OF THESE MATRICIES
 
 % FUNCTIONS | FLOWRATE_____________________________________________________
 
@@ -375,7 +355,7 @@ for s1 = s1_domain
 
 			% COSTS INCURRED
 			profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
-			%profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
+% 			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
 			profit(i) = profit(i) - value_ethane(F_ethane);
 			profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
 % 			F_waste = 0; % ??????????????????????????
@@ -539,8 +519,8 @@ function cost = tax_C02(combusted_flowrates, F_natural_gas)
 end
 
 function cost = cost_natural_gas_fuel(heat_flux_remaining)
-	global EFFECTIVE_VALUE_NAT_GAS_FUEL;
-	cost = heat_flux_remaining * EFFECTIVE_VALUE_NAT_GAS_FUEL;
+	global VALUE_NATGAS_FUEL
+	cost = heat_flux_remaining * VALUE_NATGAS_FUEL;
 end 
 
 function F_natural_gas = natgas_combustion(heat_flux_remaining)
