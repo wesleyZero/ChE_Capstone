@@ -32,12 +32,20 @@ global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 % Energy		GJ
 % Pressure 		Bar
 % Temperature 	Celcius
+% Moles			Gigamoles ???
 
-% DESIGN PARAMETERS_____________________________________________________________
-STEAM_TO_FEED_RATIO = 0.6; %0.6 to 1.0
+% [ __ ] THIS MEANS DIMENSIONLESS UNITS
+
+% DESIGN PARAMETERS________________________________________________________
+STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
 
 % Design params
 P_ETHYLENE_DES = 200;			% [	kta ]
+
+% Reactor Conditions
+TEMP_RXTR = 800;				% [ C ]
+PRESS_RXTR = 3;					% [ Bar ]
+TEMP_ETHANE_FEED = 25;			% [ C ]
 
 % CONSTANTS | PLOTTING_____________________________________________________
  
@@ -275,10 +283,6 @@ butane_flowrates = (s1_mesh + s2_mesh) .* 0;
 ethane_flowrates = (s1_mesh + s2_mesh) .* 0;
 profit = (s1_mesh + s2_mesh) .* 0;
 
-% Reactor Conditions
-T_reactor = 800;				% [ C ]
-P_reactor = 3;					% [ Bar ]
-T_ethane_feed = 25;				% [ C ]
 
 i = 1;
 for s1 = s1_domain
@@ -310,8 +314,8 @@ for s1 = s1_domain
  			% Calculate the heat flux needed to keep reactor isothermal 
 			heat_flux = 0;
 			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
-			heat_flux = heat_flux + heat_ethane(P_ethylene, T_ethane_feed, T_reactor);
- 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, P_reactor, T_reactor); 
+			heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR);
+ 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR); 
 			heat_flux = heat_flux + heat_rxn(xi);
 
 % 			% Use the heat flux to calculate the fuel cost	
@@ -519,7 +523,7 @@ function F_natural_gas = natgas_combustion(heat_flux_remaining)
 	global KJ_PER_GJ ENTHALPY_NAT_GAS KT_PER_G MOLMASS_NATGAS;
 	% output should be in kta, input is in GJ 
 
-	%					GJ				* (kJ / GJ) * (mol / kJ) *			(g / mol) *				(kt / g)
+	%		kt			GJ				* (kJ / GJ) * (mol / kJ) *			(g / mol) *				(kt / g)
 	F_natural_gas = heat_flux_remaining * KJ_PER_GJ * (1/ENTHALPY_NAT_GAS) * (MOLMASS_NATGAS) * KT_PER_G;
 
 end
