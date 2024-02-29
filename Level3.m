@@ -402,7 +402,7 @@ for s1 = s1_domain
 end 
 
 profit = profit ./ 10^6; % Convert to Millions of dollars 
-ethylene_flowrates( 
+profit(profit < 0) = 0; % remove irrelvant data
 plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, Fethyl_S1S2_plotOpt);
 plot_contour(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
 disp("Function completed running")
