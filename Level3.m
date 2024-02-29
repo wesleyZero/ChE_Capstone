@@ -199,12 +199,7 @@ EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
 % EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
 	% Not using number 2 fuel bc its too expensive 
 
-% Flow rate Indicies | For the flowrates(i) array
-HYDROGEN = 1; 
-METHANE = 2;
-ETHYLENE = 3;
-PROPANE = 4;
-BUTANE = 5;
+
 
 % Chemistry | MT of C02 per KT of Fuel used 
 % (MT CO2) = (1KT gas basis) * (g / KT) * (mol gas/ g gas) * (mol CO2 / mol gas) * (g CO2 / mol CO2) * (MT / g) 
@@ -239,8 +234,11 @@ b = [0;		0;		P_ETHYLENE_DES];
 %      1		,1		,1	];
 % b = [0;		0;		P_ETHYLENE_DES];
 
+% WHAT THE FUCK ARE THE UNITS GOING INTO AND OUT OF THESE MATRICIES
+
 % FUNCTIONS | FLOWRATE_____________________________________________________
 
+% UNITS?????
 P_HYDROGEN = @(xi_1)			xi_1;
 P_METHANE = @(xi_2)				xi_2;
 P_ETHYLENE = @(xi_1, xi_3)		xi_1 - xi_3;
@@ -255,19 +253,20 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 
 % FUNCTIONS | ECONOMICS____________________________________________________
 
-% Inputs are in [ kta ] outputs are in [ $ ]
+% ($) =                    (kta) *   (MT / KT) * ($ / MT)
 value_ethane = @(P_ethane) P_ethane * MT_PER_KT * VALUE_ETHANE;
 value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
 value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_H2_CHEM;
 
+% ($) = 							(kta) *  (kg / kt) * ($ / kg)
 cost_steam = @(F_steam, steam_rate) F_steam * KG_PER_KT * steam_rate;
 
 % FUNCTIONS | THEROMODYNAMICS______________________________________________
-% Input: [ kta ] Output: [ GJ ]
-% kta * (g / kta) * (mol / g) * (kJ / mol) * (GJ / kJ) * K 
+% (GJ) =                          (kta) *  (g / KT)   * (mol gas/ g gas)    * (kJ / mol K)          * (GJ / KJ) * (K)
 heat_ethane = @(F_ethane, T0, Tf) F_ethane * G_PER_KT * (1 / MOLMASS_ETHANE) * HEAT_CAPACITY_ETHANE * GJ_PER_KJ * (Tf - T0);
 
 % Input: [ kta ] 	Output: [ GJ ]
+% (GJ)  =          (???) * (kJ / mol)
 heat_rxn1 = @(xi_1) xi_1 * ENTHALPY_RXN_1 ;
 heat_rxn2 = @(xi_2) xi_2 * ENTHALPY_RXN_2;
 heat_rxn3 = @(xi_3) xi_3 * ENTHALPY_RXN_3 ;
@@ -280,6 +279,7 @@ heat_rxn = @(xi) heat_rxn1(xi(1)) + heat_rxn2(xi(2)) + heat_rxn3(xi(3));
 s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
 s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
 [s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
+% All flowrates are initialized as matricies of zeros
 ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
 hydrogen_flowrates = (s1_mesh + s2_mesh) .* 0;
 methane_flowrates = (s1_mesh + s2_mesh) .* 0;
@@ -289,6 +289,12 @@ butane_flowrates = (s1_mesh + s2_mesh) .* 0;
 ethane_flowrates = (s1_mesh + s2_mesh) .* 0;
 profit = (s1_mesh + s2_mesh) .* 0;
 
+% Flow rate Indicies | For the flowrates(i) array
+HYDROGEN = 1; 
+METHANE = 2;
+ETHYLENE = 3;
+PROPANE = 4;
+BUTANE = 5;
 
 i = 1;
 for s1 = s1_domain
