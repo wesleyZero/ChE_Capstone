@@ -1,4 +1,6 @@
-clc; clear; close all;
+% WORKSPACE VARIABLES ARE NOT BEING CLEARED 
+clc; close all; 
+
 global S1_MIN S1_MAX S1_POINTS;
 global S2_MIN S2_MAX S2_POINTS;
 global INVALID_FLOWRATE;
@@ -23,7 +25,9 @@ global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
 global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 
-% Note: The primary units of this script are ... 
+% USER NOTES____________________________________________________________________
+
+% Note: The primary (high level) units of this script are ... 
 % Mass			kta
 % Energy		GJ
 % Pressure 		Bar
@@ -32,20 +36,33 @@ global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 % Value			Millions of Dollars ($ MM)
 
 % [ __ ] THIS MEANS DIMENSIONLESS UNITS
-% Notes
 
-% DESIGN PARAMETERS________________________________________________________
-STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
+% DESIGN PARAMETERS & USER INPUTS_______________________________________________
 
-% Design params
+% Feed
+STEAM_TO_FEED_RATIO = 1.0;		% [ __ ] 0.6 to 1.0
+
+% Product
 P_ETHYLENE_DES = 200;			% [	kta ]
-% (mol / yr)   = (kt / yr)        (g / kt) *  ( mol / g) 
-% P_ETHYLENE_DES = P_ETHYLENE_DES * G_PER_KT * (1 / MOLMASS_ETHYLENE);	
+	% Note! This design parameter's units are changed prior to the matrix def 
 
 % Reactor Conditions
-TEMP_RXTR = 800;				% [ C ]
+TEMP_RXTR = 800;				% [ C ] 775 to 825 C ???
 PRESS_RXTR = 3;					% [ Bar ]
 TEMP_ETHANE_FEED = 25;			% [ C ]
+CONVERSION = 0.8;				% [ __ ]
+USERINPUT_S1 = 0.60;				% [ __ ]
+USERINPUT_S2 = 0.15; 			% [ __ ]
+
+% Plotting : Tabs mean one input is dependent on another 
+OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
+	SANITY_CHECK_CALCULATIONS = true;
+CALCULATE_ALL_SELECTIVITIES = true;
+	PLOT_ECON_3D = true;
+	PLOT_ECON_COUNTOUR = true;
+%_______________________________________________________________________________
+% DON'T TOUCH ANYTHING BELOW THIS LINE
+%_______________________________________________________________________________
 
 % CONSTANTS | PLOTTING_____________________________________________________
  
@@ -90,11 +107,11 @@ DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
 % CONSTANTS | CHEMICAL_____________________________________________________
 
 % Chemical | Molar Mass
-MOLMASS_HYDROGEN = 1.008;				% [ g / mol ];
+MOLMASS_HYDROGEN = 1.008;				% [ g / mol ]
 	% Source : ?? 
-MOLMASS_METHANE = 16.04;				% [ g / mol ];
+MOLMASS_METHANE = 16.04;				% [ g / mol ]
 	% Source : ?? 
-MOLMASS_CO2 = 44.01;					% [ g / mol ];
+MOLMASS_CO2 = 44.01;					% [ g / mol ]
 	% Source : ??
 MOLMASS_PROPANE = 44.0956;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
@@ -102,9 +119,9 @@ MOLMASS_BUTANE = 58.1222;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 MOLMASS_ETHANE = 30.0690;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840
-MOLMASS_ETHYLENE = 28.0532;				% [ g / mol ];
+MOLMASS_ETHYLENE = 28.0532;				% [ g / mol ]
 	% Source = https://webbook.nist.gov/cgi/cbook.cgi?ID=74-85-1&Type=IR-SPEC&Index=QUANT-IR,20
-MOLMASS_NATGAS = 16.04;					% [ g / mol ];
+MOLMASS_NATGAS = 16.04;					% [ g / mol ]
 	% ASSUMING NATURAL GAS IS ALL METHANE
 
 % Chemical | Combustion Stochiometery 
@@ -181,11 +198,11 @@ COST_RATES_STEAM = [
 
 % Economic | Fuel
 VALUE_HYDROGEN_FUEL = 3;			% [ $ / GJ ]
-VALUE_METHANE_FUEL = 3;			% [ $ / GJ ]
-VALUE_PROPANE_FUEL = 3;		% [ $ / GJ ]
-VALUE_BUTANE_FUEL = 3;		% [ $ / GJ ]
-VALUE_NATGAS_FUEL = 3;		% [ $ / GJ ]
-VALUE_NUM2OIL_FUEL = 4.5;	% [ $ / US Gallon ]
+VALUE_METHANE_FUEL = 3;				% [ $ / GJ ]
+VALUE_PROPANE_FUEL = 3;				% [ $ / GJ ]
+VALUE_BUTANE_FUEL = 3;				% [ $ / GJ ]
+VALUE_NATGAS_FUEL = 3;				% [ $ / GJ ]
+VALUE_NUM2OIL_FUEL = 4.5;			% [ $ / US Gallon ]
 
 % Economics | Enviormental
 TAX_CO2_PER_MT = 125;				% [ $ / MT ]
@@ -252,7 +269,7 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 
 % FUNCTIONS | ECONOMICS____________________________________________________
 
-% ($) =                    (kta) *   (MT / KT) * ($ / MT)
+% ($ / yr) =                    (kta) *   (MT / KT) * ($ / MT)
 value_ethane = @(P_ethane) P_ethane * MT_PER_KT * VALUE_ETHANE;
 value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
 value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_HYDROGEN_CHEM;
@@ -260,15 +277,14 @@ value_methane = @(P_methane) P_methane * MT_PER_KT * VALUE_METHANE_FUEL;
 value_propane = @(P_propane) P_propane * MT_PER_KT * VALUE_PROPANE_FUEL;
 value_butane = @(P_butane) P_butane * MT_PER_KT * VALUE_BUTANE_FUEL;
 
-% ($) = 							(kta) *  (kg / kt) * ($ / kg)
+% ($ / yr) = 							(kta) *  (kg / kt) * ($ / kg)
 cost_steam = @(F_steam, steam_rate) F_steam * KG_PER_KT * steam_rate;
 
 % FUNCTIONS | THEROMODYNAMICS______________________________________________
-% (GJ) =                          (kta) *  (g / KT)   * (mol gas/ g gas)    * (kJ / mol K)          * (GJ / KJ) * (K)
+% (GJ / yr) =                          (kta) *  (g / KT)   * (mol gas/ g gas)    * (kJ / mol K)          * (GJ / KJ) * (K)
 heat_ethane = @(F_ethane, T0, Tf) F_ethane * G_PER_KT * (1 / MOLMASS_ETHANE) * HEAT_CAPACITY_ETHANE * GJ_PER_KJ * (Tf - T0);
 
-% Input: [ kta ] 	Output: [ GJ ]
-% (GJ)  =          (???) * (kJ / mol) *   (GJ / kJ)
+% (GJ / yr)  =      (mol / yr) * (kJ / mol) *   (GJ / kJ)
 heat_rxn1 = @(xi_1) xi_1 * ENTHALPY_RXN_1 * GJ_PER_KJ;
 heat_rxn2 = @(xi_2) xi_2 * ENTHALPY_RXN_2 * GJ_PER_KJ;
 heat_rxn3 = @(xi_3) xi_3 * ENTHALPY_RXN_3 * GJ_PER_KJ;
@@ -276,116 +292,171 @@ heat_rxn = @(xi) heat_rxn1(xi(1)) + heat_rxn2(xi(2)) + heat_rxn3(xi(3));
 
 % SCRIPT___________________________________________________________________
 
-% Iterates through each value of selectivities S1 and S2 to find the economic
-% potential for different reaction conditions 
-s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
-s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
-[s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
-% All flowrates are initialized as matricies of zeros
-ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
-hydrogen_flowrates = (s1_mesh + s2_mesh) .* 0;
-methane_flowrates = (s1_mesh + s2_mesh) .* 0;
-ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
-propane_flowrates = (s1_mesh + s2_mesh) .* 0;
-butane_flowrates = (s1_mesh + s2_mesh) .* 0;
-ethane_flowrates = (s1_mesh + s2_mesh) .* 0;
-profit = (s1_mesh + s2_mesh) .* 0;
+if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
+	xi = A(USERINPUT_S1, USERINPUT_S2) \ b;
 
-% Flow rate Indicies | For the flowrates(i) array
-HYDROGEN = 1; 
-METHANE = 2;
-ETHYLENE = 3;
-PROPANE = 4;
-BUTANE = 5;
+	% Calculate the flow rates of each species (kta)
+	P_hydrogen = P_HYDROGEN(xi(1));
+	P_methane = P_METHANE(xi(2));
+	P_ethylene = P_ETHYLENE(xi(1), xi(3));
+	P_propane = P_PROPANE(xi(2));
+	P_butane = P_BUTANE(xi(3));
+	P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];	
 
-i = 1;
-for s1 = s1_domain
-	for s2 = s2_domain
+	if (flowrates_valid(P_flowrates))
+		fprintf("Flowrates for the reactor given that s1 = %f, s2 = %f\n\n", ...
+			USERINPUT_S1, USERINPUT_S2)
+
+		disp("Level 2 Flowrates  in / out of the entire plant [ kt / yr ]")
+		P_hydrogen = P_HYDROGEN(xi(1))
+		P_methane = P_METHANE(xi(2))
+		P_ethylene = P_ETHYLENE(xi(1), xi(3))
+		P_propane = P_PROPANE(xi(2))
+		P_butane = P_BUTANE(xi(3))
+
+		disp("Fresh Feed Flowrate")
+		F_ethane = F_ETHANE(xi(1), xi(2), xi(3))
+
+		disp("Level 3 Flowrates [ kt / yr ] ")
+
+		disp("Recycle Stream Flowrate")
+
+		R_ethane = F_ethane * ((1-CONVERSION) / (CONVERSION))
+		R_ethane = (P_ethylene/USERINPUT_S1) * ((1-CONVERSION)/CONVERSION)
+
+		disp("Reactor Flowrates")
+
+		F_ethane_into_reactor = R_ethane + R_ethane
 		
-		% Solve for extents of reaction
-		xi = A(s1, s2) \ b;
+		if SANITY_CHECK_CALCULATIONS
+			Conservation_of_mass = F_ethane - sum(P_flowrates)
+			if Conservation_of_mass
+				fprintf("WARNING : YOU ARE NOT CONSERVING MASS\n\n")
+			end
+		end
+	else
+		disp("ERROR : Selectivities S1 S2 chosen are not physically possible")
+	end
+end
 
-		% Calculate the flow rates of each species (kta)
-		P_hydrogen = P_HYDROGEN(xi(1));
-		P_methane = P_METHANE(xi(2));
-		P_ethylene = P_ETHYLENE(xi(1), xi(3));
-		P_propane = P_PROPANE(xi(2));
-		P_butane = P_BUTANE(xi(3));
 
-		F_ethane = F_ETHANE(xi(1), xi(2), xi(3));
+if (CALCULATE_ALL_SELECTIVITIES)
+	disp("Calculating all selectivities... ⏳")
+	% Iterates through each value of selectivities S1 and S2 to find the economic
+	% potential for different reaction conditions 
+	s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
+	s2_domain = linspace(S2_MIN, S2_MAX, S2_POINTS);
+	[s1_mesh, s2_mesh] = meshgrid(s1_domain, s2_domain);
+	% All flowrates are initialized as matricies of zeros
+	ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
+	hydrogen_flowrates = (s1_mesh + s2_mesh) .* 0;
+	methane_flowrates = (s1_mesh + s2_mesh) .* 0;
+	ethylene_flowrates = (s1_mesh + s2_mesh) .* 0;
+	propane_flowrates = (s1_mesh + s2_mesh) .* 0;
+	butane_flowrates = (s1_mesh + s2_mesh) .* 0;
+	ethane_flowrates = (s1_mesh + s2_mesh) .* 0;
+	profit = (s1_mesh + s2_mesh) .* 0;
 
-		flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
-	
-		if (flowrates_valid(flowrates))
+	% Flow rate Indicies | For the flowrates(i) array
+	HYDROGEN = 1; 
+	METHANE = 2;
+	ETHYLENE = 3;
+	PROPANE = 4;
+	BUTANE = 5;
 
-			% Store for plotting (kta)
-			ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
-			hydrogen_flowrates(i) = P_HYDROGEN(xi(1));
-			methane_flowrates(i) = P_METHANE(xi(2));
-			ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
-			propane_flowrates(i) = P_PROPANE(xi(2));
-			butane_flowrates(i) = P_BUTANE(xi(3));
-			ethane_flowrates(i) = F_ETHANE(xi(1), xi(2), xi(3));
+	i = 1;
+	for s1 = s1_domain
+		for s2 = s2_domain
+			
+			% Solve for extents of reaction
+			xi = A(s1, s2) \ b;
 
- 			% Calculate the heat flux needed to keep reactor isothermal 
-			heat_flux = 0;
-			F_steam = STEAM_TO_FEED_RATIO * F_ethane;
-			heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR);
- 			heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
-			heat_flux = heat_flux + heat_rxn(xi);
+			% Calculate the flow rates of each species (kta)
+			P_hydrogen = P_HYDROGEN(xi(1));
+			P_methane = P_METHANE(xi(2));
+			P_ethylene = P_ETHYLENE(xi(1), xi(3));
+			P_propane = P_PROPANE(xi(2));
+			P_butane = P_BUTANE(xi(3));
 
-% 			% Use the heat flux to calculate the fuel cost	
-			[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, flowrates);
+			F_ethane = F_ETHANE(xi(1), xi(2), xi(3));
 
-			% Calculate how much natural gas you needed to combust
-			F_natural_gas = natgas_combustion(heat_flux_remaining);
+			P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
+		
+			if (flowrates_valid(P_flowrates))
 
-			% Determine how much of the product streams were combusted to keep the reactor isothermal	
-			% Assume: no hydrogen is combusted
-			combusted_methane = combusted_fuel_flow_rates(METHANE);
-			combusted_propane = combusted_fuel_flow_rates(PROPANE);
-			combusted_butane = combusted_fuel_flow_rates(BUTANE);
+				% Store for plotting (kta)
+				ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
+				hydrogen_flowrates(i) = P_HYDROGEN(xi(1));
+				methane_flowrates(i) = P_METHANE(xi(2));
+				ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
+				propane_flowrates(i) = P_PROPANE(xi(2));
+				butane_flowrates(i) = P_BUTANE(xi(3));
+				ethane_flowrates(i) = F_ETHANE(xi(1), xi(2), xi(3));
 
-% 			% VALUE CREATED | Primary Products
-			profit(i) = profit(i) + value_ethylene(P_ethylene);
-			profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
+				% Calculate the heat flux needed to keep reactor isothermal 
+				heat_flux = 0;
+				F_steam = STEAM_TO_FEED_RATIO * F_ethane;
+				heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR);
+				heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
+				heat_flux = heat_flux + heat_rxn(xi);
 
-			% VALUE CREATED | Non-combusted fuels 
-			profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
-			profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
-			profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
+	% 			% Use the heat flux to calculate the fuel cost	
+				[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
 
-			% COSTS INCURRED
-			profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
-% 			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
-			profit(i) = profit(i) - value_ethane(F_ethane);
-			profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
-% 			F_waste = 0; % ??????????????????????????
-% 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
+				% Calculate how much natural gas you needed to combust
+				F_natural_gas = natgas_combustion(heat_flux_remaining);
 
-		else
-			profit(i) = INVALID_FLOWRATE;
-			ethylene_flowrates(i) = INVALID_FLOWRATE;
+				% Determine how much of the product streams were combusted to keep the reactor isothermal	
+				% Assume: no hydrogen is combusted
+				combusted_methane = combusted_fuel_flow_rates(METHANE);
+				combusted_propane = combusted_fuel_flow_rates(PROPANE);
+				combusted_butane = combusted_fuel_flow_rates(BUTANE);
+
+	% 			% VALUE CREATED | Primary Products
+				profit(i) = profit(i) + value_ethylene(P_ethylene);
+				profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
+
+				% VALUE CREATED | Non-combusted fuels 
+				profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
+				profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
+				profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
+
+				% COSTS INCURRED
+				profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
+	% 			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
+				profit(i) = profit(i) - value_ethane(F_ethane);
+				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
+	% 			F_waste = 0; % ??????????????????????????
+	% 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
+
+			else
+				profit(i) = INVALID_FLOWRATE;
+				ethylene_flowrates(i) = INVALID_FLOWRATE;
+			end 
+			i = i + 1;
 		end 
-		i = i + 1;
 	end 
-end 
 
-profit = profit ./ 10^6; % Convert to Millions of dollars 
-profit(profit < 0) = 0; % remove irrelvant data
-plot_contour(s1_mesh, s2_mesh, ethylene_flowrates, Fethyl_S1S2_plotOpt);
-plot_contour(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
-disp("Function completed running")
+	profit = profit ./ 10^6; % Convert to Millions of dollars 
+	profit(profit < 0) = 0; % remove irrelvant data
+	
+	if (PLOT_ECON_COUNTOUR)
+		disp("Plotting EP Contour Map")
+		plot_contour(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
+	end
+	if (PLOT_ECON_3D)
+		disp("Plotting 3D EP Surface Function")
+		plot_3D(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
+	end
 
-plot_3D(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
+	% Prepare the array of flow rate matrices
+	% flowRatesArray = {hydrogen_flowrates, methane_flowrates, ethylene_flowrates, propane_flowrates, butane_flowrates, ethane_flowrates};
 
-% Prepare the array of flow rate matrices
-flowRatesArray = {hydrogen_flowrates, methane_flowrates, ethylene_flowrates, propane_flowrates, butane_flowrates, ethane_flowrates};
+	% Call the function with the desired row
+	% plotFlowRatesForRow(4, flowRatesArray); % To plot the first row across all matrices
+end
 
-% Call the function with the desired row
-plotFlowRatesForRow(4, flowRatesArray); % To plot the first row across all matrices
-
-
+disp("The Script is done running ⌛️")
 % HELPER FUNCTIONS | PLOTTING______________________________________________
 
 function z = plot_contour(x, y, z, options)
