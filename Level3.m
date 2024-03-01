@@ -70,11 +70,11 @@ CALCULATE_ALL_SELECTIVITIES = true;
 
 CONSOLE_SECTION_DIVIDER = ...
 	"_____________________________________________________________________";
-S1_MIN = 0.40;
+S1_MIN = 0.05;
 S1_MAX = 1.00;
 S1_POINTS = 100;
 S2_MIN = 0.05;
-S2_MAX = 0.20;
+S2_MAX = 1.00;
 S2_POINTS = 40;
 INVALID_FLOWRATE = 0;
 Fethyl_S1S2_plotOpt = { ...
@@ -368,6 +368,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 	propane_flowrates = (s1_mesh + s2_mesh) .* 0;
 	butane_flowrates = (s1_mesh + s2_mesh) .* 0;
 	ethane_flowrates = (s1_mesh + s2_mesh) .* 0;
+	
 	profit = (s1_mesh + s2_mesh) .* 0;
 
 	% Flow rate Indicies | For the flowrates(i) array
@@ -417,20 +418,21 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
 
 				% Calculate how much natural gas you needed to combust
-				F_natural_gas = natgas_combustion(heat_flux_remaining);
+				F_natural_gas = natgas_combustion(heat_flux_remaining)
 
 				% Determine how much of the product streams were combusted to keep the reactor isothermal	
 				% Assume: no hydrogen is combusted
-				combusted_methane = combusted_fuel_flow_rates(METHANE);
-				combusted_propane = combusted_fuel_flow_rates(PROPANE);
-				combusted_butane = combusted_fuel_flow_rates(BUTANE);
+				combusted_methane = combusted_fuel_flow_rates(METHANE)
+				combusted_propane = combusted_fuel_flow_rates(PROPANE)
+				combusted_butane = combusted_fuel_flow_rates(BUTANE)
 
 	% 			% VALUE CREATED | Primary Products
 				profit(i) = profit(i) + value_ethylene(P_ethylene);
 				profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
 
 				% VALUE CREATED | Non-combusted fuels 
-				profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
+				% profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
+					% ?? I don't think you can sell methane
 				profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
 				profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
 
@@ -528,48 +530,53 @@ function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, 
 
 	% (GJ / yr) 		  = (kt / yr)          * (g / kt) * (kJ / g)		* (GJ / kJ)
 	Q_combust_all_methane = flowrates(METHANE) * G_PER_KT * ENTHALPY_METHANE * GJ_PER_KJ;
-	% (GJ)   	  = (GJ)          - (GJ)
-	heatflux_left = heatflux_left - Q_combust_all_methane;
 	
 	% Methane
-	if (heatflux_left > 0)
+	if (heatflux_left > Q_combust_all_methane)
 		combusted_fuel_flowrates(METHANE) = flowrates(METHANE);
+		heatflux_left = heatflux_left - Q_combust_all_methane;
 	else
 		% (kt / yr) 					  = ((GJ)                 ) * (KJ / GJ) *
-		combusted_fuel_flowrates(METHANE) = (Q_combust_all_methane) * KJ_PER_GJ * ...
+		combusted_fuel_flowrates(METHANE) = (heatflux_left) * KJ_PER_GJ * ...
 			... % (mol / KJ) 		* (g / mol) 	  * (kt / g)
 			( 1 / ENTHALPY_METHANE) * MOLMASS_METHANE * KT_PER_G;
 		heatflux_left = 0;
 		return
 	end
 
-    % Propane
-	% (GJ / yr) 		  = (kt / yr)          * (g / kt) * (kJ / g)		* (GJ / kJ)
-    Q_combust_all_propane = flowrates(PROPANE) * G_PER_KT * ENTHALPY_PROPANE * GJ_PER_KJ;
-    heatflux_left = heatflux_left - Q_combust_all_propane;
+	% (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
+	Q_combust_all_propane = flowrates(PROPANE) * G_PER_KT * ENTHALPY_PROPANE * GJ_PER_KJ;
 
-    if (heatflux_left > 0)
-        combusted_fuel_flowrates(PROPANE) = flowrates(PROPANE);
-    else
-        combusted_fuel_flowrates(PROPANE) = heat_flux / (ENTHALPY_PROPANE * GJ_PER_KJ);
-        heatflux_left = 0;
-        return
-    end
+	% Propane
+	if (heatflux_left > Q_combust_all_propane)
+		combusted_fuel_flowrates(PROPANE) = flowrates(PROPANE);
+		heatflux_left = heatflux_left - Q_combust_all_propane;
+	else
+		% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
+		combusted_fuel_flowrates(PROPANE) = (heatflux_left) * KJ_PER_GJ * ...
+			... % (mol / KJ)        * (g / mol)       * (kt / g)
+			( 1 / ENTHALPY_PROPANE) * MOLMASS_PROPANE * KT_PER_G;
+		heatflux_left = 0;
+		return
+	end
 
-    % Butane
-    Q_combust_all_butane = flowrates(BUTANE) * ENTHALPY_BUTANE * GJ_PER_KJ;
-    heatflux_left = heatflux_left - Q_combust_all_butane;
 
-    if (heatflux_left > 0)
-        combusted_fuel_flowrates(BUTANE) = flowrates(BUTANE);
-    else
-        combusted_fuel_flowrates(BUTANE) = (heatflux_left + Q_combust_all_butane) / (ENTHALPY_BUTANE * GJ_PER_KJ);
-        heatflux_left = 0;
-        return
-    end
+	% (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
+	Q_combust_all_butane = flowrates(BUTANE) * G_PER_KT * ENTHALPY_BUTANE * GJ_PER_KJ;
 
-	%DEBUGGING 
-	heatflux_from_combustion = heat_flux - heatflux_left;
+	% Butane
+	if (heatflux_left > Q_combust_all_butane)
+		combusted_fuel_flowrates(BUTANE) = flowrates(BUTANE);
+		heatflux_left = heatflux_left - Q_combust_all_butane;
+	else
+		% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
+		combusted_fuel_flowrates(BUTANE) = (heatflux_left) * KJ_PER_GJ * ...
+			... % (mol / KJ)        * (g / mol)       * (kt / g)
+			( 1 / ENTHALPY_BUTANE) * MOLMASS_BUTANE * KT_PER_G;
+		heatflux_left = 0;
+		return
+	end
+
 
 end
 
@@ -594,28 +601,24 @@ function cost = tax_C02(combusted_flowrates, F_natural_gas)
 	global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
 	MT_CO2_PER_KT_NATURALGAS;
 
-	cost = 0;
 	% Calculate the cost per kt (in tax) of each combusted fuel
-	combusted_flowrates;
 	methane = combusted_flowrates(METHANE);
 	propane = combusted_flowrates(PROPANE);
 	butane = combusted_flowrates(BUTANE);
 
-	mt_c02 = methane * MT_CO2_PER_KT_METHANE;
+	mt_c02 = 0;
+	% kta  =  (MT)  + ( (kt fuel / yr) * (MT CO2 / KT FUEL) )
+	mt_c02 = mt_c02 + methane * MT_CO2_PER_KT_METHANE;
 	mt_c02 = mt_c02 + propane * MT_CO2_PER_KT_PROPANE;
 	mt_c02 = mt_c02 + butane * MT_CO2_PER_KT_BUTANE;
 	mt_c02 = mt_c02 + F_natural_gas * MT_CO2_PER_KT_NATURALGAS;
 
 	cost = mt_c02 * TAX_CO2_PER_MT;
-	
-	% Calculate the cost of the remaining natural gas C02 tax
-
-
-
 end
 
 function cost = cost_natural_gas_fuel(heat_flux_remaining)
 	global VALUE_NATGAS_FUEL
+	% $ / yr = (GJ) 		   * ($ / GJ)
 	cost = heat_flux_remaining * VALUE_NATGAS_FUEL;
 end 
 
