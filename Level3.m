@@ -24,6 +24,7 @@ global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
 	MT_CO2_PER_KT_NATURALGAS;
 global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
+global MOLMASS_METHANE;
 
 % USER NOTES____________________________________________________________________
 
@@ -55,6 +56,7 @@ USERINPUT_S1 = 0.60;				% [ __ ]
 USERINPUT_S2 = 0.15; 			% [ __ ]
 
 % Plotting : Tabs mean one input is dependent on another 
+CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
 OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
 	SANITY_CHECK_CALCULATIONS = true;
 CALCULATE_ALL_SELECTIVITIES = true;
@@ -65,12 +67,14 @@ CALCULATE_ALL_SELECTIVITIES = true;
 %_______________________________________________________________________________
 
 % CONSTANTS | PLOTTING_____________________________________________________
- 
-S1_MIN = 0.05;
-S1_MAX = 0.95;
-S1_POINTS = 40;
+
+CONSOLE_SECTION_DIVIDER = ...
+	"_____________________________________________________________________";
+S1_MIN = 0.40;
+S1_MAX = 1.00;
+S1_POINTS = 100;
 S2_MIN = 0.05;
-S2_MAX = 0.95;
+S2_MAX = 0.20;
 S2_POINTS = 40;
 INVALID_FLOWRATE = 0;
 Fethyl_S1S2_plotOpt = { ...
@@ -213,15 +217,6 @@ TAX_CO2_PER_GJ_PROPANE = KJ_PER_GJ * (1 / ENTHALPY_PROPANE) * CO2_TO_PROPANE_COM
 TAX_CO2_PER_GJ_BUTANE = KJ_PER_GJ * (1 / ENTHALPY_BUTANE) * CO2_TO_BUTANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
 TAX_CO2_PER_GJ_NATGAS = TAX_CO2_PER_GJ_METHANE; % ???
 
-% Economics | Post-Tax Value of different fuel sources 
-% I DONT THINK I ACTUALLY USE THESE IN THE CODE, JUST TO CHECK THE RELATIVE COSTS
-% EFFECTIVE_VALUE_METHANE_FUEL = VALUE_HYDROGEN_FUEL + TAX_CO2_PER_GJ_METHANE;
-% EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_PROPANE_FUEL + TAX_CO2_PER_GJ_PROPANE;
-% EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_BUTANE_FUEL + TAX_CO2_PER_GJ_BUTANE;
-% EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS;
-% EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
-	% Not using number 2 fuel bc its too expensive 
-
 % Chemistry | MT of C02 per KT of Fuel used 
 % (MT CO2) = 1KT(basis) * (g / KT) * (mol gas/ g gas) * 
 MT_CO2_PER_KT_METHANE = G_PER_KT * (1/MOLMASS_METHANE) *...
@@ -292,6 +287,17 @@ heat_rxn = @(xi) heat_rxn1(xi(1)) + heat_rxn2(xi(2)) + heat_rxn3(xi(3));
 
 % SCRIPT___________________________________________________________________
 
+% Economics | Post-Tax Value of different fuel sources 
+if (CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS)
+	disp(" [ $ / GJ ] ")
+	EFFECTIVE_VALUE_METHANE_FUEL = VALUE_HYDROGEN_FUEL + TAX_CO2_PER_GJ_METHANE
+	EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_PROPANE_FUEL + TAX_CO2_PER_GJ_PROPANE
+	EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_BUTANE_FUEL + TAX_CO2_PER_GJ_BUTANE
+	EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS
+% 	EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
+		% Not using number 2 fuel bc its too expensive 
+end
+
 if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 	xi = A(USERINPUT_S1, USERINPUT_S2) \ b;
 
@@ -303,10 +309,13 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 	P_butane = P_BUTANE(xi(3));
 	P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];	
 
+	disp(CONSOLE_SECTION_DIVIDER)
 	if (flowrates_valid(P_flowrates))
+		
 		fprintf("Flowrates for the reactor given that s1 = %f, s2 = %f\n\n", ...
 			USERINPUT_S1, USERINPUT_S2)
 
+		disp(CONSOLE_SECTION_DIVIDER)
 		disp("Level 2 Flowrates  in / out of the entire plant [ kt / yr ]")
 		P_hydrogen = P_HYDROGEN(xi(1))
 		P_methane = P_METHANE(xi(2))
@@ -316,7 +325,8 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 
 		disp("Fresh Feed Flowrate")
 		F_ethane = F_ETHANE(xi(1), xi(2), xi(3))
-
+		
+		disp(CONSOLE_SECTION_DIVIDER)
 		disp("Level 3 Flowrates [ kt / yr ] ")
 
 		disp("Recycle Stream Flowrate")
@@ -326,9 +336,11 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 
 		disp("Reactor Flowrates")
 
-		F_ethane_into_reactor = R_ethane + R_ethane
+		F_ethane_into_reactor = R_ethane + F_ethane
 		
 		if SANITY_CHECK_CALCULATIONS
+			disp(CONSOLE_SECTION_DIVIDER)
+			disp("Sanity Checking the Calculations")
 			Conservation_of_mass = F_ethane - sum(P_flowrates)
 			if Conservation_of_mass
 				fprintf("WARNING : YOU ARE NOT CONSERVING MASS\n\n")
@@ -341,7 +353,8 @@ end
 
 
 if (CALCULATE_ALL_SELECTIVITIES)
-	disp("Calculating all selectivities... ⏳")
+	disp(CONSOLE_SECTION_DIVIDER)
+	disp("Calculating all selectivities... ")
 	% Iterates through each value of selectivities S1 and S2 to find the economic
 	% potential for different reaction conditions 
 	s1_domain = linspace(S1_MIN, S1_MAX, S1_POINTS);
@@ -426,7 +439,6 @@ if (CALCULATE_ALL_SELECTIVITIES)
 	% 			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
 				profit(i) = profit(i) - value_ethane(F_ethane);
 				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
-	% 			F_waste = 0; % ??????????????????????????
 	% 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
 
 			else
@@ -504,25 +516,36 @@ end
 function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, flowrates)
 	global HYDROGEN METHANE ETHYLENE PROPANE BUTANE;
 	global ENTHALPY_METHANE ENTHALPY_PROPANE ENTHALPY_BUTANE HEAT_CAPACITY_ETHANE;
-	global MT_PER_KT G_PER_KT GJ_PER_KJ;
+	global MT_PER_KT G_PER_KT GJ_PER_KJ KJ_PER_GJ MOLMASS_METHANE KT_PER_G;
 
+	% Note! : Longest Chain Hydrocarbons are cheapest to combust
+
+	% initialize all values in the array to be zero 
 	combusted_fuel_flowrates = flowrates * 0;
+
+	% LOGIC : Goes through each heat source in order, returns if the heat flux supplied is sufficient.
 	heatflux_left = heat_flux; 
-	% Longest Chain Hydrocarbons are cheapest to combust
-	Q_combust_all_methane = flowrates(METHANE) * ENTHALPY_METHANE * GJ_PER_KJ;
+
+	% (GJ / yr) 		  = (kt / yr)          * (g / kt) * (kJ / g)		* (GJ / kJ)
+	Q_combust_all_methane = flowrates(METHANE) * G_PER_KT * ENTHALPY_METHANE * GJ_PER_KJ;
+	% (GJ)   	  = (GJ)          - (GJ)
 	heatflux_left = heatflux_left - Q_combust_all_methane;
 	
-	% Goes through each heat source in order, returns if the heat flux supplied is sufficient.
+	% Methane
 	if (heatflux_left > 0)
 		combusted_fuel_flowrates(METHANE) = flowrates(METHANE);
 	else
-		combusted_fuel_flowrates(METHANE) = (heatflux_left + Q_combust_all_methane) * ( 1 / ENTHALPY_METHANE);
+		% (kt / yr) 					  = ((GJ)                 ) * (KJ / GJ) *
+		combusted_fuel_flowrates(METHANE) = (Q_combust_all_methane) * KJ_PER_GJ * ...
+			... % (mol / KJ) 		* (g / mol) 	  * (kt / g)
+			( 1 / ENTHALPY_METHANE) * MOLMASS_METHANE * KT_PER_G;
 		heatflux_left = 0;
 		return
 	end
 
-    % Start with Propane
-    Q_combust_all_propane = flowrates(PROPANE) * ENTHALPY_PROPANE * GJ_PER_KJ;
+    % Propane
+	% (GJ / yr) 		  = (kt / yr)          * (g / kt) * (kJ / g)		* (GJ / kJ)
+    Q_combust_all_propane = flowrates(PROPANE) * G_PER_KT * ENTHALPY_PROPANE * GJ_PER_KJ;
     heatflux_left = heatflux_left - Q_combust_all_propane;
 
     if (heatflux_left > 0)
@@ -533,7 +556,7 @@ function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, 
         return
     end
 
-    % Then Butane
+    % Butane
     Q_combust_all_butane = flowrates(BUTANE) * ENTHALPY_BUTANE * GJ_PER_KJ;
     heatflux_left = heatflux_left - Q_combust_all_butane;
 
