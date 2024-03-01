@@ -40,7 +40,7 @@ STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
 % Design params
 P_ETHYLENE_DES = 200;			% [	kta ]
 % (mol / yr)   = (kt / yr)        (g / kt) *  ( mol / g) 
-P_ETHYLENE_DES = P_ETHYLENE_DES * G_PER_KT * (1 / MOLMASS_ETHYLENE);	
+% P_ETHYLENE_DES = P_ETHYLENE_DES * G_PER_KT * (1 / MOLMASS_ETHYLENE);	
 
 % Reactor Conditions
 TEMP_RXTR = 800;				% [ C ]
@@ -218,6 +218,9 @@ MT_CO2_PER_KT_NATURALGAS = MT_CO2_PER_KT_METHANE;
 
 % FUNCTIONS | MATRIX (EXTENT OF RXN)_______________________________________
 
+% (mol / yr)   = (kt / yr)        (g / kt) *  ( mol / g) 
+P_ETHYLENE_DES = P_ETHYLENE_DES * G_PER_KT * (1 / MOLMASS_ETHYLENE);	
+
 A = @(s1, s2)...
 	[s1-1	,s1		,s1+1	;
      s2		,s2-1	,s2		;
@@ -240,7 +243,6 @@ P_PROPANE = @(xi_2)					xi_2 * ...
 			MOLMASS_PROPANE * KT_PER_G;
 P_BUTANE = @(xi_3)					xi_3 * ...
 			MOLMASS_BUTANE * KT_PER_G;
-
 F_ETHANE = @(xi_1, xi_2, xi_3)		(xi_1 + xi_2 + xi_3) * ...
 			MOLMASS_ETHANE * KT_PER_G;
 
