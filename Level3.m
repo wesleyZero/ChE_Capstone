@@ -441,7 +441,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				% Calculate the heat flux needed to keep reactor isothermal 
 				heat_flux = 0;
 				F_steam = STEAM_TO_FEED_RATIO * F_ethane;
-				heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR);
+				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 				% heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
 				% heat_flux = heat_flux + heat_rxn(xi);
 
