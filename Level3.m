@@ -52,8 +52,8 @@ TEMP_RXTR = 800;				% [ C ] 775 to 825 C ???
 PRESS_RXTR = 3;					% [ Bar ]
 TEMP_ETHANE_FEED = 25;			% [ C ]
 CONVERSION = 0.8;				% [ __ ]
-USERINPUT_S1 = 0.60;			% [ __ ]
-USERINPUT_S2 = 0.15; 			% [ __ ]
+USERINPUT_S1 = 0.4;			% [ __ ]
+USERINPUT_S2 = 0.2; 			% [ __ ]
 
 % Plotting : Tabs mean one input is dependent on another 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
@@ -111,7 +111,7 @@ DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
 % CONSTANTS | CHEMICAL_____________________________________________________
 
 % Chemical | Molar Mass
-MOLMASS_HYDROGEN = 1.008;				% [ g / mol ]
+MOLMASS_HYDROGEN = 2.01568;				% [ g / mol ]
 	% Source : ?? 
 MOLMASS_METHANE = 16.04;				% [ g / mol ]
 	% Source : ?? 
@@ -268,7 +268,7 @@ P_PROPANE = @(s1, s2) 		(s2 / s1 *P_ETHYLENE_DES) * ...
 										MOLMASS_PROPANE;
 P_BUTANE = @(s1, s2)		(P_ETHYLENE_DES*(1/(2*s1) - s2/s1 - 1/2)) * ...
 										MOLMASS_BUTANE;
-F_ETHANE = @(s1, s2) (P_ETHYLENE_DES / s1) * ...
+F_ETHANE = @(s1, s2)		(P_ETHYLENE_DES / s1) * ...
 										MOLMASS_ETHANE;
 P_METHANE = @(s1, s2) (s2 / s1 * P_ETHYLENE_DES) * ...
 										MOLMASS_METHANE;
@@ -340,7 +340,6 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 		P_ethylene
 		P_propane 
 		P_butane 
-		F_ethane 
 
 		disp("Fresh Feed Flowrate")
 		F_ethane
@@ -443,6 +442,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				F_steam = STEAM_TO_FEED_RATIO * F_ethane;
 				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 				% heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
+				% xi_1 = 
 				% heat_flux = heat_flux + heat_rxn(xi);
 
 	% 			% Use the heat flux to calculate the fuel cost	
