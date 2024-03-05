@@ -1,4 +1,4 @@
-% WORKSPACE VARIABLES ARE NOT BEING CLEARED 
+5% WORKSPACE VARIABLES ARE NOT BEING CLEARED 
 clc; close all; 
 
 global S1_MIN S1_MAX S1_POINTS;
@@ -52,7 +52,7 @@ TEMP_RXTR = 800;				% [ C ] 775 to 825 C ???
 PRESS_RXTR = 3;					% [ Bar ]
 TEMP_ETHANE_FEED = 25;			% [ C ]
 CONVERSION = 0.8;				% [ __ ]
-USERINPUT_S1 = 0.60;				% [ __ ]
+USERINPUT_S1 = 0.60;			% [ __ ]
 USERINPUT_S2 = 0.15; 			% [ __ ]
 
 % Plotting : Tabs mean one input is dependent on another 
@@ -235,32 +235,45 @@ MT_CO2_PER_KT_NATURALGAS = MT_CO2_PER_KT_METHANE;
 % FUNCTIONS | MATRIX (EXTENT OF RXN)_______________________________________
 
 % (mol / yr)   = (kt / yr)        (g / kt) *  ( mol / g) 
-P_ETHYLENE_DES = P_ETHYLENE_DES * G_PER_KT * (1 / MOLMASS_ETHYLENE);	
+% P_ETHYLENE_DES = P_ETHYLENE_DES * G_PER_KT * (1 / MOLMASS_ETHYLENE);	
 
-A = @(s1, s2)...
-	[s1-1	,s1		,s1+1	;
-     s2		,s2-1	,s2		;
-     1		,0		,-1		];
-b = [	0;	
-		0;		
-		P_ETHYLENE_DES	];
+% A = @(s1, s2)...
+% 	[s1-1	,s1		,s1+1	;
+%      s2		,s2-1	,s2		;
+%      1		,0		,-1		];
+% b = [	0;	
+% 		0;		
+% 		P_ETHYLENE_DES	];
 
 % FUNCTIONS | FLOWRATE_____________________________________________________
 
-% (kta)	   =                        (mol / yr)
-P_HYDROGEN = @(xi_1)				xi_1 * ...
-	... % (g / mol)       * (kt / g) 
-		MOLMASS_HYDROGEN * KT_PER_G;
-P_METHANE = @(xi_2)					xi_2 * ...
-			MOLMASS_METHANE * KT_PER_G;
-P_ETHYLENE = @(xi_1, xi_3)			(xi_1 - xi_3) * ...
-			MOLMASS_ETHYLENE * KT_PER_G;
-P_PROPANE = @(xi_2)					xi_2 * ...
-			MOLMASS_PROPANE * KT_PER_G;
-P_BUTANE = @(xi_3)					xi_3 * ...
-			MOLMASS_BUTANE * KT_PER_G;
-F_ETHANE = @(xi_1, xi_2, xi_3)		(xi_1 + xi_2 + xi_3) * ...
-			MOLMASS_ETHANE * KT_PER_G;
+% % (kta)	   =                        (mol / yr)
+% P_HYDROGEN = @(xi_1)				xi_1 * ...
+% 	... % (g / mol)       * (kt / g) 
+% 		MOLMASS_HYDROGEN * KT_PER_G;
+% P_METHANE = @(xi_2)					xi_2 * ...
+% 			MOLMASS_METHANE * KT_PER_G;
+% P_ETHYLENE = @(xi_1, xi_3)			(xi_1 - xi_3) * ...
+% 			MOLMASS_ETHYLENE * KT_PER_G;
+% P_PROPANE = @(xi_2)					xi_2 * ...
+% 			MOLMASS_PROPANE * KT_PER_G;
+% P_BUTANE = @(xi_3)					xi_3 * ...
+% 			MOLMASS_BUTANE * KT_PER_G;
+% F_ETHANE = @(xi_1, xi_2, xi_3)		(xi_1 + xi_2 + xi_3) * ...
+% 			MOLMASS_ETHANE * KT_PER_G;
+
+P_ETHYLENE = P_ETHYLENE_DES;
+P_ETHYLENE_DES = P_ETHYLENE_DES * (1 / MOLMASS_ETHYLENE);	
+P_PROPANE = @(s1, s2) 		(s2 / s1 *P_ETHYLENE_DES) * ...
+										MOLMASS_PROPANE;
+P_BUTANE = @(s1, s2)		(P_ETHYLENE_DES*(1/(2*s1) - s2/s1 - 1/2)) * ...
+										MOLMASS_BUTANE;
+F_ETHANE = @(s1, s2) (P_ETHYLENE_DES / s1) * ...
+										MOLMASS_ETHANE;
+P_METHANE = @(s1, s2) (s2 / s1 * P_ETHYLENE_DES) * ...
+										MOLMASS_METHANE;
+P_HYDROGEN = @(s1, s2) (P_ETHYLENE_DES * ((1/(2*s1) - s2/s1 + 1/2))) * ...
+										MOLMASS_HYDROGEN;
 
 % FUNCTIONS | VALIDATION___________________________________________________
 
@@ -268,7 +281,7 @@ flowrates_valid = @( flowrates ) all(flowrates >= 0);
 
 % FUNCTIONS | ECONOMICS____________________________________________________
 
-% ($ / yr) =                    (kta) *   (MT / KT) * ($ / MT)
+% ($ / yr) =                  (kta) *   (MT / KT) * ($ / MT)
 value_ethane = @(P_ethane) P_ethane * MT_PER_KT * VALUE_ETHANE;
 value_ethylene = @(P_ethylene) P_ethylene * MT_PER_KT * VALUE_ETHYLENE;
 value_h2_chem = @(P_h2_chem) P_h2_chem * MT_PER_KT * VALUE_HYDROGEN_CHEM;
@@ -303,14 +316,15 @@ if (CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS)
 end
 
 if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
-	xi = A(USERINPUT_S1, USERINPUT_S2) \ b;
+	% xi = A(USERINPUT_S1, USERINPUT_S2) \ b;
 
 	% Calculate the flow rates of each species (kta)
-	P_hydrogen = P_HYDROGEN(xi(1));
-	P_methane = P_METHANE(xi(2));
-	P_ethylene = P_ETHYLENE(xi(1), xi(3));
-	P_propane = P_PROPANE(xi(2));
-	P_butane = P_BUTANE(xi(3));
+	P_hydrogen = P_HYDROGEN(USERINPUT_S1, USERINPUT_S2);
+	P_methane = P_METHANE(USERINPUT_S1, USERINPUT_S2);
+	P_ethylene = P_ETHYLENE;
+	P_propane = P_PROPANE(USERINPUT_S1, USERINPUT_S2);
+	P_butane = P_BUTANE(USERINPUT_S1, USERINPUT_S2);
+	F_ethane = F_ETHANE(USERINPUT_S1, USERINPUT_S2);
 	P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];	
 
 	disp(CONSOLE_SECTION_DIVIDER)
@@ -321,14 +335,15 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 
 		disp(CONSOLE_SECTION_DIVIDER)
 		disp("Level 2 Flowrates  in / out of the entire plant [ kt / yr ]")
-		P_hydrogen = P_HYDROGEN(xi(1))
-		P_methane = P_METHANE(xi(2))
-		P_ethylene = P_ETHYLENE(xi(1), xi(3))
-		P_propane = P_PROPANE(xi(2))
-		P_butane = P_BUTANE(xi(3))
+		P_hydrogen 
+		P_methane 
+		P_ethylene
+		P_propane 
+		P_butane 
+		F_ethane 
 
 		disp("Fresh Feed Flowrate")
-		F_ethane = F_ETHANE(xi(1), xi(2), xi(3))
+		F_ethane
 		
 		disp(CONSOLE_SECTION_DIVIDER)
 		disp("Level 3 Flowrates [ kt / yr ] ")
@@ -336,7 +351,7 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 		disp("Recycle Stream Flowrate")
 
 		R_ethane = F_ethane * ((1-CONVERSION) / (CONVERSION))
-		R_ethane = (P_ethylene/USERINPUT_S1) * ((1-CONVERSION)/CONVERSION)
+		% R_ethane = (P_ethylene/USERINPUT_S1) * ((1-CONVERSION)/CONVERSION)
 
 		disp("Reactor Flowrates")
 
@@ -355,6 +370,7 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 	end
 end
 
+% SCRIPT | PLOTTING_____________________________________________________________
 
 if (CALCULATE_ALL_SELECTIVITIES)
 	disp(CONSOLE_SECTION_DIVIDER)
@@ -387,36 +403,47 @@ if (CALCULATE_ALL_SELECTIVITIES)
 		for s2 = s2_domain
 			
 			% Solve for extents of reaction
-			xi = A(s1, s2) \ b;
+			% xi = A(s1, s2) \ b;
 
 			% Calculate the flow rates of each species (kta)
-			P_hydrogen = P_HYDROGEN(xi(1));
-			P_methane = P_METHANE(xi(2));
-			P_ethylene = P_ETHYLENE(xi(1), xi(3));
-			P_propane = P_PROPANE(xi(2));
-			P_butane = P_BUTANE(xi(3));
+			% P_hydrogen = P_HYDROGEN(xi(1));
+			% P_methane = P_METHANE(xi(2));
+			% P_ethylene = P_ETHYLENE(xi(1), xi(3));
+			% P_propane = P_PROPANE(xi(2));
+			% P_butane = P_BUTANE(xi(3));
 
-			F_ethane = F_ETHANE(xi(1), xi(2), xi(3));
+			% F_ethane = F_ETHANE(P_ethylene)
+			
+			% F_ethane = F_ETHANE(xi(1), xi(2), xi(3));
+
+
+			P_hydrogen = P_HYDROGEN(s1, s2);
+			P_methane = P_METHANE(s1, s2);
+			P_ethylene = P_ETHYLENE;
+			P_propane = P_PROPANE(s1, s2);
+			P_butane = P_BUTANE(s1, s2);
+			F_ethane = F_ETHANE(s1, s2);
+
 
 			P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
 		
 			if (flowrates_valid(P_flowrates))
 
 				% Store for plotting (kta)
-				ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
-				hydrogen_flowrates(i) = P_HYDROGEN(xi(1));
-				methane_flowrates(i) = P_METHANE(xi(2));
-				ethylene_flowrates(i) = P_ETHYLENE(xi(1), xi(3));
-				propane_flowrates(i) = P_PROPANE(xi(2));
-				butane_flowrates(i) = P_BUTANE(xi(3));
-				ethane_flowrates(i) = F_ETHANE(xi(1), xi(2), xi(3));
+				hydrogen_flowrates(i) = P_HYDROGEN(s1, s2);
+				methane_flowrates(i) = P_METHANE(s1, s2);
+				ethylene_flowrates(i) = P_ETHYLENE;
+				propane_flowrates(i) = P_PROPANE(s1, s2);
+				butane_flowrates(i) = P_BUTANE(s1, s2);
+				ethane_flowrates(i) = F_ETHANE(s1, s2);
+				
 
 				% Calculate the heat flux needed to keep reactor isothermal 
 				heat_flux = 0;
 				F_steam = STEAM_TO_FEED_RATIO * F_ethane;
 				heat_flux = heat_flux + heat_ethane(P_ethylene, TEMP_ETHANE_FEED, TEMP_RXTR);
 				% heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
-				heat_flux = heat_flux + heat_rxn(xi);
+				% heat_flux = heat_flux + heat_rxn(xi);
 
 	% 			% Use the heat flux to calculate the fuel cost	
 				[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
@@ -611,19 +638,32 @@ function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, 
 	end
 end
 
-function heat = heat_steam(F_steam, STEAM_50C, P_reactor, T_reactor)
+function heat = heat_steam(F_steam, STEAM_CHOICE, P_reactor, T_reactor)
 	global COST_RATES_STEAM;
 	global STEAM_PRESSURE_COL STEAM_TEMP_COL COST_RATES_STEAM G_PER_KT MOLMASS_WATER
 
-	P_steam = COST_RATES_STEAM(STEAM_50C, STEAM_PRESSURE_COL);
-	T_steam = COST_RATES_STEAM(STEAM_50C, STEAM_TEMP_COL);
+	P_steam = COST_RATES_STEAM(STEAM_CHOICE, STEAM_PRESSURE_COL); % [ psia ]
+	T_steam = COST_RATES_STEAM(STEAM_CHOICE, STEAM_TEMP_COL);	  % [ C ]
 
 	if (P_steam > P_reactor)
-		T_adiabatic = T_steam * (P_reactor / P_steam);
+		% T_adiabatic = adiabatic_temp
 		% GJ = (kta)   * (g / kt) * (mol / g)			* (kJ / g K)
 		heat = F_steam * G_PER_KT * (1 / MOLMASS_WATER);
+	elseif (P_steam < P_reactor)
+		W = compressor_work(T_reactor, P_steam, P_reactor);
 	end
 
+end
+
+function T_f = adiabatic_temp(T_0, P_0, P_f)
+
+	T_f = T_0 * ( P_0 / P_f);
+end
+
+function W = compressor_work(T, P_0, P_f)
+	R = 8.314;		% [ J / mol K]
+
+	W = - n * R * T * log(P_f / P_0);
 
 end
 
