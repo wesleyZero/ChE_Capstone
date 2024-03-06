@@ -58,7 +58,20 @@ USERINPUT_S2 = 0.2; 			% [ __ ]
 		
 
 % Plotting : Tabs mean one input is dependent on another 
-NUM_POINTS = 10^4;	
+NUM_POINTS = 10^4;
+
+% Reactor Script Parameters
+NUM_P_POINTS = 2;				% [ __ ]
+NUM_P_POINTS = 2; 				% [ __ ]
+NUM_STEAM_POINTS = 2;			% [ __ ]
+P_MIN = 2;						% [ Bar ]
+P_MAX = 5;						% [ Bar ]
+T_MIN = 775;					% [ Celcius ]
+T_MAX = 825;					% [ Celcius ]
+STEAM_MIN = 0.6;				% [ __ ]
+STEAM_MAX = 1.0;				% [ __ ]
+
+
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
 OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
 	SANITY_CHECK_CALCULATIONS = true;
@@ -482,6 +495,16 @@ if (CALCULATE_ALL_SELECTIVITIES)
 	% Call the function with the desired row
 	% plotFlowRatesForRow(4, flowRatesArray); % To plot the first row across all matrices
 end
+
+
+% SCRIPT | REACTOR _____________________________________________________________
+
+
+
+
+
+
+
 
 disp("The Script is done running ⌛️")
 % HELPER FUNCTIONS | PLOTTING______________________________________________
