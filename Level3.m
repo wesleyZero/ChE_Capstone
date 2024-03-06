@@ -24,7 +24,8 @@ global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
 	MT_CO2_PER_KT_NATURALGAS;
 global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
-global MOLMASS_METHANE MOLMASS_WATER;
+global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
+global C_TO_K HEAT_CAPACITY_WATER;
 
 % USER NOTES____________________________________________________________________
 
@@ -54,9 +55,10 @@ TEMP_ETHANE_FEED = 25;			% [ C ]
 CONVERSION = 0.8;				% [ __ ]
 USERINPUT_S1 = 0.4;			% [ __ ]
 USERINPUT_S2 = 0.2; 			% [ __ ]
-NUM_POINTS = 10^4;			
+		
 
 % Plotting : Tabs mean one input is dependent on another 
+NUM_POINTS = 10^4;	
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
 OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
 	SANITY_CHECK_CALCULATIONS = true;
@@ -106,9 +108,14 @@ MT_PER_G = 10^-6;		% [ MT / g ]
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
 
+% Temperature		
+C_TO_K = 273.15;		% [ C -> K ]
 % Value
 MMDOLLA_PER_DOLLA = 10^-6;	% [ $ MM / $]
 DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
+
+% Pressure
+BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
 
 % CONSTANTS | CHEMICAL_____________________________________________________
 
@@ -435,7 +442,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				xi = get_xi(P_flowrates);
 				F_steam = STEAM_TO_FEED_RATIO * F_ethane;
 				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
-				% heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
+				heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
 				heat_flux = heat_flux + heat_rxn(xi);
 
 	% 			% Use the heat flux to calculate the fuel cost	
@@ -642,20 +649,35 @@ function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, 
 	end
 end
 
+%        GJ   =            (kta   ,  __         , bar      , C )
 function heat = heat_steam(F_steam, STEAM_CHOICE, P_reactor, T_reactor)
 	global COST_RATES_STEAM;
-	global STEAM_PRESSURE_COL STEAM_TEMP_COL COST_RATES_STEAM G_PER_KT MOLMASS_WATER
+	global STEAM_PRESSURE_COL STEAM_TEMP_COL COST_RATES_STEAM G_PER_KT ...
+			MOLMASS_WATER BAR_PER_PSIA C_TO_K HEAT_CAPACITY_WATER GJ_PER_KJ;
 
 	P_steam = COST_RATES_STEAM(STEAM_CHOICE, STEAM_PRESSURE_COL); % [ psia ]
 	T_steam = COST_RATES_STEAM(STEAM_CHOICE, STEAM_TEMP_COL);	  % [ C ]
+	P_steam = P_steam * BAR_PER_PSIA;
+	T_steam = T_steam + C_TO_K;
+	T_reactor = T_reactor + C_TO_K;
 
-	if (P_steam > P_reactor)
-		% T_adiabatic = adiabatic_temp
-		% GJ = (kta)   * (g / kt) * (mol / g)			* (kJ / g K)
-		heat = F_steam * G_PER_KT * (1 / MOLMASS_WATER);
-	elseif (P_steam < P_reactor)
+	if (P_steam > P_reactor) % Adiabatic Expansion
+		T_adibatic = (T_steam) * (P_reactor / P_steam);
+		T_steam = T_adibatic;
+	elseif (P_steam < P_reactor) % Compression
 		W = compressor_work(T_reactor, P_steam, P_reactor);
+		% I should add this to the heat flux probably ?? 
 	end
+	
+	% KJ = kta     * (G / KT) * (mol / g)         * (KJ / MOL K)        * (K - K)
+	heat = F_steam * G_PER_KT * (1/MOLMASS_WATER) * HEAT_CAPACITY_WATER * (T_reactor - T_steam);
+	% GJ = KJ   * (KJ / GJ)
+	heat = heat * GJ_PER_KJ;
+
+
+	% Heat flux after temperture 
+
+
 
 end
 
