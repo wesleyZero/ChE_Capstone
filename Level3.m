@@ -53,7 +53,7 @@ TEMP_RXTR = 800;				% [ C ] 775 to 825 C ???
 PRESS_RXTR = 3;					% [ Bar ]
 TEMP_ETHANE_FEED = 25;			% [ C ]
 CONVERSION = 0.8;				% [ __ ]
-USERINPUT_S1 = 0.4;			% [ __ ]
+USERINPUT_S1 = 0.4;				% [ __ ]
 USERINPUT_S2 = 0.2; 			% [ __ ]
 		
 
@@ -241,35 +241,7 @@ MT_CO2_PER_KT_BUTANE = G_PER_KT * (1/MOLMASS_BUTANE) *...
 	CO2_TO_BUTANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G;
 MT_CO2_PER_KT_NATURALGAS = MT_CO2_PER_KT_METHANE;
 
-% FUNCTIONS | MATRIX (EXTENT OF RXN)_______________________________________
-
-% (mol / yr)   = (kt / yr)        (g / kt) *  ( mol / g) 
-% P_ETHYLENE_DES = P_ETHYLENE_DES * G_PER_KT * (1 / MOLMASS_ETHYLENE);	
-
-% A = @(s1, s2)...
-% 	[s1-1	,s1		,s1+1	;
-%      s2		,s2-1	,s2		;
-%      1		,0		,-1		];
-% b = [	0;	
-% 		0;		
-% 		P_ETHYLENE_DES	];
-
 % FUNCTIONS | FLOWRATE_____________________________________________________
-
-% % (kta)	   =                        (mol / yr)
-% P_HYDROGEN = @(xi_1)				xi_1 * ...
-% 	... % (g / mol)       * (kt / g) 
-% 		MOLMASS_HYDROGEN * KT_PER_G;
-% P_METHANE = @(xi_2)					xi_2 * ...
-% 			MOLMASS_METHANE * KT_PER_G;
-% P_ETHYLENE = @(xi_1, xi_3)			(xi_1 - xi_3) * ...
-% 			MOLMASS_ETHYLENE * KT_PER_G;
-% P_PROPANE = @(xi_2)					xi_2 * ...
-% 			MOLMASS_PROPANE * KT_PER_G;
-% P_BUTANE = @(xi_3)					xi_3 * ...
-% 			MOLMASS_BUTANE * KT_PER_G;
-% F_ETHANE = @(xi_1, xi_2, xi_3)		(xi_1 + xi_2 + xi_3) * ...
-% 			MOLMASS_ETHANE * KT_PER_G;
 
 P_ETHYLENE = P_ETHYLENE_DES;
 P_ETHYLENE_DES = P_ETHYLENE_DES * (1 / MOLMASS_ETHYLENE);	
