@@ -772,8 +772,48 @@ end
 
 % FUNCTIONS | REACTOR ODE SYSTEM________________________________________________
 
-function dFdV = reactionODEs(V, F)
-	% global k1 k2 R
+function dFdV = reactionODEs(V, F, T, P)
+	global R
+	% P = P * M3_PER_BAR;
+	
+	% Product flow rate indicies 
+	HYDROGEN = 1;
+	METHANE = 2;
+	ETHYLENE = 3;
+	PROPANE = 4;
+	BUTANE = 5;
+
+	% Feed flow rate index
+	ETHANE = 6;
+
+	F_tot = sum(F);
+
+	% Hydrogen = A
+	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R * T)) ) - ...
+			(k1_r(T) * ( F(ETHYLENE * F(HYDROGEN) * P^2) ) / (F_tot * R * T)^2);
+	
+	% Methane = B
+	dFBdV = k2(T) * (F(ETHANE) * P)^2 / (F_tot * R * T)^2;
+
+	% Ethylene = C
+	dFCdV = (k1_f(T) * (F(ETHANE) * P / (F_tot * R * T))) - ...
+			(k1_r(T) * (F(ETHYLENE) * F(HYDROGEN) * P^2) / (F_tot * R * T)^2) - ...
+			(k3(T) * (F(ETHANE) * F(ETHYLENE) * P^2) / (F_tot * R * T)^2);
+
+	% Ethane = D
+	dFDdV = (-k1_f(T) * (F(ETHANE) * P / (F_tot * R * T))) + ...
+			(k1_r(T) * (F(ETHYLENE * F(HYDROGEN) * P^2)/(F_tot * R * T)^2)) - ...
+			(k2(T) * F(ETHANE)^2 * P^2 / (F_tot * R * T)^2) - ...
+			(k3(T) * F(ETHANE) * F(ETHYLENE) * P^2 / (F_tot * R * T)^2);
+	
+	% Propane = E
+	dFEdV = k2(T) * (F(ETHANE) * P)^2 / (F_tot * R * T)^2;
+
+	% Butane = F
+	dFFdV = k3(T) * (F(ETHANE) * F(ETHYLENE) * P^2) / (F_tot * R * T)^2;
+
+	dFdV = [dFAdV, dFBdV, dFCdV, dFDdV, dFEdV, dFFdV];
+	
 end
 
 
