@@ -26,6 +26,7 @@ global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
+global R k1 k2;
 
 % USER NOTES____________________________________________________________________
 
@@ -163,6 +164,11 @@ C02_TO_NATGAS_COMBUSTION_STOICH = CO2_TO_METHANE_COMBUSTION_STOICH;
 	% Natural gas is asuumed to be entirely methane
 
 % CONSTANTS | THERMODYNAMICS_______________________________________________
+
+% Gas Constant 
+R = 8.314;								% [ J / g K ]
+
+
 
 % Heat capacities 
 HEAT_CAPACITY_WATER = 4.184 * 10^-3;	% [ kJ / mol K ] Ref Temp = ??
@@ -305,6 +311,16 @@ heat_rxn1 = @(xi_1) xi_1 * ENTHALPY_RXN_1 * GJ_PER_KJ;
 heat_rxn2 = @(xi_2) xi_2 * ENTHALPY_RXN_2 * GJ_PER_KJ;
 heat_rxn3 = @(xi_3) xi_3 * ENTHALPY_RXN_3 * GJ_PER_KJ;
 heat_rxn = @(xi) heat_rxn1(xi(1)) + heat_rxn2(xi(2)) + heat_rxn3(xi(3)); 
+
+% FUNCTIONS | RATE CONTANTS________________________________________________
+
+% T is [ C ]
+k1_f = @(T) (4.652 * 10^13) * exp( (-273000 / (R * (T + C_TO_K))))
+k1_r = @(T) (9.91 * 10^8) * exp( (-137800 / (R * (T + C_TO_K))))
+k2 = @(T) (4.652 * 10^11) * exp( (-273000 / (R * (T + C_TO_K))))
+k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T + C_TO_K))))
+
+
 
 % SCRIPT___________________________________________________________________
 
@@ -516,7 +532,7 @@ for T_i = T_RANGE
 			% Setup the PFR Design Equations 
 			
 			% [V_soln, F_soln] = ode45(@reactionODEs, V_RANGE, F_INTIAL_COND);
-			
+
 			
 
 			% Computer Selectivity vs conversion relationships 
@@ -754,8 +770,11 @@ function F_natural_gas = natgas_combustion(heat_flux_remaining)
 
 end
 
+% FUNCTIONS | REACTOR ODE SYSTEM________________________________________________
 
-
+function dFdV = reactionODEs(V, F)
+	% global k1 k2 R
+end
 
 
 
