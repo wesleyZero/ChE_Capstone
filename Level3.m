@@ -62,8 +62,11 @@ NUM_POINTS = 10^4;
 
 % Reactor Script Parameters
 NUM_P_POINTS = 2;				% [ __ ]
-NUM_P_POINTS = 2; 				% [ __ ]
+NUM_T_POINTS = 2; 				% [ __ ]
 NUM_STEAM_POINTS = 2;			% [ __ ]
+NUM_V_POINTS = 20;				% [ __ ]
+V_MIN = 0.1;					% [ m^3 ??? ]
+V_MAX = 5;						% ???
 P_MIN = 2;						% [ Bar ]
 P_MAX = 5;						% [ Bar ]
 T_MIN = 775;					% [ Celcius ]
@@ -499,9 +502,31 @@ end
 
 % SCRIPT | REACTOR _____________________________________________________________
 
+T_RANGE = linspace(T_MIN, T_MAX, NUM_T_POINTS);
+P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
+STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
+V_RANGE = linspace(V_MIN, V_MAX, NUM_V_POINTS);
+F_INTIAL_COND = [ 1, 1, 1, 1, 1];
 
 
+for T_i = T_RANGE
+	for P_i = P_RANGE
+		for MR_S_i = STEAM_RANGE
+		
+			% Setup the PFR Design Equations 
+			
+			% [V_soln, F_soln] = ode45(@reactionODEs, V_RANGE, F_INTIAL_COND);
+			
+			
 
+			% Computer Selectivity vs conversion relationships 
+
+			% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
+			% to calculate the true feed flow rates into the reactor 
+
+		end 
+	end 
+end
 
 
 
