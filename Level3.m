@@ -1,5 +1,5 @@
-5% WORKSPACE VARIABLES ARE NOT BEING CLEARED 
-clc; close all; 
+% WORKSPACE VARIABLES ARE NOT BEING CLEARED 
+clc; close all; clear;
 
 global S1_MIN S1_MAX S1_POINTS;
 global S2_MIN S2_MAX S2_POINTS;
@@ -75,7 +75,7 @@ S1_MAX = 1.00;
 S1_POINTS = 100;
 S2_MIN = 0.05;
 S2_MAX = 1.00;
-S2_POINTS = 40;
+S2_POINTS = 100;
 INVALID_FLOWRATE = 0;
 Fethyl_S1S2_plotOpt = { ...
 	'S_1 Selectivity', ...
@@ -275,6 +275,13 @@ P_METHANE = @(s1, s2) (s2 / s1 * P_ETHYLENE_DES) * ...
 P_HYDROGEN = @(s1, s2) (P_ETHYLENE_DES * ((1/(2*s1) - s2/s1 + 1/2))) * ...
 										MOLMASS_HYDROGEN;
 
+% FUNCTIONS | EXTENT OF REACTION___________________________________________
+
+% Returns molar flowrates [ mol / yr ]
+get_xi = @(flowrates) [ flowrates(HYDROGEN) * G_PER_KT / MOLMASS_HYDROGEN, ...
+					flowrates(PROPANE) * G_PER_KT / MOLMASS_PROPANE, ...
+					flowrates(BUTANE) * G_PER_KT / MOLMASS_BUTANE ];
+
 % FUNCTIONS | VALIDATION___________________________________________________
 
 flowrates_valid = @( flowrates ) all(flowrates >= 0);
@@ -401,28 +408,12 @@ if (CALCULATE_ALL_SELECTIVITIES)
 	for s1 = s1_domain
 		for s2 = s2_domain
 			
-			% Solve for extents of reaction
-			% xi = A(s1, s2) \ b;
-
-			% Calculate the flow rates of each species (kta)
-			% P_hydrogen = P_HYDROGEN(xi(1));
-			% P_methane = P_METHANE(xi(2));
-			% P_ethylene = P_ETHYLENE(xi(1), xi(3));
-			% P_propane = P_PROPANE(xi(2));
-			% P_butane = P_BUTANE(xi(3));
-
-			% F_ethane = F_ETHANE(P_ethylene)
-			
-			% F_ethane = F_ETHANE(xi(1), xi(2), xi(3));
-
-
 			P_hydrogen = P_HYDROGEN(s1, s2);
 			P_methane = P_METHANE(s1, s2);
 			P_ethylene = P_ETHYLENE;
 			P_propane = P_PROPANE(s1, s2);
 			P_butane = P_BUTANE(s1, s2);
 			F_ethane = F_ETHANE(s1, s2);
-
 
 			P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
 		
@@ -439,11 +430,12 @@ if (CALCULATE_ALL_SELECTIVITIES)
 
 				% Calculate the heat flux needed to keep reactor isothermal 
 				heat_flux = 0;
+				xi = get_xi(P_flowrates);
 				F_steam = STEAM_TO_FEED_RATIO * F_ethane;
 				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 				% heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
 				% xi_1 = 
-				% heat_flux = heat_flux + heat_rxn(xi);
+				heat_flux = heat_flux + heat_rxn(xi);
 
 	% 			% Use the heat flux to calculate the fuel cost	
 				[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
@@ -469,7 +461,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 
 				% COSTS INCURRED
 				profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
-	% 			profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
+				%profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_COST_ROW,STEAM_50PSIA));
 				profit(i) = profit(i) - value_ethane(F_ethane);
 				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
 	% 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
@@ -579,7 +571,7 @@ end
 function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, flowrates)
 	global HYDROGEN METHANE ETHYLENE PROPANE BUTANE;
 	global ENTHALPY_METHANE ENTHALPY_PROPANE ENTHALPY_BUTANE HEAT_CAPACITY_ETHANE;
-	global MT_PER_KT G_PER_KT GJ_PER_KJ KJ_PER_GJ MOLMASS_METHANE KT_PER_G;
+	global MT_PER_KT G_PER_KT GJ_PER_KJ KJ_PER_GJ MOLMASS_METHANE KT_PER_G MOLMASS_BUTANE;
 
 	% Note! : Longest Chain Hydrocarbons are cheapest to combust
 
