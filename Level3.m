@@ -56,7 +56,14 @@ TEMP_ETHANE_FEED = 25;			% [ C ]
 CONVERSION = 0.8;				% [ __ ]
 USERINPUT_S1 = 0.4;				% [ __ ]
 USERINPUT_S2 = 0.2; 			% [ __ ]
-		
+STEAM_CHOICE = 2;
+% 	STEAM_30PSIA = 1;
+% 	STEAM_50PSIA = 2;
+% 	STEAM_100PSIA = 3;
+% 	STEAM_200PSIA = 4;
+% 	STEAM_500PSIA = 5;
+% 	STEAM_750PSIA = 6;
+	
 
 % Plotting : Tabs mean one input is dependent on another 
 NUM_POINTS = 10^4;
@@ -450,7 +457,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				xi = get_xi(P_flowrates);
 				F_steam = STEAM_TO_FEED_RATIO * F_ethane;
 				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
-				heat_flux = heat_flux + heat_steam(F_steam, STEAM_50PSIA, PRESS_RXTR, TEMP_RXTR) ;
+				heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 				heat_flux = heat_flux + heat_rxn(xi);
 
 	% 			% Use the heat flux to calculate the fuel cost	
@@ -487,7 +494,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				% value_ethane(F_ethane)
 				% cost_natural_gas_fuel(F_natural_gas)
 				profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
- 				profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_50PSIA, STEAM_COST_COL));
+ 				profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
 				profit(i) = profit(i) - value_ethane(F_ethane);
 				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
 	% 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
