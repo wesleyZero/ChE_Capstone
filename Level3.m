@@ -589,6 +589,8 @@ for T_i = T_RANGE
 % 			soln_table.Properties.VariableNames = col_names;
 			soln_table
 
+			conserv_mass = sum(F_soln, 2)
+
 			% Computer Selectivity vs conversion relationships 
 
 			% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
