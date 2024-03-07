@@ -526,7 +526,7 @@ P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
 STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
 V_RANGE = [0.1, 10000]; % WARNING THESE ARE IN LITERS
 % H2 Methane Ethane Propane Butane Ethylene 
-F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10];
+F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in mol / s
 
 	% Product flow rate indicies 
 	HYDROGEN = 1;
@@ -569,10 +569,22 @@ for T_i = T_RANGE
 			
 			F_steam = MR_S_i * P_ETHYLENE;
 
+			conversion = (F_INTIAL_COND(ETHANE) - F_soln(:, ETHANE)) / F_INTIAL_COND(ETHANE);
+
 			
 			disp("This is the solution set ")
 			V_soln
 			F_soln
+			conversion
+			col_names = {'V', 'Hydrogen', 'Methane', 'Ethylene', 'Butane','Propane', 'Ethane'};
+% 			col_names = {"Vol_L", "H2", "CH4", "C2H4", "C3H8", "C4H10", "C2H6"};
+
+			soln_table = table( V_soln, F_soln(:, HYDROGEN), ...
+						F_soln(:, METHANE), F_soln(:, ETHYLENE), ...
+						F_soln(:, PROPANE), F_soln(:, BUTANE), ...
+						F_soln(:, ETHANE), 'VariableNames',col_names)
+% 			soln_table.Properties.VariableNames = col_names;
+			soln_table
 
 			% Computer Selectivity vs conversion relationships 
 
