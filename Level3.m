@@ -568,21 +568,26 @@ for T_i = T_RANGE
 			F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
 			
 			F_steam = MR_S_i * P_ETHYLENE;
+			
 
 			conversion = (F_INTIAL_COND(ETHANE) - F_soln(:, ETHANE)) / F_INTIAL_COND(ETHANE);
+
+			len = length(F_soln(:, 1));
+			F_ethane_temp = ones(len, 1) * F_INTIAL_COND(ETHANE);
+			select_1 = (F_soln(:, ETHYLENE) - F_ethane_temp) ./ (F_ethane_temp - F_soln(:, ETHANE))
 
 			
 			disp("This is the solution set ")
 			V_soln
 			F_soln
 			conversion
-			col_names = {'V', 'Hydrogen', 'Methane', 'Ethylene', 'Butane','Propane', 'Ethane'};
+			col_names = {'[L] ', 'Hydrogen [kta]', 'Methane', 'Ethylene', 'Butane','Propane', 'Ethane', 'conversion', 'S1'};
 % 			col_names = {"Vol_L", "H2", "CH4", "C2H4", "C3H8", "C4H10", "C2H6"};
 
 			soln_table = table( V_soln, F_soln(:, HYDROGEN), ...
 						F_soln(:, METHANE), F_soln(:, ETHYLENE), ...
 						F_soln(:, PROPANE), F_soln(:, BUTANE), ...
-						F_soln(:, ETHANE), 'VariableNames',col_names)
+						F_soln(:, ETHANE), conversion,select_1,  'VariableNames',col_names)
 % 			soln_table.Properties.VariableNames = col_names;
 			soln_table
 
