@@ -544,7 +544,7 @@ for T_i = T_RANGE
 	for P_i = P_RANGE
 		for MR_S_i = STEAM_RANGE
 
-			F_steam = MR_S_i * P_ETHYLENE;
+			
 			% Setup the PFR Design Equations 
 			
 			% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
@@ -555,17 +555,23 @@ for T_i = T_RANGE
 			F_INTIAL_COND(PROPANE) = F_INTIAL_COND(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
 			F_steam = F_steam * G_PER_KT * (1/MOLMASS_WATER) * YR_PER_SEC;
 
+			F_steam = MR_S_i * F_INTIAL_COND(ETHANE);
+
 			odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
 			[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND); 
 			
 			% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
-			F_soln(METHANE) = F_soln(METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
-			F_soln(ETHANE) = F_soln(ETHANE) * MOLMASS_ETHANE * KT_PER_G * SEC_PER_YR;	
-			F_soln(HYDROGEN) = F_soln(HYDROGEN) * MOLMASS_HYDROGEN * KT_PER_G * SEC_PER_YR;
-			F_soln(ETHYLENE) = F_soln(ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
-			F_soln(BUTANE) = F_soln(BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
-			F_soln(PROPANE) = F_soln(PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
+			F_soln(:, METHANE) = F_soln(: ,METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
+			F_soln(:, ETHANE) = F_soln(:, ETHANE) * MOLMASS_ETHANE * KT_PER_G * SEC_PER_YR;	
+			F_soln(:, HYDROGEN) = F_soln(:, HYDROGEN) * MOLMASS_HYDROGEN * KT_PER_G * SEC_PER_YR;
+			F_soln(:, ETHYLENE) = F_soln(:, ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
+			F_soln(:, BUTANE) = F_soln(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
+			F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
+			
+			F_steam = MR_S_i * P_ETHYLENE;
 
+			
+			disp("This is the solution set ")
 			V_soln
 			F_soln
 
