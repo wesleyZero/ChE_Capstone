@@ -524,7 +524,7 @@ end
 T_RANGE = linspace(T_MIN, T_MAX, NUM_T_POINTS);
 P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
 STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
-V_RANGE = [0.1, 10000]; % WARNING THESE ARE IN LITERS
+V_RANGE = [0.1, 10^3]; % WARNING THESE ARE IN LITERS
 % H2 Methane Ethane Propane Butane Ethylene 
 F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in mol / s
 
@@ -579,7 +579,7 @@ for T_i = T_RANGE
 			F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
 			F_steam = MR_S_i * P_ETHYLENE;
 			
-			col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', 'Ethylene', 'Butane','Propane', 'Ethane', 'conversion', 'S1', 'S2'};
+			col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', 'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', 'S1', 'S2'};
 % 			col_names = {"Vol_L", "H2", "CH4", "C2H4", "C3H8", "C4H10", "C2H6"};
 
 			soln_table = table( V_soln, F_soln(:, HYDROGEN), ...
@@ -589,7 +589,7 @@ for T_i = T_RANGE
 % 			soln_table.Properties.VariableNames = col_names;
 			soln_table
 
-			conserv_mass = sum(F_soln, 2)
+			conserv_mass = sum(F_soln, 2);
 
 			% Computer Selectivity vs conversion relationships 
 
