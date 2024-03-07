@@ -82,6 +82,10 @@ T_MAX = 825;					% [ Celcius ]
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
 
+T_P_OVERRIDE = true;		
+	T_OVERRIDE = 800;		%[C]
+	P_OVERRIDE = 3;			%[Bar]
+
 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
 OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
@@ -552,7 +556,15 @@ if (CALCULATE_REACTOR_FLOWS)
 		for P_i = P_RANGE
 			for MR_S_i = STEAM_RANGE
 	
-				
+
+				% override the T_i and P_i with user input 
+				if T_P_OVERRIDE
+					T_i = T_OVERRIDE;
+					P_i = P_OVERRIDE;
+				end
+
+				fprintf("T = %f [C], P = %f [bar]", T_i, P_i)
+
 				% Setup the PFR Design Equations 
 				
 				% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
@@ -628,11 +640,11 @@ if (CALCULATE_REACTOR_FLOWS)
 							F_soln(:, ETHANE), conversion,select_1, ...
 							select_2,q0,V_plant,q0_plant,  'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
-				soln_table
 	
 	
 	
 	
+				% Check if you're conserving mass
 				conserv_mass = sum(F_soln, 2);
 	
 				% Computer Selectivity vs conversion relationships 
