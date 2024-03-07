@@ -26,7 +26,7 @@ global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
-global R k1_f k1_r k2 k3
+global R k1_f k1_r k2 k3 R_2 C_TO_K
 
 % USER NOTES____________________________________________________________________
 
@@ -166,7 +166,8 @@ C02_TO_NATGAS_COMBUSTION_STOICH = CO2_TO_METHANE_COMBUSTION_STOICH;
 % CONSTANTS | THERMODYNAMICS_______________________________________________
 
 % Gas Constant 
-R = 8.314;								% [ J / g K ]
+R = 8.314;								% [ J / mol K ]
+R_2 = 0.0831446261815324;				% [ L bar / K mol ]
 
 % Heat capacities 
 HEAT_CAPACITY_WATER = 4.184 * 10^-3;	% [ kJ / mol K ] Ref Temp = ??
@@ -312,11 +313,11 @@ heat_rxn = @(xi) heat_rxn1(xi(1)) + heat_rxn2(xi(2)) + heat_rxn3(xi(3));
 
 % FUNCTIONS | RATE CONTANTS________________________________________________
 
-% T is [ C ]
-k1_f = @(T) (4.652 * 10^13) * exp( (-273000 / (R * (T + C_TO_K))))
-k1_r = @(T) (9.91 * 10^8) * exp( (-137800 / (R * (T + C_TO_K))))
-k2 = @(T) (4.652 * 10^11) * exp( (-273000 / (R * (T + C_TO_K))))
-k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T + C_TO_K))))
+% T is [ Kelvin ]  R is [ J / mol K ]
+k1_f = @(T) (4.652 * 10^13) * exp( (-273000 / (R * (T ))))
+k1_r = @(T) (9.91 * 10^8) * exp( (-137800 / (R * (T ))))
+k2 = @(T) (4.652 * 10^11) * exp( (-273000 / (R * (T ))))
+k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T ))))
 
 
 
@@ -776,8 +777,16 @@ end
 % FUNCTIONS | REACTOR ODE SYSTEM________________________________________________
 
 function dFdV = reactionODEs(V, F, T, P, F_steam)
-	global R k1_f k1_r k2 k3
-	% P = P * M3_PER_BAR;
+	global R_2 k1_f k1_r k2 k3 C_TO_K
+	% INPUT UNITS 
+	% V [ m^3 ]
+	% F [ kta ]
+	% T [ Celcius ]
+	% P [ bar ]
+
+	% Change the input units so that evrything is consistent
+	% P = P * ATM_PER_BAR;
+	T = T + C_TO_K;
 	
 	% Product flow rate indicies 
 	HYDROGEN = 1;
@@ -791,34 +800,34 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 
 	F_tot = sum(F) + F_steam;
 
-	F(ETHANE, 1)
+	F(ETHANE)
 	F(ETHANE)
 	
 	% Hydrogen = A
-	dFAdV = (k1_f(T) * ( (F(ETHANE, 1) * P) / (F_tot * R * T) )   ) - ...
-			(k1_r(T) * ( F(ETHYLENE, 1) * F(HYDROGEN, 1) * P^2) ) / (F_tot * R * T)^2;
+	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R_2 * T) )   ) - ...
+			(k1_r(T) * ( F(ETHYLENE) * F(HYDROGEN) * P^2) ) / (F_tot * R_2 * T)^2;
 	
 	% Methane = B
-	dFBdV = k2(T) * (F(ETHANE) * P)^2 / (F_tot * R * T)^2;
+	dFBdV = (k2(T) * (F(ETHANE) * P)^2) / (F_tot * R_2 * T)^2;
 
 	% Ethylene = C
-	dFCdV = (k1_f(T) * (F(ETHANE) * P / (F_tot * R * T))) - ...
-			(k1_r(T) * (F(ETHYLENE) * F(HYDROGEN) * P^2) / (F_tot * R * T)^2) - ...
-			(k3(T) * (F(ETHANE) * F(ETHYLENE) * P^2) / (F_tot * R * T)^2);
+	dFCdV = (k1_f(T) * (F(ETHANE) * P / (F_tot * R_2 * T))) - ...
+			(k1_r(T) * (F(ETHYLENE) * F(HYDROGEN) * P^2) / (F_tot * R_2 * T)^2) - ...
+			(k3(T) * (F(ETHANE) * F(ETHYLENE) * P^2) / (F_tot * R_2 * T)^2);
 
-	% Ethane = D
-	dFDdV = (-k1_f(T) * (F(ETHANE) * P / (F_tot * R * T))) + ...
-			(k1_r(T) * (F(ETHYLENE) * F(HYDROGEN) * P^2)/(F_tot * R * T)^2) - ...
-			(k2(T) * F(ETHANE)^2 * P^2 / (F_tot * R * T)^2) - ...
-			(k3(T) * F(ETHANE) * F(ETHYLENE) * P^2 / (F_tot * R * T)^2);
-	
 	% Propane = E
-	dFEdV = k2(T) * (F(ETHANE) * P)^2 / (F_tot * R * T)^2;
+	dFEdV = k2(T) * (F(ETHANE) * P)^2 / (F_tot * R_2 * T)^2;
 
 	% Butane = F
-	dFFdV = k3(T) * (F(ETHANE) * F(ETHYLENE) * P^2) / (F_tot * R * T)^2;
+	dFFdV = (k3(T) * (F(ETHANE) * F(ETHYLENE) * P^2)) / (F_tot * R_2 * T)^2;
 
-	dFdV = [dFAdV; dFBdV; dFCdV; dFDdV; dFEdV; dFFdV];
+	% Ethane = D
+	dFDdV = (-k1_f(T) * (F(ETHANE) * P / (F_tot * R_2 * T))) + ...
+			(k1_r(T) * (F(ETHYLENE) * F(HYDROGEN) * P^2)/(F_tot * R_2 * T)^2) - ...
+			(k2(T) * F(ETHANE)^2 * P^2 / (F_tot * R_2 * T)^2) - ...
+			(k3(T) * F(ETHANE) * F(ETHYLENE) * P^2 / (F_tot * R_2 * T)^2);
+
+	dFdV = [dFAdV; dFBdV; dFCdV; dFEdV; dFFdV; dFDdV];
 	
 end
 
