@@ -168,8 +168,6 @@ C02_TO_NATGAS_COMBUSTION_STOICH = CO2_TO_METHANE_COMBUSTION_STOICH;
 % Gas Constant 
 R = 8.314;								% [ J / g K ]
 
-
-
 % Heat capacities 
 HEAT_CAPACITY_WATER = 4.184 * 10^-3;	% [ kJ / mol K ] Ref Temp = ??
 	% Source : ??
@@ -521,10 +519,10 @@ end
 T_RANGE = linspace(T_MIN, T_MAX, NUM_T_POINTS);
 P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
 STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
-V_RANGE = linspace(V_MIN, V_MAX, NUM_V_POINTS);
-
+% V_RANGE = linspace(V_MIN, V_MAX, NUM_V_POINTS);
+V_RANGE = [0.1, 100]
 % H2 Methane Ethane Propane Butane Ethylene 
-F_INTIAL_COND = [ 0, 0, 1, 0, 0, 0];
+F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10];
 
 disp("Reactor Script ")
 for T_i = T_RANGE
@@ -533,10 +531,10 @@ for T_i = T_RANGE
 
 			F_steam = MR_S_i * P_ETHYLENE;
 			% Setup the PFR Design Equations 
-			odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam)
+			odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
 % 			[V_soln, F_soln] = ode45(@reactionODEs, V_RANGE, F_INTIAL_COND);
 			
-			[V, F] = ode45(odes, V_RANGE, F_INTIAL_COND) 
+			[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND) 
 			
 			
 
@@ -793,9 +791,12 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 
 	F_tot = sum(F) + F_steam;
 
+	F(ETHANE, 1)
+	F(ETHANE)
+	
 	% Hydrogen = A
-	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R * T) )   ) - ...
-			(k1_r(T) * ( F(ETHYLENE) * F(HYDROGEN) * P^2) ) / (F_tot * R * T)^2;
+	dFAdV = (k1_f(T) * ( (F(ETHANE, 1) * P) / (F_tot * R * T) )   ) - ...
+			(k1_r(T) * ( F(ETHYLENE, 1) * F(HYDROGEN, 1) * P^2) ) / (F_tot * R * T)^2;
 	
 	% Methane = B
 	dFBdV = k2(T) * (F(ETHANE) * P)^2 / (F_tot * R * T)^2;
