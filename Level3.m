@@ -524,8 +524,7 @@ end
 T_RANGE = linspace(T_MIN, T_MAX, NUM_T_POINTS);
 P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
 STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
-% V_RANGE = linspace(V_MIN, V_MAX, NUM_V_POINTS);
-V_RANGE = [0.1, 10000]
+V_RANGE = [0.1, 10000]; % WARNING THESE ARE IN LITERS
 % H2 Methane Ethane Propane Butane Ethylene 
 F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10];
 
@@ -861,7 +860,8 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 			(k1_r(T) * (F(ETHYLENE) * F(HYDROGEN) * P^2)/(F_tot * R_2 * T)^2) - ...
 			(k2(T) * F(ETHANE)^2 * P^2 / (F_tot * R_2 * T)^2) - ...
 			(k3(T) * F(ETHANE) * F(ETHYLENE) * P^2 / (F_tot * R_2 * T)^2);
-
+	
+	T = T - C_TO_K;
 
 	dFdV = [dFAdV; dFBdV; dFCdV; dFEdV; dFFdV; dFDdV];
 	
