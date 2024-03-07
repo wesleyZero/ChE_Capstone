@@ -26,7 +26,7 @@ global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
-global R k1_f k1_r k2 k3 R_2 C_TO_K
+global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC
 
 % USER NOTES____________________________________________________________________
 
@@ -133,6 +133,9 @@ DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
 
 % Pressure
 BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
+
+% Time
+YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
 
 % CONSTANTS | CHEMICAL_____________________________________________________
 
@@ -777,7 +780,8 @@ end
 % FUNCTIONS | REACTOR ODE SYSTEM________________________________________________
 
 function dFdV = reactionODEs(V, F, T, P, F_steam)
-	global R_2 k1_f k1_r k2 k3 C_TO_K
+	global R_2 k1_f k1_r k2 k3 C_TO_K MOLMASS_METHANE MOLMASS_ETHANE MOLMASS_ETHYLENE ... 
+		MOLMASS_PROPANE MOLMASS_HYDROGEN MOLMASS_BUTANE YR_PER_SEC G_PER_KT
 	% INPUT UNITS 
 	% V [ m^3 ]
 	% F [ kta ]
@@ -802,6 +806,8 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 
 	F(ETHANE)
 	F(ETHANE)
+	% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
+	F(METHANE) = F(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
 	
 	% Hydrogen = A
 	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R_2 * T) )   ) - ...
