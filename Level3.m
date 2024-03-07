@@ -525,9 +525,19 @@ T_RANGE = linspace(T_MIN, T_MAX, NUM_T_POINTS);
 P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
 STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
 % V_RANGE = linspace(V_MIN, V_MAX, NUM_V_POINTS);
-V_RANGE = [0.1, 100]
+V_RANGE = [0.1, 10000]
 % H2 Methane Ethane Propane Butane Ethylene 
 F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10];
+
+	% Product flow rate indicies 
+	HYDROGEN = 1;
+	METHANE = 2;
+	ETHYLENE = 3;
+	PROPANE = 4;
+	BUTANE = 5;
+
+	% Feed flow rate index
+	ETHANE = 6;
 
 disp("Reactor Script ")
 for T_i = T_RANGE
@@ -536,12 +546,28 @@ for T_i = T_RANGE
 
 			F_steam = MR_S_i * P_ETHYLENE;
 			% Setup the PFR Design Equations 
+			
+			% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
+			F_INTIAL_COND(METHANE) = F_INTIAL_COND(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
+			F_INTIAL_COND(HYDROGEN) = F_INTIAL_COND(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
+			F_INTIAL_COND(ETHANE) = F_INTIAL_COND(ETHANE) * G_PER_KT * (1/MOLMASS_ETHANE) * YR_PER_SEC;
+			F_INTIAL_COND(ETHYLENE) = F_INTIAL_COND(ETHYLENE) * G_PER_KT * (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
+			F_INTIAL_COND(PROPANE) = F_INTIAL_COND(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
+			F_steam = F_steam * G_PER_KT * (1/MOLMASS_WATER) * YR_PER_SEC;
+
 			odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
-% 			[V_soln, F_soln] = ode45(@reactionODEs, V_RANGE, F_INTIAL_COND);
+			[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND); 
 			
-			[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND) 
-			
-			
+			% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
+			F_soln(METHANE) = F_soln(METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
+			F_soln(ETHANE) = F_soln(ETHANE) * MOLMASS_ETHANE * KT_PER_G * SEC_PER_YR;	
+			F_soln(HYDROGEN) = F_soln(HYDROGEN) * MOLMASS_HYDROGEN * KT_PER_G * SEC_PER_YR;
+			F_soln(ETHYLENE) = F_soln(ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
+			F_soln(BUTANE) = F_soln(BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
+			F_soln(PROPANE) = F_soln(PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
+
+			V_soln
+			F_soln
 
 			% Computer Selectivity vs conversion relationships 
 
@@ -782,7 +808,7 @@ end
 
 function dFdV = reactionODEs(V, F, T, P, F_steam)
 	global R_2 k1_f k1_r k2 k3 C_TO_K MOLMASS_METHANE MOLMASS_ETHANE MOLMASS_ETHYLENE ... 
-		MOLMASS_PROPANE MOLMASS_HYDROGEN MOLMASS_BUTANE YR_PER_SEC G_PER_KT SEC_PER_YR
+		MOLMASS_PROPANE MOLMASS_HYDROGEN MOLMASS_BUTANE YR_PER_SEC G_PER_KT SEC_PER_YR KT_PER_G
 	% INPUT UNITS 
 	% V [ ?? ]
 	% F [ kta ]
@@ -805,12 +831,6 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 
 	F_tot = sum(F) + F_steam;
 
-	% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
-	F(METHANE) = F(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
-	F(HYDROGEN) = F(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
-	F(ETHANE) = F(ETHANE) * G_PER_KT * (1/MOLMASS_ETHANE) * YR_PER_SEC;
-	F(ETHYLENE) = F(ETHYLENE) * G_PER_KT * (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
-	F(PROPANE) = F(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
 
 	% Hydrogen = A
 	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R_2 * T) )   ) - ...
@@ -835,6 +855,7 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 			(k1_r(T) * (F(ETHYLENE) * F(HYDROGEN) * P^2)/(F_tot * R_2 * T)^2) - ...
 			(k2(T) * F(ETHANE)^2 * P^2 / (F_tot * R_2 * T)^2) - ...
 			(k3(T) * F(ETHANE) * F(ETHYLENE) * P^2 / (F_tot * R_2 * T)^2);
+
 
 	dFdV = [dFAdV; dFBdV; dFCdV; dFEdV; dFFdV; dFDdV];
 	
