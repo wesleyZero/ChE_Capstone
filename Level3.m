@@ -66,8 +66,8 @@ NUM_P_POINTS = 2;				% [ __ ]
 NUM_T_POINTS = 2; 				% [ __ ]
 NUM_STEAM_POINTS = 2;			% [ __ ]
 NUM_V_POINTS = 20;				% [ __ ]
-V_MIN = 0.1;					% [ m^3 ??? ]
-V_MAX = 5;						% ???
+V_MIN = 0.1;					% [ L ]
+V_MAX = 10000;					 % [ L ]
 P_MIN = 2;						% [ Bar ]
 P_MAX = 5;						% [ Bar ]
 T_MIN = 775;					% [ Celcius ]
@@ -82,6 +82,7 @@ OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
 CALCULATE_ALL_SELECTIVITIES = true;
 	PLOT_ECON_3D = true;
 	PLOT_ECON_COUNTOUR = true;
+CALCULATE_REACTOR_FLOWS = true;
 %_______________________________________________________________________________
 % DON'T TOUCH ANYTHING BELOW THIS LINE
 %_______________________________________________________________________________
@@ -318,10 +319,10 @@ heat_rxn = @(xi) heat_rxn1(xi(1)) + heat_rxn2(xi(2)) + heat_rxn3(xi(3));
 % FUNCTIONS | RATE CONTANTS________________________________________________
 
 % T is [ Kelvin ]  R is [ J / mol K ]
-k1_f = @(T) (4.652 * 10^13) * exp( (-273000 / (R * (T ))))
-k1_r = @(T) (9.91 * 10^8) * exp( (-137800 / (R * (T ))))
-k2 = @(T) (4.652 * 10^11) * exp( (-273000 / (R * (T ))))
-k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T ))))
+k1_f = @(T) (4.652 * 10^13) * exp( (-273000 / (R * (T ))));
+k1_r = @(T) (9.91 * 10^8) * exp( (-137800 / (R * (T ))));
+k2 = @(T) (4.652 * 10^11) * exp( (-273000 / (R * (T ))));
+k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T ))));
 
 
 
@@ -524,7 +525,7 @@ end
 T_RANGE = linspace(T_MIN, T_MAX, NUM_T_POINTS);
 P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
 STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
-V_RANGE = [0.1, 10^3]; % WARNING THESE ARE IN LITERS
+V_RANGE = [V_MIN, V_MAX]; % WARNING THESE ARE IN LITERS
 % H2 Methane Ethane Propane Butane Ethylene 
 F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in mol / s
 
@@ -538,72 +539,104 @@ F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in mol / s
 	% Feed flow rate index
 	ETHANE = 6;
 
-disp("Reactor Script ")
-for T_i = T_RANGE
-	for P_i = P_RANGE
-		for MR_S_i = STEAM_RANGE
-
-			
-			% Setup the PFR Design Equations 
-			
-			% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
-			F_INTIAL_COND(METHANE) = F_INTIAL_COND(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
-			F_INTIAL_COND(HYDROGEN) = F_INTIAL_COND(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
-			F_INTIAL_COND(ETHANE) = F_INTIAL_COND(ETHANE) * G_PER_KT * (1/MOLMASS_ETHANE) * YR_PER_SEC;
-			F_INTIAL_COND(ETHYLENE) = F_INTIAL_COND(ETHYLENE) * G_PER_KT * (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
-			F_INTIAL_COND(PROPANE) = F_INTIAL_COND(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
-			F_steam = F_steam * G_PER_KT * (1/MOLMASS_WATER) * YR_PER_SEC;
-
-			F_steam = MR_S_i * F_INTIAL_COND(ETHANE);
-
-			odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
-			[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND); 
-			
-
-			
-			% Do the conversion and S_i calculations while in moles
-			conversion = (F_INTIAL_COND(ETHANE) - F_soln(:, ETHANE)) / F_INTIAL_COND(ETHANE);
-			len = length(F_soln(:, 1));
-			F_ethane_initial = ones(len, 1) * F_INTIAL_COND(ETHANE);
-			select_1 = (F_soln(:, ETHYLENE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
-			select_2 = (F_soln(:, PROPANE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
-			
-			sum(F_soln, 2)
-			q0 = (R_2  * (T_i + C_TO_K) / P_i) .* sum(F_soln, 2)
-
-% 			disp("This is the solution set ")
-			
-			% convert back to kta
-			% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
-			F_soln(:, METHANE) = F_soln(: ,METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
-			F_soln(:, ETHANE) = F_soln(:, ETHANE) * MOLMASS_ETHANE * KT_PER_G * SEC_PER_YR;	
-			F_soln(:, HYDROGEN) = F_soln(:, HYDROGEN) * MOLMASS_HYDROGEN * KT_PER_G * SEC_PER_YR;
-			F_soln(:, ETHYLENE) = F_soln(:, ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
-			F_soln(:, BUTANE) = F_soln(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
-			F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
-			F_steam = MR_S_i * P_ETHYLENE;
-			
-			col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', 'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', 'S1', 'S2', 'q0'};
-% 			col_names = {"Vol_L", "H2", "CH4", "C2H4", "C3H8", "C4H10", "C2H6"};
-
-			soln_table = table( V_soln, F_soln(:, HYDROGEN), ...
-						F_soln(:, METHANE), F_soln(:, ETHYLENE), ...
-						F_soln(:, PROPANE), F_soln(:, BUTANE), ...
-						F_soln(:, ETHANE), conversion,select_1, select_2,q0,   'VariableNames',col_names)
-% 			soln_table.Properties.VariableNames = col_names;
-			soln_table
-
-			conserv_mass = sum(F_soln, 2);
-
-			% Computer Selectivity vs conversion relationships 
-
-			% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
-			% to calculate the true feed flow rates into the reactor 
-
+if (CALCULATE_REACTOR_FLOWS)
+	disp("Reactor Script ")
+	for T_i = T_RANGE
+		for P_i = P_RANGE
+			for MR_S_i = STEAM_RANGE
+	
+				
+				% Setup the PFR Design Equations 
+				
+				% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
+				F_INTIAL_COND(METHANE) = F_INTIAL_COND(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
+				F_INTIAL_COND(HYDROGEN) = F_INTIAL_COND(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
+				F_INTIAL_COND(ETHANE) = F_INTIAL_COND(ETHANE) * G_PER_KT * (1/MOLMASS_ETHANE) * YR_PER_SEC;
+				F_INTIAL_COND(ETHYLENE) = F_INTIAL_COND(ETHYLENE) * G_PER_KT * (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
+				F_INTIAL_COND(PROPANE) = F_INTIAL_COND(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
+	% 			F_steam = F_steam * G_PER_KT * (1/MOLMASS_WATER) * YR_PER_SEC;
+	
+				F_steam = MR_S_i * F_INTIAL_COND(ETHANE);
+	
+				odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
+				[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND); 
+				
+	
+				
+				% Do the conversion and S_i calculations while in moles
+				conversion = (F_INTIAL_COND(ETHANE) - F_soln(:, ETHANE)) / F_INTIAL_COND(ETHANE);
+				len = length(F_soln(:, 1));
+				F_ethane_initial = ones(len, 1) * F_INTIAL_COND(ETHANE);
+				select_1 = (F_soln(:, ETHYLENE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
+				select_2 = (F_soln(:, PROPANE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
+				sum(F_soln, 2);
+				q0 = (R_2  * (T_i + C_TO_K) / P_i) .* (sum(F_soln, 2) + F_steam);
+	
+				
+				F_ethane = [];
+				for row = 1:length(select_1)
+	% 				P_hydrogen(row, 1) = P_HYDROGEN(select_1(row), select_2(row)) .* G_PER_KT .* MOLMASS_HYDROGEN
+	% 				P_methane(row, 1) = P_METHANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_METHANE;
+	% % 				P_ethylene(row, 1) = P_ETHYLENE(select_1(row), select_2(row));
+	% 				P_propane(row, 1) = P_PROPANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_PROPANE;
+	% 				P_butane(row, 1) = P_BUTANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_BUTANE;
+					F_ethane(row, 1) = F_ETHANE(select_1(row), select_2(row)) .* G_PER_KT .* (1/MOLMASS_ETHANE) * YR_PER_SEC;
+				end
+	% 			P_ethylene = ones(length(F_ethane(:, 1)), 1) .* P_ETHYLENE .* G_PER_KT .* MOLMASS_ETHYLENE;
+	
+	%  			P_flowrates_plant = [ P_hydrogen, P_methane, P_propane, P_butane];
+	% 			total_molFlow_plant = sum(P_flowrates_plant, 2) + F_steam + (P_ETHYLENE);
+				F_ethane;
+				F_soln(ETHANE);
+				V_plant = V_soln(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
+	
+	
+				q0_plant = q0(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
+	
+	
+	
+	
+	% 			disp("This is the solution set ")
+				
+				% convert back to kta
+				% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
+				F_soln(:, METHANE) = F_soln(: ,METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
+				F_soln(:, ETHANE) = F_soln(:, ETHANE) * MOLMASS_ETHANE * KT_PER_G * SEC_PER_YR;	
+				F_soln(:, HYDROGEN) = F_soln(:, HYDROGEN) * MOLMASS_HYDROGEN * KT_PER_G * SEC_PER_YR;
+				F_soln(:, ETHYLENE) = F_soln(:, ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
+				F_soln(:, BUTANE) = F_soln(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
+				F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
+	% 			F_steam = MR_S_i * P_ETHYLENE;
+				
+	
+	
+	
+	
+				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
+					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
+					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant'};
+				soln_table = table( V_soln, F_soln(:, HYDROGEN), ...
+							F_soln(:, METHANE), F_soln(:, ETHYLENE), ...
+							F_soln(:, PROPANE), F_soln(:, BUTANE), ...
+							F_soln(:, ETHANE), conversion,select_1, ...
+							select_2,q0,V_plant,q0_plant,  'VariableNames',col_names)
+	% 			soln_table.Properties.VariableNames = col_names;
+				soln_table
+	
+	
+	
+	
+				conserv_mass = sum(F_soln, 2);
+	
+				% Computer Selectivity vs conversion relationships 
+	
+				% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
+				% to calculate the true feed flow rates into the reactor 
+	
+			end 
 		end 
-	end 
-end
-
+	end
+end 
 
 
 
