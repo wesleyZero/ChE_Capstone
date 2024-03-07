@@ -26,7 +26,7 @@ global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
-global R k1 k2;
+global R k1_f k1_r k2 k3
 
 % USER NOTES____________________________________________________________________
 
@@ -462,11 +462,11 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				combusted_butane = combusted_fuel_flow_rates(BUTANE);
 
 	% 			% VALUE CREATED | Primary Products
-				disp("Value created")
-				value_ethylene(P_ethylene)
-				value_h2_chem(P_hydrogen)
-				value_propane(P_propane - combusted_propane)
-				value_butane(P_butane - combusted_butane)
+				% disp("Value created")
+				% value_ethylene(P_ethylene)
+				% value_h2_chem(P_hydrogen)
+				% value_propane(P_propane - combusted_propane)
+				% value_butane(P_butane - combusted_butane)
 				profit(i) = profit(i) + value_ethylene(P_ethylene);
 				profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
 
@@ -477,11 +477,11 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
 
 				% COSTS INCURRED
-				disp("costs")
-				tax_C02(combusted_fuel_flow_rates, F_natural_gas)
-				cost_steam(F_steam, COST_RATES_STEAM(STEAM_50PSIA, STEAM_COST_COL))
-				value_ethane(F_ethane)
-				cost_natural_gas_fuel(F_natural_gas)
+				% disp("costs")
+				% tax_C02(combusted_fuel_flow_rates, F_natural_gas)
+				% cost_steam(F_steam, COST_RATES_STEAM(STEAM_50PSIA, STEAM_COST_COL))
+				% value_ethane(F_ethane)
+				% cost_natural_gas_fuel(F_natural_gas)
 				profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
  				profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_50PSIA, STEAM_COST_COL));
 				profit(i) = profit(i) - value_ethane(F_ethane);
@@ -522,17 +522,22 @@ T_RANGE = linspace(T_MIN, T_MAX, NUM_T_POINTS);
 P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
 STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
 V_RANGE = linspace(V_MIN, V_MAX, NUM_V_POINTS);
-F_INTIAL_COND = [ 1, 1, 1, 1, 1];
 
+% H2 Methane Ethane Propane Butane Ethylene 
+F_INTIAL_COND = [ 0, 0, 1, 0, 0, 0];
 
+disp("Reactor Script ")
 for T_i = T_RANGE
 	for P_i = P_RANGE
 		for MR_S_i = STEAM_RANGE
-		
-			% Setup the PFR Design Equations 
-			
-			% [V_soln, F_soln] = ode45(@reactionODEs, V_RANGE, F_INTIAL_COND);
 
+			F_steam = MR_S_i * P_ETHYLENE;
+			% Setup the PFR Design Equations 
+			odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam)
+% 			[V_soln, F_soln] = ode45(@reactionODEs, V_RANGE, F_INTIAL_COND);
+			
+			[V, F] = ode45(odes, V_RANGE, F_INTIAL_COND) 
+			
 			
 
 			% Computer Selectivity vs conversion relationships 
@@ -547,7 +552,7 @@ end
 
 
 
-disp("The Script is done running ⌛️")
+disp("The Script is done running ️")
 % HELPER FUNCTIONS | PLOTTING______________________________________________
 
 function z = plot_contour(x, y, z, options)
@@ -772,8 +777,8 @@ end
 
 % FUNCTIONS | REACTOR ODE SYSTEM________________________________________________
 
-function dFdV = reactionODEs(V, F, T, P)
-	global R
+function dFdV = reactionODEs(V, F, T, P, F_steam)
+	global R k1_f k1_r k2 k3
 	% P = P * M3_PER_BAR;
 	
 	% Product flow rate indicies 
@@ -786,11 +791,11 @@ function dFdV = reactionODEs(V, F, T, P)
 	% Feed flow rate index
 	ETHANE = 6;
 
-	F_tot = sum(F);
+	F_tot = sum(F) + F_steam;
 
 	% Hydrogen = A
-	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R * T)) ) - ...
-			(k1_r(T) * ( F(ETHYLENE * F(HYDROGEN) * P^2) ) / (F_tot * R * T)^2);
+	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R * T) )   ) - ...
+			(k1_r(T) * ( F(ETHYLENE) * F(HYDROGEN) * P^2) ) / (F_tot * R * T)^2;
 	
 	% Methane = B
 	dFBdV = k2(T) * (F(ETHANE) * P)^2 / (F_tot * R * T)^2;
@@ -802,7 +807,7 @@ function dFdV = reactionODEs(V, F, T, P)
 
 	% Ethane = D
 	dFDdV = (-k1_f(T) * (F(ETHANE) * P / (F_tot * R * T))) + ...
-			(k1_r(T) * (F(ETHYLENE * F(HYDROGEN) * P^2)/(F_tot * R * T)^2)) - ...
+			(k1_r(T) * (F(ETHYLENE) * F(HYDROGEN) * P^2)/(F_tot * R * T)^2) - ...
 			(k2(T) * F(ETHANE)^2 * P^2 / (F_tot * R * T)^2) - ...
 			(k3(T) * F(ETHANE) * F(ETHYLENE) * P^2 / (F_tot * R * T)^2);
 	
@@ -812,7 +817,7 @@ function dFdV = reactionODEs(V, F, T, P)
 	% Butane = F
 	dFFdV = k3(T) * (F(ETHANE) * F(ETHYLENE) * P^2) / (F_tot * R * T)^2;
 
-	dFdV = [dFAdV, dFBdV, dFCdV, dFDdV, dFEdV, dFFdV];
+	dFdV = [dFAdV; dFBdV; dFCdV; dFDdV; dFEdV; dFFdV];
 	
 end
 
