@@ -26,7 +26,7 @@ global TAX_CO2_PER_MT;
 global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
-global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC
+global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 
 % USER NOTES____________________________________________________________________
 
@@ -136,6 +136,7 @@ BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
 
 % Time
 YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
+SEC_PER_YR = 3.154 * 10^7;			% [ s / yr ]
 
 % CONSTANTS | CHEMICAL_____________________________________________________
 
@@ -781,9 +782,9 @@ end
 
 function dFdV = reactionODEs(V, F, T, P, F_steam)
 	global R_2 k1_f k1_r k2 k3 C_TO_K MOLMASS_METHANE MOLMASS_ETHANE MOLMASS_ETHYLENE ... 
-		MOLMASS_PROPANE MOLMASS_HYDROGEN MOLMASS_BUTANE YR_PER_SEC G_PER_KT
+		MOLMASS_PROPANE MOLMASS_HYDROGEN MOLMASS_BUTANE YR_PER_SEC G_PER_KT SEC_PER_YR
 	% INPUT UNITS 
-	% V [ m^3 ]
+	% V [ ?? ]
 	% F [ kta ]
 	% T [ Celcius ]
 	% P [ bar ]
@@ -804,11 +805,13 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 
 	F_tot = sum(F) + F_steam;
 
-	F(ETHANE)
-	F(ETHANE)
 	% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
 	F(METHANE) = F(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
-	
+	F(HYDROGEN) = F(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
+	F(ETHANE) = F(ETHANE) * G_PER_KT * (1/MOLMASS_ETHANE) * YR_PER_SEC;
+	F(ETHYLENE) = F(ETHYLENE) * G_PER_KT * (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
+	F(PROPANE) = F(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
+
 	% Hydrogen = A
 	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R_2 * T) )   ) - ...
 			(k1_r(T) * ( F(ETHYLENE) * F(HYDROGEN) * P^2) ) / (F_tot * R_2 * T)^2;
