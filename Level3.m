@@ -1,5 +1,11 @@
-% WORKSPACE VARIABLES ARE NOT BEING CLEARED 
-clc; close all; clear;
+
+
+% Clear the console
+clc; 
+% Close all the windows
+% close all;
+% Clear Workspace Variables
+clear;
 
 global S1_MIN S1_MAX S1_POINTS;
 global S2_MIN S2_MAX S2_POINTS;
@@ -27,6 +33,7 @@ global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
+global PSA_TOGGLE ENTHALPY_HYDROGEN
 
 % USER NOTES____________________________________________________________________
 
@@ -35,27 +42,27 @@ global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 % Energy		GJ
 % Pressure 		Bar
 % Temperature 	Celcius
-% Moles			Gigamoles ???
-% Value			Millions of Dollars ($ MM)
+% Moles			Moles
+% Value			Dollars
 
 % [ __ ] THIS MEANS DIMENSIONLESS UNITS
 
 % DESIGN PARAMETERS & USER INPUTS_______________________________________________
 
-% Feed
+% Feed | 3D PLOT & COUNTOUR PLOT (S1 S2)
 STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
 
 % Product
 P_ETHYLENE_DES = 200;			% [	kta ]
 	% Note! This design parameter's units are changed prior to the matrix def 
 
-% Reactor Conditions
-TEMP_RXTR = 800;				% [ C ] 775 to 825 C ???
-PRESS_RXTR = 3;					% [ Bar ]
+% Reactor Conditions | 3D PLOT & CONTOUR PLOT (S1 S2)
+TEMP_RXTR = 800;				% [ C ] 
+PRESS_RXTR = 3;					% [ Bar ]  
 TEMP_ETHANE_FEED = 25;			% [ C ]
-CONVERSION = 0.8;				% [ __ ]
-USERINPUT_S1 = 0.4;				% [ __ ]
-USERINPUT_S2 = 0.2; 			% [ __ ]
+CONVERSION = 0.8;				% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S1 = 0.4;				% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S2 = 0.2; 			% [ __ ] % Level 2 & 3 Calculations 
 STEAM_CHOICE = 2;
 % 	STEAM_30PSIA = 1;
 % 	STEAM_50PSIA = 2;
@@ -64,36 +71,53 @@ STEAM_CHOICE = 2;
 % 	STEAM_500PSIA = 5;
 % 	STEAM_750PSIA = 6;
 	
+% Plotting | 3D PLOT & CONTOUR PLOT (S1 S2)
+NUM_POINTS = 10^4; 
 
-% Plotting : Tabs mean one input is dependent on another 
-NUM_POINTS = 10^4;
-
-% Reactor Script Parameters
-NUM_P_POINTS = 2;				% [ __ ]
-NUM_T_POINTS = 2; 				% [ __ ]
-NUM_STEAM_POINTS = 2;			% [ __ ]
-NUM_V_POINTS = 20;				% [ __ ]
+% Reactor Script Parameters | RXTR TABLE OUTPUT
 V_MIN = 0.1;					% [ L ]
-V_MAX = 10000;					 % [ L ]
+V_MAX = 10000;					% [ L ]
+NUM_V_POINTS = 20;				% [ __ ]
+
 P_MIN = 2;						% [ Bar ]
 P_MAX = 5;						% [ Bar ]
+NUM_P_POINTS = 2;				% [ __ ]
+
 T_MIN = 775;					% [ Celcius ]
 T_MAX = 825;					% [ Celcius ]
+NUM_T_POINTS = 2; 				% [ __ ]
+
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
+NUM_STEAM_POINTS = 2;			% [ __ ]
 
+% Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
-	T_OVERRIDE = 800;		%[C]
-	P_OVERRIDE = 3;			%[Bar]
+	T_OVERRIDE = 800;			%[C]
+	P_OVERRIDE = 3;				%[Bar]
+	STEAM_MR_OVERRIDE = 0.8;%	[__]
 
-
+% Output fuel costs 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
+
+% Output the level 2 and 3 calculations 
 OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
 	SANITY_CHECK_CALCULATIONS = true;
+
+% Plot the 3D and Contour plot's
 CALCULATE_ALL_SELECTIVITIES = true;
 	PLOT_ECON_3D = true;
 	PLOT_ECON_COUNTOUR = true;
+
+% Output the Reactor Design tables
 CALCULATE_REACTOR_FLOWS = true;
+
+% PSA Toggle switch
+PSA_TOGGLE = false;
+
+% Zeolite and waste stream
+% zeo 1.2 - 2.2 wt% absobtion = max of zeolite (g/g)
+
 %_______________________________________________________________________________
 % DON'T TOUCH ANYTHING BELOW THIS LINE
 %_______________________________________________________________________________
@@ -129,7 +153,6 @@ G_PER_KT = 10^9;		% [ g / kt ]
 KT_PER_G = 10^-9;		% [ kt / g ] 
 
 KG_PER_KT = 10^6;		% [ kg / MT ]
-
 
 MT_PER_G = 10^-6;		% [ MT / g ]
 
@@ -205,6 +228,9 @@ HEAT_FORMATION_BUTANE = -125.6;			% [ kJ / mol ] reference Temp = std
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
 % Enthalpy of combustion (std conditions)
+ENTHALPY_HYDROGEN = 286;
+	% Source : https://chem.libretexts.org/Courses/University_of_Kentucky/UK%3A_General_Chemistry/05%3A_Thermochemistry/5.3%3A_Enthalpy
+	% ?? Is this is a good source? 
 ENTHALPY_METHANE = 890;					% [ kJ / mol ]	
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1
 ENTHALPY_PROPANE = 2219.2;				% [ kJ / mol ]
@@ -342,16 +368,16 @@ k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T ))));
 % Economics | Post-Tax Value of different fuel sources 
 if (CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS)
 	disp(" [ $ / GJ ] ")
-	EFFECTIVE_VALUE_METHANE_FUEL = VALUE_HYDROGEN_FUEL + TAX_CO2_PER_GJ_METHANE
+	EFFECTIVE_VALUE_HYDROGEN_FUEL = VALUE_HYDROGEN_FUEL
+	EFFECTIVE_VALUE_METHANE_FUEL = VALUE_METHANE_FUEL + TAX_CO2_PER_GJ_METHANE
 	EFFECTIVE_VALUE_PROPANE_FUEL = VALUE_PROPANE_FUEL + TAX_CO2_PER_GJ_PROPANE
 	EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_BUTANE_FUEL + TAX_CO2_PER_GJ_BUTANE
 	EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS
 % 	EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
-		% Not using number 2 fuel bc its too expensive 
+		% ?? Not using number 2 fuel bc its too expensive 
 end
 
 if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
-	% xi = A(USERINPUT_S1, USERINPUT_S2) \ b;
 
 	% Calculate the flow rates of each species (kta)
 	P_hydrogen = P_HYDROGEN(USERINPUT_S1, USERINPUT_S2);
@@ -471,7 +497,8 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				F_natural_gas = natgas_combustion(heat_flux_remaining);
 
 				% Determine how much of the product streams were combusted to keep the reactor isothermal	
-				% Assume: no hydrogen is combusted
+
+				combusted_hydrogen = combusted_fuel_flow_rates(HYDROGEN);
 				combusted_methane = combusted_fuel_flow_rates(METHANE);
 				combusted_propane = combusted_fuel_flow_rates(PROPANE);
 				combusted_butane = combusted_fuel_flow_rates(BUTANE);
@@ -483,7 +510,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				% value_propane(P_propane - combusted_propane)
 				% value_butane(P_butane - combusted_butane)
 				profit(i) = profit(i) + value_ethylene(P_ethylene);
-				profit(i) = profit(i) + value_h2_chem(P_hydrogen); % Assume no H2 combusted
+				profit(i) = profit(i) + value_h2_chem(P_hydrogen - combusted_hydrogen);
 
 				% VALUE CREATED | Non-combusted fuels 
 				% profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
@@ -561,9 +588,10 @@ if (CALCULATE_REACTOR_FLOWS)
 				if T_P_OVERRIDE
 					T_i = T_OVERRIDE;
 					P_i = P_OVERRIDE;
+					MR_S_i = STEAM_MR_OVERRIDE;
 				end
 
-				fprintf("T = %f [C], P = %f [bar]", T_i, P_i)
+				fprintf("\n\nT = %f [C], P = %f [bar] MR = %f [__]\n", T_i, P_i, MR_S_i)
 
 				% Setup the PFR Design Equations 
 				
@@ -663,11 +691,19 @@ disp("The Script is done running ️")
 % HELPER FUNCTIONS | PLOTTING______________________________________________
 
 function z = plot_contour(x, y, z, options)
+	global PSA_TOGGLE
 	% Unpack options 
 	x_label = options{1};
 	y_label = options{2};
 	plt_title = options{3};
 	plt_saveName = options{4};
+	
+	if PSA_TOGGLE
+    	stringValue = 'true';
+	else
+    	stringValue = 'false';
+	end
+	plt_title = plt_title + sprintf(" PSA %s ", stringValue);
 
 	hold on 
 	figure
@@ -681,11 +717,20 @@ function z = plot_contour(x, y, z, options)
 end 
 
 function plot_3D(x, y, z, options)
-    % Unpack options 
+	global PSA_TOGGLE
+
+	% Unpack options 
     x_label = options{1};
     y_label = options{2};
     plt_title = options{3};
     plt_saveName = options{4};
+
+	if PSA_TOGGLE
+    	stringValue = 'true';
+	else
+    	stringValue = 'false';
+	end
+	plt_title = plt_title + sprintf(" PSA %s ", stringValue);
 
      % Create a new figure
     hold on; % Hold on to add multiple plot elements
@@ -738,7 +783,7 @@ function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, 
 	global HYDROGEN METHANE ETHYLENE PROPANE BUTANE;
 	global ENTHALPY_METHANE ENTHALPY_PROPANE ENTHALPY_BUTANE HEAT_CAPACITY_ETHANE;
 	global MT_PER_KT G_PER_KT GJ_PER_KJ KJ_PER_GJ MOLMASS_METHANE KT_PER_G MOLMASS_BUTANE ...
-			MOLMASS_PROPANE;
+			MOLMASS_PROPANE PSA_TOGGLE ENTHALPY_HYDROGEN MOLMASS_HYDROGEN
 
 	% Note! : Longest Chain Hydrocarbons are cheapest to combust
 
@@ -747,6 +792,24 @@ function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, 
 
 	% LOGIC : Goes through each heat source in order, returns if the heat flux supplied is sufficient.
 	heatflux_left = heat_flux; 
+
+	% (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
+	Q_combust_all_hydrogen = flowrates(HYDROGEN) * G_PER_KT * ENTHALPY_HYDROGEN * GJ_PER_KJ;
+
+	if (~PSA_TOGGLE)
+		% Hydrogen
+		if (heatflux_left > Q_combust_all_hydrogen)
+			combusted_fuel_flowrates(HYDROGEN) = flowrates(HYDROGEN);
+			heatflux_left = heatflux_left - Q_combust_all_hydrogen;
+		else
+			% (kt / yr)                       = ((GJ)                 ) * (KJ / GJ) *
+			combusted_fuel_flowrates(HYDROGEN) = (heatflux_left) * KJ_PER_GJ * ...
+				... % (mol / KJ)        * (g / mol)       * (kt / g)
+				( 1 / ENTHALPY_HYDROGEN) * MOLMASS_HYDROGEN * KT_PER_G;
+			heatflux_left = 0;
+			return
+		end
+	end
 
 	% (GJ / yr) 		  = (kt / yr)          * (g / kt) * (kJ / g)		* (GJ / kJ)
 	Q_combust_all_methane = flowrates(METHANE) * G_PER_KT * ENTHALPY_METHANE * GJ_PER_KJ;
