@@ -559,6 +559,17 @@ for T_i = T_RANGE
 			odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
 			[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND); 
 			
+
+			
+			% Do the conversion and S_i calculations while in moles
+			conversion = (F_INTIAL_COND(ETHANE) - F_soln(:, ETHANE)) / F_INTIAL_COND(ETHANE);
+			len = length(F_soln(:, 1));
+			F_ethane_initial = ones(len, 1) * F_INTIAL_COND(ETHANE);
+			select_1 = (F_soln(:, ETHYLENE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
+			select_2 = (F_soln(:, PROPANE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
+% 			disp("This is the solution set ")
+			
+			% convert back to kta
 			% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
 			F_soln(:, METHANE) = F_soln(: ,METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
 			F_soln(:, ETHANE) = F_soln(:, ETHANE) * MOLMASS_ETHANE * KT_PER_G * SEC_PER_YR;	
@@ -566,21 +577,7 @@ for T_i = T_RANGE
 			F_soln(:, ETHYLENE) = F_soln(:, ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
 			F_soln(:, BUTANE) = F_soln(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
 			F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
-			
 			F_steam = MR_S_i * P_ETHYLENE;
-			
-
-			conversion = (F_INTIAL_COND(ETHANE) - F_soln(:, ETHANE)) / F_INTIAL_COND(ETHANE);
-
-			len = length(F_soln(:, 1));
-			F_ethane_initial = ones(len, 1) * F_INTIAL_COND(ETHANE);
-			select_1 = (F_soln(:, ETHYLENE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
-
-			select_2 = (F_soln(:, METHANE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
-			
-			disp("This is the solution set ")
-			
-			
 			
 			col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', 'Ethylene', 'Butane','Propane', 'Ethane', 'conversion', 'S1', 'S2'};
 % 			col_names = {"Vol_L", "H2", "CH4", "C2H4", "C3H8", "C4H10", "C2H6"};
