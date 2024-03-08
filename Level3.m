@@ -639,7 +639,8 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_ethane;
 				F_soln(ETHANE);
 				V_plant = V_soln(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
-	
+				
+				cost_rxtr  = cost_reactor(V_plant(20,1))
 	
 				q0_plant = q0(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
 	
@@ -1006,7 +1007,7 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 	
 end
 
-function cost = cost_reactor(V_plant)
+function cost = cost_reactor(V_plant_input)
 	global FT_PER_METER STEAM_TO_FEED_RATIO
 	FT_PER_METER = 3.28084;
 
@@ -1020,19 +1021,23 @@ function cost = cost_reactor(V_plant)
 	cost = 0;
 
 	% Find the Cost of the max-sized reactors
-	num_of_additional_reactors = int(V_plant / V_plant_max);	
-	if num_of_additional_reactors
-		V_plant = V_plant_max;
-		factor_1 = 3.25;
-		factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
-		factor_3 = (101.9 * D * FT_PER_METER)^1.066;
-		factor_4 = (1800 / 280);
-		cost_max_reactor = factor_1 * factor_2 * factor_3 * factor_4; 
-		cost = cost + num_of_additional_reactors * cost_max_reactor;
-	end
+	num_of_additional_reactors = int64(V_plant_input / V_plant_max);	
+	num_of_additional_reactors = double(num_of_additional_reactors);
+	
+	V_plant = V_plant_max;
+	factor_1 = 3.25;
+	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
+	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
+	factor_4 = (1800 / 280);
+	cost_max_reactor = factor_1 * factor_2 * factor_3 * factor_4; 
+	cost = cost + num_of_additional_reactors * cost_max_reactor;
+	
 
 	% Find the cost of the non-max size reactor 
-	V_plant = V_plant - num_of_additional_reactors * cost_max_reactor;
+	V_plant = V_plant_input - V_plant_max * num_of_additional_reactors;
+	if V_plant < 0
+		V_plant = 0;
+	end
 	factor_1 = 3.25;
 	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
 	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
