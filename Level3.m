@@ -640,7 +640,10 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_soln(ETHANE);
 				V_plant = V_soln(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
 				
-				cost_rxtr  = cost_reactor(V_plant(20,1))
+				cost_rxt_vec = zeros(size(V_plant));
+				for row = 1:length(V_plant)	
+					cost_rxt_vec(row) = cost_reactor(V_plant(row,1));
+				end
 	
 				q0_plant = q0(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
 	
@@ -665,12 +668,12 @@ if (CALCULATE_REACTOR_FLOWS)
 	
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
-					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant'};
+					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor'};
 				soln_table = table( V_soln, F_soln(:, HYDROGEN), ...
 							F_soln(:, METHANE), F_soln(:, ETHYLENE), ...
 							F_soln(:, PROPANE), F_soln(:, BUTANE), ...
 							F_soln(:, ETHANE), conversion,select_1, ...
-							select_2,q0,V_plant,q0_plant,  'VariableNames',col_names)
+							select_2,q0,V_plant,q0_plant,cost_rxt_vec,  'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
 	
 	
