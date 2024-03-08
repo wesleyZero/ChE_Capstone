@@ -3,7 +3,7 @@
 % Clear the console
 clc; 
 % Close all the windows
-% close all;
+close all;
 % Clear Workspace Variables
 clear;
 
@@ -117,6 +117,8 @@ PSA_TOGGLE = false;
 
 % Zeolite and waste stream
 % zeo 1.2 - 2.2 wt% absobtion = max of zeolite (g/g)
+
+% NOTE SEARCH FOR "??" TO SEE MY ASSUMPTIONS AND OTHER NOTES IN THE CODE
 
 %_______________________________________________________________________________
 % DON'T TOUCH ANYTHING BELOW THIS LINE
@@ -528,6 +530,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
  				profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
 				profit(i) = profit(i) - value_ethane(F_ethane);
 				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
+% 				profit(i) = profit(i) - cost_reactor(P_flowrates, P, T, S1, S2);	
 	% 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
 
 			else
@@ -1001,6 +1004,42 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 
 	dFdV = [dFAdV; dFBdV; dFCdV; dFEdV; dFFdV; dFDdV];
 	
+end
+
+function cost = cost_reactor(V_plant)
+	global FT_PER_METER STEAM_TO_FEED_RATIO
+	FT_PER_METER = 3.28084;
+
+	pi = 3.14159;
+	D = 0.05;								% [m]
+	V_plant_max = pi * (0.025)^2 * 20; 		%[m^3]
+	
+	% Reactors have a max length, so calculate the number of full size reactors
+	% and add it to the cost of the one non-max length reactor
+
+	cost = 0;
+
+	% Find the Cost of the max-sized reactors
+	num_of_additional_reactors = int(V_plant / V_plant_max);	
+	if num_of_additional_reactors
+		V_plant = V_plant_max;
+		factor_1 = 3.25;
+		factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
+		factor_3 = (101.9 * D * FT_PER_METER)^1.066;
+		factor_4 = (1800 / 280);
+		cost_max_reactor = factor_1 * factor_2 * factor_3 * factor_4; 
+		cost = cost + num_of_additional_reactors * cost_max_reactor;
+	end
+
+	% Find the cost of the non-max size reactor 
+	V_plant = V_plant - num_of_additional_reactors * cost_max_reactor;
+	factor_1 = 3.25;
+	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
+	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
+	factor_4 = (1800 / 280);
+	cost = cost + factor_1 * factor_2 * factor_3 * factor_4;
+
+
 end
 
 
