@@ -108,7 +108,7 @@ STEAM_MAX = 1.0;				% [ __ ]
 NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
-T_P_OVERRIDE = false;		
+T_P_OVERRIDE = true;		
 	T_OVERRIDE = 825;			%[C]
 	P_OVERRIDE = 2;				%[Bar]
 	STEAM_MR_OVERRIDE = 0.6;%	[__]
@@ -714,6 +714,9 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_soln_ODE(:, BUTANE) = F_soln_ODE(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
 				F_soln_ODE(:, PROPANE) = F_soln_ODE(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
 
+								% Check if you're conserving mass
+				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
+
 				% ECONOMIC CALCULATIONS____________________________________________________________
 				profit = zeros(length(F_soln_ODE(:,1)), 1);
 				for i = 1:length(F_soln_ODE(:, 1))
@@ -723,7 +726,7 @@ if (CALCULATE_REACTOR_FLOWS)
 						disp("")
 					end 
 					% P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
-					P_flowrates = F_soln_ODE(i , HYDROGEN:ETHANE);
+					P_flowrates = F_soln_ODE(i , HYDROGEN:BUTANE);
 					
 					P_hydrogen = P_flowrates(HYDROGEN);
 					P_methane = P_flowrates(METHANE);
@@ -732,7 +735,8 @@ if (CALCULATE_REACTOR_FLOWS)
 					P_butane = P_flowrates(BUTANE);
 
 % 					F_ethane = P_flowrates(ETHANE);
-					F_ethane = sum(P_flowrates,2) - P_flowrates(ETHANE);
+					F_ethane = sum(P_flowrates(:)) + F_soln_ODE(i ,ETHANE);
+					% ?? WHAT IS THE FLOWRATE INTO THE PLANT ??
 
 					if (~flowrates_valid(P_flowrates))
 						disp("WARNING SOME FLOWATES MAY BE INVALID")
@@ -796,25 +800,24 @@ if (CALCULATE_REACTOR_FLOWS)
 						value_ethane(F_ethane)
 						cost_natural_gas_fuel(F_natural_gas)
 					end 
-
+					% Sanity checking
+					conserv_mass(i, 1) = F_ethane - sum(P_flowrates);
 				end
 
 				% PLOTTING_________________________________________________________________________
 				
-				% Check if you're conserving mass
-				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
-				P_flowrates = sum(F_soln_ODE(:, HYDROGEN:BUTANE), 2);
-				F_flowrates = F_soln_ODE( : , ETHANE);
-				conserv_mass(:, 1) = F_flowrates - P_flowrates;
+
+				
+
 
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
-					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit'};
+					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit', 'conserv mass'};
 				soln_table = table( V_soln_ODE, F_soln_ODE(:, HYDROGEN), ...
 							F_soln_ODE(:, METHANE), F_soln_ODE(:, ETHYLENE), ...
 							F_soln_ODE(:, PROPANE), F_soln_ODE(:, BUTANE), ...
 							F_soln_ODE(:, ETHANE), conversion,select_1, ...
-							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, 'VariableNames',col_names)
+							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
 	
 	
@@ -1156,7 +1159,8 @@ end
 function cost = cost_reactor(V_plant_input)
 	global FT_PER_METER STEAM_TO_FEED_RATIO
 	FT_PER_METER = 3.28084;
-
+	% ??? WHAT ARE THE UNITS OF TIME
+	%
 	pi = 3.14159;
 	D = 0.05;								% [m]
 	V_plant_max = pi * (0.025)^2 * 20; 		%[m^3]
