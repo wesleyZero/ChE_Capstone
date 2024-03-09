@@ -70,6 +70,16 @@ STEAM_CHOICE = 2;
 % 	STEAM_200PSIA = 4;
 % 	STEAM_500PSIA = 5;
 % 	STEAM_750PSIA = 6;
+		% % Steam 
+		% % [ psia Temp[C] $/MT  kJ/kg ]
+		% COST_RATES_STEAM = [
+		%     30  121		2.38  2213;
+		%     50  138		3.17  2159;
+		%     100 165		4.25  2067;
+		%     200 194		5.32  1960;
+		%     500 242		6.74  1755;
+		%     750 266		7.37  1634
+		% ];
 
 YEARS_IN_OPERATION = 10 ;
 
@@ -117,10 +127,18 @@ CALCULATE_REACTOR_FLOWS = true;
 % PSA Toggle switch
 PSA_TOGGLE = true;
 
+% Do you want to add the work of the compressor to the heat flux of heating 
+% the steam from the temp it's avilable at, to the temp of the reactor?
+ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX = true;
+
 % Zeolite and waste stream
 % zeo 1.2 - 2.2 wt% absobtion = max of zeolite (g/g)
 
 % NOTE SEARCH FOR "??" TO SEE MY ASSUMPTIONS AND OTHER NOTES IN THE CODE
+ 
+% WORK OF THE COMPRESSOR HAS NOT BEEN IMPLEMENTED
+% THE STEAM TO FEED RATIO LIKELY HAS UNIT ISSUES OF (g/g) vs (mol/mol)
+% 		I think I implemented both
 
 %_______________________________________________________________________________
 % DON'T TOUCH ANYTHING BELOW THIS LINE
@@ -271,6 +289,7 @@ COST_RATES_STEAM = [
     500 242		6.74  1755;
     750 266		7.37  1634
 ];
+
 % Accessing the Steam P,T Data 
 	STEAM_PRESSURE_COL = 2;
 	STEAM_TEMP_COL = 1;
@@ -731,14 +750,6 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				end
 
-	
-	
-	% 			disp("This is the solution set ")
-				
-
-	
-	
-	
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
 					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit'};
@@ -957,6 +968,9 @@ function heat = heat_steam(F_steam, STEAM_CHOICE, P_reactor, T_reactor)
 		T_steam = T_adibatic;
 	elseif (P_steam < P_reactor) % Compression
 		W = compressor_work(T_reactor, P_steam, P_reactor);
+		if ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX
+			heat = heat + W;
+		end
 		% I should add this to the heat flux probably ?? 
 	end
 	
