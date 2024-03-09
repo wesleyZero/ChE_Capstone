@@ -70,7 +70,9 @@ STEAM_CHOICE = 2;
 % 	STEAM_200PSIA = 4;
 % 	STEAM_500PSIA = 5;
 % 	STEAM_750PSIA = 6;
-	
+
+YEARS_IN_OPERATION = 10 ;
+
 % Plotting | 3D PLOT & CONTOUR PLOT (S1 S2)
 NUM_POINTS = 10^4; 
 
@@ -93,7 +95,7 @@ NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
-	T_OVERRIDE = 800;			%[C]
+	T_OVERRIDE = 825;			%[C]
 	P_OVERRIDE = 3;				%[Bar]
 	STEAM_MR_OVERRIDE = 0.8;%	[__]
 
@@ -174,6 +176,9 @@ BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
 % Time
 YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
 SEC_PER_YR = 3.154 * 10^7;			% [ s / yr ]
+
+% Volums 
+M3_PER_L = 0.001;
 
 % CONSTANTS | CHEMICAL_____________________________________________________
 
@@ -506,11 +511,6 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				combusted_butane = combusted_fuel_flow_rates(BUTANE);
 
 	% 			% VALUE CREATED | Primary Products
-				% disp("Value created")
-				% value_ethylene(P_ethylene)
-				% value_h2_chem(P_hydrogen)
-				% value_propane(P_propane - combusted_propane)
-				% value_butane(P_butane - combusted_butane)
 				profit(i) = profit(i) + value_ethylene(P_ethylene);
 				profit(i) = profit(i) + value_h2_chem(P_hydrogen - combusted_hydrogen);
 
@@ -521,11 +521,6 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
 
 				% COSTS INCURRED
-				% disp("costs")
-				% tax_C02(combusted_fuel_flow_rates, F_natural_gas)
-				% cost_steam(F_steam, COST_RATES_STEAM(STEAM_50PSIA, STEAM_COST_COL))
-				% value_ethane(F_ethane)
-				% cost_natural_gas_fuel(F_natural_gas)
 				profit(i) = profit(i) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
  				profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
 				profit(i) = profit(i) - value_ethane(F_ethane);
@@ -640,18 +635,17 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_soln(ETHANE);
 				V_plant = V_soln(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
 				
+				%cost of the reactor
+% 				M3_PER_L = 0.001;
 				cost_rxt_vec = zeros(size(V_plant));
 				for row = 1:length(V_plant)	
-					cost_rxt_vec(row) = cost_reactor(V_plant(row,1));
+					cost_rxt_vec(row) = cost_reactor(V_plant(row,1) * M3_PER_L);
+					cost_rxt_vec(row) = cost_rxt_vec(row) / YEARS_IN_OPERATION;
 				end
-	
-				q0_plant = q0(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
-	
-	
-	
-	
-	% 			disp("This is the solution set ")
 				
+				%flow of the plant
+				q0_plant = q0(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
+
 				% convert back to kta
 				% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
 				F_soln(:, METHANE) = F_soln(: ,METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
@@ -663,17 +657,82 @@ if (CALCULATE_REACTOR_FLOWS)
 	% 			F_steam = MR_S_i * P_ETHYLENE;
 				
 	
+
+				profit = zeros(length(F_soln(:,1)), 1);
+				for i = 1:length(F_soln(:, 1))
+
+					% P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
+					Flowrates = F_soln(i,  :);
+					P_flowrates = Flowrates(HYDROGEN:ETHANE);
+					
+					P_hydrogen = P_flowrates(HYDROGEN);
+					P_methane = P_flowrates(METHANE);
+					P_ethylene = P_flowrates(ETHYLENE);
+					P_propane = P_flowrates(PROPANE);
+					P_butane = P_flowrates(BUTANE);
+					F_ethane = P_flowrates(ETHANE);
+
+					if (~flowrates_valid(P_flowrates))
+						disp("WARNING SOME FLOWATES MAY BE INVALID")
+					end
+
+					% Calculate the heat flux needed to keep reactor isothermal 
+					heat_flux = 0;
+					xi = get_xi(P_flowrates);
+					F_steam = STEAM_TO_FEED_RATIO * F_ethane;
+					heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
+					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
+					heat_flux = heat_flux + heat_rxn(xi);
+
+		% 			% Use the heat flux to calculate the fuel cost	
+					[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
+
+					% Calculate how much natural gas you needed to combust
+					F_natural_gas = natgas_combustion(heat_flux_remaining);
+
+					% Determine how much of the product streams were combusted to keep the reactor isothermal	
+
+					combusted_hydrogen = combusted_fuel_flow_rates(HYDROGEN);
+					combusted_methane = combusted_fuel_flow_rates(METHANE);
+					combusted_propane = combusted_fuel_flow_rates(PROPANE);
+					combusted_butane = combusted_fuel_flow_rates(BUTANE);
+
+		% 			% VALUE CREATED | Primary Products
+					profit(i, 1) = profit(i, 1) + value_ethylene(P_ethylene);
+					profit(i, 1) = profit(i, 1) + value_h2_chem(P_hydrogen - combusted_hydrogen);
+					
+					% VALUE CREATED | Non-combusted fuels 
+					% The commented line can be removed or modified as per the context.
+					% profit(i, 1) = profit(i, 1) + value_methane(P_methane - combusted_methane);
+					
+					profit(i, 1) = profit(i, 1) + value_propane(P_propane - combusted_propane);
+					profit(i, 1) = profit(i, 1) + value_butane(P_butane - combusted_butane);  
+					
+					% COSTS INCURRED
+					profit(i, 1) = profit(i, 1) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
+					profit(i, 1) = profit(i, 1) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
+					profit(i, 1) = profit(i, 1) - value_ethane(F_ethane);
+					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
+
+
+				end
+
+	
+	
+	% 			disp("This is the solution set ")
+				
+
 	
 	
 	
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
-					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor'};
+					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit'};
 				soln_table = table( V_soln, F_soln(:, HYDROGEN), ...
 							F_soln(:, METHANE), F_soln(:, ETHYLENE), ...
 							F_soln(:, PROPANE), F_soln(:, BUTANE), ...
 							F_soln(:, ETHANE), conversion,select_1, ...
-							select_2,q0,V_plant,q0_plant,cost_rxt_vec,  'VariableNames',col_names)
+							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, 'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
 	
 	
