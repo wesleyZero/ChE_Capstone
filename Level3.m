@@ -3,7 +3,7 @@
 % Clear the console
 clc; 
 % Close all the windows
-%close all;
+close all;
 % Clear Workspace Variables
 clear;
 
