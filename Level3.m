@@ -92,7 +92,7 @@ NUM_POINTS = 10^4;
 
 % Reactor Script Parameters | RXTR TABLE OUTPUT
 V_MIN = 0.1;					% [ L ]
-V_MAX = 10^5;					% [ L ]
+V_MAX = 10^4;					% [ L ]
 NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
@@ -108,7 +108,7 @@ STEAM_MAX = 1.0;				% [ __ ]
 NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
-T_P_OVERRIDE = true;		
+T_P_OVERRIDE = false;		
 	T_OVERRIDE = 825;			%[C]
 	P_OVERRIDE = 2;				%[Bar]
 	STEAM_MR_OVERRIDE = 0.6;%	[__]
@@ -514,7 +514,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				butane_flowrates(i) = P_BUTANE(s1, s2);
 				ethane_flowrates(i) = F_ETHANE(s1, s2);
 				
-
+				xi = [];
 				% Calculate the heat flux needed to keep reactor isothermal 
 				heat_flux = 0;
 				xi = get_xi(P_flowrates);
@@ -717,7 +717,11 @@ if (CALCULATE_REACTOR_FLOWS)
 				% ECONOMIC CALCULATIONS____________________________________________________________
 				profit = zeros(length(F_soln_ODE(:,1)), 1);
 				for i = 1:length(F_soln_ODE(:, 1))
-
+					
+					% DEBUGGING
+					if i > 500
+						disp("")
+					end 
 					% P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
 					P_flowrates = F_soln_ODE(i , HYDROGEN:ETHANE);
 					
@@ -726,7 +730,9 @@ if (CALCULATE_REACTOR_FLOWS)
 					P_ethylene = P_flowrates(ETHYLENE);
 					P_propane = P_flowrates(PROPANE);
 					P_butane = P_flowrates(BUTANE);
-					F_ethane = P_flowrates(ETHANE);
+
+% 					F_ethane = P_flowrates(ETHANE);
+					F_ethane = sum(P_flowrates,2) - P_flowrates(ETHANE);
 
 					if (~flowrates_valid(P_flowrates))
 						disp("WARNING SOME FLOWATES MAY BE INVALID")
@@ -770,10 +776,36 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - value_ethane(F_ethane);
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 
+					if profit(i, 1) > 2 * 10^8
+						fprintf("Profit = %f \n", profit(i, 1))
+						% VALUE CREATED | Primary Products
+						disp("value")
+						value_ethylene(P_ethylene)
+						value_h2_chem(P_hydrogen - combusted_hydrogen)
+						
+						% VALUE CREATED | Non-combusted fuels 
+						% The commented line can be removed or modified as per the context.
+						% profit(i, 1) = profit(i, 1) + value_methane(P_methane - combusted_methane);
+						
+						value_propane(P_propane - combusted_propane)
+						value_butane(P_butane - combusted_butane) 
+						disp("costs")
+						% COSTS INCURRED
+						tax_C02(combusted_fuel_flow_rates, F_natural_gas)
+						cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL))
+						value_ethane(F_ethane)
+						cost_natural_gas_fuel(F_natural_gas)
+					end 
 
 				end
 
 				% PLOTTING_________________________________________________________________________
+				
+				% Check if you're conserving mass
+				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
+				P_flowrates = sum(F_soln_ODE(:, HYDROGEN:BUTANE), 2);
+				F_flowrates = F_soln_ODE( : , ETHANE);
+				conserv_mass(:, 1) = F_flowrates - P_flowrates;
 
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
@@ -788,8 +820,7 @@ if (CALCULATE_REACTOR_FLOWS)
 	
 	
 	
-				% Check if you're conserving mass
-				conserv_mass = sum(F_soln_ODE, 2);
+				
 	
 				% Computer Selectivity vs conversion relationships 
 	
