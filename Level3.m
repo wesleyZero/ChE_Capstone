@@ -660,7 +660,17 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
 	% 			F_steam = MR_S_i * P_ETHYLENE;
 				
-	
+				% Scaling all of the mass flowrates to the size of the plant
+				for i = 1:length(F_soln(:, 1))
+					F_soln(i, METHANE) = F_soln(i, METHANE) * (V_plant(i,1) / V_soln(i, 1));
+					F_soln(i, HYDROGEN) = F_soln(i, HYDROGEN) * (V_plant(i, 1) / V_soln(i, 1));
+					F_soln(i, ETHANE) = F_soln(i, ETHANE) * (V_plant(i, 1) / V_soln(i, 1));
+					F_soln(i, ETHYLENE) = F_soln(i, ETHYLENE) * (V_plant(i, 1) / V_soln(i, 1));
+					F_soln(i, BUTANE) = F_soln(i, BUTANE) * (V_plant(i, 1) / V_soln(i, 1));
+					F_soln(i, PROPANE) = F_soln(i, PROPANE) * (V_plant(i, 1) / V_soln(i, 1));
+				end
+
+				
 
 				profit = zeros(length(F_soln(:,1)), 1);
 				for i = 1:length(F_soln(:, 1))
