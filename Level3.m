@@ -621,10 +621,11 @@ if (CALCULATE_REACTOR_FLOWS)
 	
 				
 				F_ethane = [];
+				P_ethylene = [];
 				for row = 1:length(select_1)
 	% 				P_hydrogen(row, 1) = P_HYDROGEN(select_1(row), select_2(row)) .* G_PER_KT .* MOLMASS_HYDROGEN
 	% 				P_methane(row, 1) = P_METHANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_METHANE;
-	% % 				P_ethylene(row, 1) = P_ETHYLENE(select_1(row), select_2(row));
+					P_ethylene(row, 1) = P_ETHYLENE .* G_PER_KT .* (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
 	% 				P_propane(row, 1) = P_PROPANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_PROPANE;
 	% 				P_butane(row, 1) = P_BUTANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_BUTANE;
 					F_ethane(row, 1) = F_ETHANE(select_1(row), select_2(row)) .* G_PER_KT .* (1/MOLMASS_ETHANE) * YR_PER_SEC;
@@ -635,8 +636,9 @@ if (CALCULATE_REACTOR_FLOWS)
 	% 			total_molFlow_plant = sum(P_flowrates_plant, 2) + F_steam + (P_ETHYLENE);
 				F_ethane;
 				F_soln(ETHANE);
-				V_plant = V_soln(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
-				
+				% V_plant = V_soln(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
+				V_plant = V_soln(:, 1) .* (P_ethylene(:, 1) ./ F_soln(:, ETHYLENE));
+
 				%cost of the reactor
 % 				M3_PER_L = 0.001;
 				cost_rxt_vec = zeros(size(V_plant));
