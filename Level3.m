@@ -50,21 +50,24 @@ global PSA_TOGGLE ENTHALPY_HYDROGEN
 % DESIGN PARAMETERS & USER INPUTS_______________________________________________
 
 % Feed | 3D PLOT & COUNTOUR PLOT (S1 S2)
-STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
+
 
 % Product
 P_ETHYLENE_DES = 200;			% [	kta ]
 	% Note! This design parameter's units are changed prior to the matrix def 
 
 % Reactor Conditions | 3D PLOT & CONTOUR PLOT (S1 S2) && THE LVL3 CALCS
-TEMP_RXTR = 800;				% [ C ] 
+STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
+TEMP_RXTR = 825;				% [ C ] 
 PRESS_RXTR = 3;					% [ Bar ]  
 TEMP_ETHANE_FEED = 25;			% [ C ]
-CONVERSION = 0.65976;				% [ __ ] % Level 2 & 3 Calculations 
-USERINPUT_S1 = 0.73531 ;				% [ __ ] % Level 2 & 3 Calculations 
-USERINPUT_S2 = 0.00014985; 			% [ __ ] % Level 2 & 3 Calculations 
+CONVERSION = 0.30266;				% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S1 = 0.94881 ;				% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S2 = 0.00010714; 			% [ __ ] % Level 2 & 3 Calculations 
 
-STEAM_CHOICE = 2;
+% 520.56       0.30266    0.94881    0.00010714
+
+STEAM_CHOICE = 1;
 % 	STEAM_30PSIA = 1;
 % 	STEAM_50PSIA = 2;
 % 	STEAM_100PSIA = 3;
@@ -106,9 +109,9 @@ NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
-	T_OVERRIDE = 800;			%[C]
-	P_OVERRIDE = 3;				%[Bar]
-	STEAM_MR_OVERRIDE = 0.8;%	[__]
+	T_OVERRIDE = 825;			%[C]
+	P_OVERRIDE = 2;				%[Bar]
+	STEAM_MR_OVERRIDE = 0.6;%	[__]
 
 % Output fuel costs 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
