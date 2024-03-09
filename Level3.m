@@ -602,7 +602,6 @@ if (CALCULATE_REACTOR_FLOWS)
 		for P_i = P_RANGE
 			for MR_S_i = STEAM_RANGE
 	
-
 				% override the T_i and P_i with user input 
 				if T_P_OVERRIDE
 					T_i = T_OVERRIDE;
@@ -614,30 +613,40 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				% Setup the PFR Design Equations 
 				
-				% (mol / s) = (kt / yr) * (g / kt) * ( mol / g )        * ( yr / s)
+				% CONVERT THE INITIAL CONDITIONS TO MOLAR FLOW RATES (MOL / SEC)
+				% (mol / s) =			(kt / yr) *               (g / kt) *   ( mol / g )        * ( yr / s)
 				F_INTIAL_COND(METHANE) = F_INTIAL_COND(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
 				F_INTIAL_COND(HYDROGEN) = F_INTIAL_COND(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
 				F_INTIAL_COND(ETHANE) = F_INTIAL_COND(ETHANE) * G_PER_KT * (1/MOLMASS_ETHANE) * YR_PER_SEC;
 				F_INTIAL_COND(ETHYLENE) = F_INTIAL_COND(ETHYLENE) * G_PER_KT * (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
 				F_INTIAL_COND(PROPANE) = F_INTIAL_COND(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
-	% 			F_steam = F_steam * G_PER_KT * (1/MOLMASS_WATER) * YR_PER_SEC;
-	
+				
+				% Calculate the molar flow rate of the steam
+				% mol/s = __    * mol / s
 				F_steam = MR_S_i * F_INTIAL_COND(ETHANE);
-	
+				
+				% Solve the system ODE's 
+				%	(L, mol / s)           (L, mol/s, Celcius, Bar, mol/s)
 				odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
 				[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND); 
-				
 	
-				
-				% Do the conversion and S_i calculations while in moles
+				% Calculate the conversion
 				conversion = (F_INTIAL_COND(ETHANE) - F_soln(:, ETHANE)) / F_INTIAL_COND(ETHANE);
+
+				% put handles length of the solution and the initial ethane flow
 				len = length(F_soln(:, 1));
 				F_ethane_initial = ones(len, 1) * F_INTIAL_COND(ETHANE);
+
+				% Calculate the Selectivities, for each row (aka V_rxtr) 
 				select_1 = (F_soln(:, ETHYLENE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
 				select_2 = (F_soln(:, PROPANE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
-				sum(F_soln, 2);
-				q0 = (R_2  * (T_i + C_TO_K) / P_i) .* (sum(F_soln, 2) + F_steam);
-	
+				
+				% Calculate the inlet volumetric flow rate 
+				% units = L / s ???
+				sum_molar_flowrates_reactor	= sum(F_soln(HYDROGEN:BUTANE)) + F_INTIAL_COND(ETHANE) + F_steam;
+				% F_out_sum = sum(F_soln, 2);
+				% q0 = (R_2  * (T_i + C_TO_K) / P_i) .* (sum(F_soln, 2) + F_steam);
+				q0 = (R_2  * (T_i + C_TO_K) / P_i) .* sum_molar_flowrates_reactor;
 				
 				F_ethane = [];
 				P_ethylene = [];
