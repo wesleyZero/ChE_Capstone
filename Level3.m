@@ -47,26 +47,26 @@ global PSA_TOGGLE ENTHALPY_HYDROGEN
 
 % [ __ ] THIS MEANS DIMENSIONLESS UNITS
 
-% DESIGN PARAMETERS & USER INPUTS_______________________________________________
-
-% Feed | 3D PLOT & COUNTOUR PLOT (S1 S2)
-
+% USER INPUTS | DESIGN PARAMETERS_______________________________________________
 
 % Product
 P_ETHYLENE_DES = 200;			% [	kta ]
 	% Note! This design parameter's units are changed prior to the matrix def 
 
+YEARS_IN_OPERATION = 10 ;
+
+% USER INPUTS | GLOBAL CONSTANTS___________________________________________
+
+% USER INPUTS | 3D PLOT, CONTOUR, LVL 2 & 3 CALCS_________________________
+
 % Reactor Conditions | 3D PLOT & CONTOUR PLOT (S1 S2) && THE LVL3 CALCS
-STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
+STEAM_TO_FEED_RATIO_MOLS = 0.6;		% [ __ ] 0.6 to 1.0
 TEMP_RXTR = 825;				% [ C ] 
-PRESS_RXTR = 3;					% [ Bar ]  
+PRESS_RXTR = 2;					% [ Bar ]  
 TEMP_ETHANE_FEED = 25;			% [ C ]
-CONVERSION = 0.30266;				% [ __ ] % Level 2 & 3 Calculations 
-USERINPUT_S1 = 0.94881 ;				% [ __ ] % Level 2 & 3 Calculations 
-USERINPUT_S2 = 0.00010714; 			% [ __ ] % Level 2 & 3 Calculations 
-
-% 520.56       0.30266    0.94881    0.00010714
-
+CONVERSION =  0.17053;			% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S1 = 0.96971 ;		% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S2 = 0.00011843; 		% [ __ ] % Level 2 & 3 Calculations 
 STEAM_CHOICE = 1;
 % 	STEAM_30PSIA = 1;
 % 	STEAM_50PSIA = 2;
@@ -85,14 +85,14 @@ STEAM_CHOICE = 1;
 		%     750 266		7.37  1634
 		% ];
 
-YEARS_IN_OPERATION = 10 ;
-
 % Plotting | 3D PLOT & CONTOUR PLOT (S1 S2)
 NUM_POINTS = 10^4; 
 
+% USER INPUTS | RXTR TABLE PARAMETERS_______________________________________
+
 % Reactor Script Parameters | RXTR TABLE OUTPUT
 V_MIN = 0.1;					% [ L ]
-V_MAX = 10000;					% [ L ]
+V_MAX = 10^3;					% [ L ]
 NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
@@ -147,6 +147,7 @@ ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX = true;
 %_______________________________________________________________________________
 % DON'T TOUCH ANYTHING BELOW THIS LINE
 %_______________________________________________________________________________
+
 
 % CONSTANTS | PLOTTING_____________________________________________________
 
@@ -391,6 +392,9 @@ k2 = @(T) (4.652 * 10^11) * exp( (-273000 / (R * (T ))));
 k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T ))));
 
 
+% DESIGN PARAMS____________________________________________________________
+STEAM_TO_FEED_RATIO_MASS = (MOLMASS_WATER / MOLMASS_ETHANE) * STEAM_TO_FEED_RATIO_MOLS;
+
 
 % SCRIPT___________________________________________________________________
 
@@ -420,8 +424,8 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 	disp(CONSOLE_SECTION_DIVIDER)
 	if (flowrates_valid(P_flowrates))
 		
-		fprintf("Flowrates for the reactor given that s1 = %f, s2 = %f\n\n", ...
-			USERINPUT_S1, USERINPUT_S2)
+		fprintf("Flowrates for the reactor given that s1 = %f, s2 = %f conv = %f\n\n", ...
+			USERINPUT_S1, USERINPUT_S2, CONVERSION)
 
 		disp(CONSOLE_SECTION_DIVIDER)
 		disp("Level 2 Flowrates  in / out of the entire plant [ kt / yr ]")
@@ -514,7 +518,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				% Calculate the heat flux needed to keep reactor isothermal 
 				heat_flux = 0;
 				xi = get_xi(P_flowrates);
-				F_steam = STEAM_TO_FEED_RATIO * F_ethane;
+				F_steam = STEAM_TO_FEED_RATIO_MASS * F_ethane;
 				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 				heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 				heat_flux = heat_flux + heat_rxn(xi);
@@ -731,7 +735,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Calculate the heat flux needed to keep reactor isothermal 
 					heat_flux = 0;
 					xi = get_xi(P_flowrates);
-					F_steam = STEAM_TO_FEED_RATIO * F_ethane;
+					F_steam = STEAM_TO_FEED_RATIO_MASS * F_ethane;
 					heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 					heat_flux = heat_flux + heat_rxn(xi);
