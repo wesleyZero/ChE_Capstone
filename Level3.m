@@ -613,7 +613,10 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				% Setup the PFR Design Equations 
 				
-				% CONVERT THE INITIAL CONDITIONS TO MOLAR FLOW RATES (MOL / SEC)
+				% BASIS CALCULATIONS_______________________________________________________________
+
+				% CONVERT TO MOLES_________________________________________________________________
+				% Convert all of the initial conditions to mol / s
 				% (mol / s) =			(kt / yr) *               (g / kt) *   ( mol / g )        * ( yr / s)
 				F_INTIAL_COND(METHANE) = F_INTIAL_COND(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
 				F_INTIAL_COND(HYDROGEN) = F_INTIAL_COND(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
@@ -642,41 +645,38 @@ if (CALCULATE_REACTOR_FLOWS)
 				select_2 = (F_soln(:, PROPANE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
 				
 				% Calculate the inlet volumetric flow rate 
-				% units = L / s ???
-				sum_molar_flowrates_reactor	= sum(F_soln(HYDROGEN:BUTANE)) + F_INTIAL_COND(ETHANE) + F_steam;
-				% F_out_sum = sum(F_soln, 2);
-				% q0 = (R_2  * (T_i + C_TO_K) / P_i) .* (sum(F_soln, 2) + F_steam);
-				q0 = (R_2  * (T_i + C_TO_K) / P_i) .* sum_molar_flowrates_reactor;
-				
+				% (L / s) ???????????????
+				P_sum = F_soln(:, HYDROGEN:BUTANE);
+				% Turn these constants into vectors to operation is valid
+				F0_ethane = ones(length(P_sum(:,1)), 1) .* F_INTIAL_COND(ETHANE);
+				F_steam = ones(length(P_sum(:,1)), 1) .* F_steam;
+				sum_products_outOf_reactor = sum(F_soln(:, HYDROGEN:BUTANE));
+				sum_flowrates_into_reactor = sum_products_outOf_reactor + F_INTIAL_COND(ETHANE) + F_steam;
+				q0 = (R_2  * (T_i + C_TO_K) / P_i) .* sum_flowrates_into_reactor;
+			
+				% PLANT CALCULATIONS_______________________________________________________________
+
+				% Calculate the the flowrates of the plant sized reactor given S1, S2 from ODE's 
 				F_ethane = [];
 				P_ethylene = [];
 				for row = 1:length(select_1)
-	% 				P_hydrogen(row, 1) = P_HYDROGEN(select_1(row), select_2(row)) .* G_PER_KT .* MOLMASS_HYDROGEN
-	% 				P_methane(row, 1) = P_METHANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_METHANE;
 					P_ethylene(row, 1) = P_ETHYLENE .* G_PER_KT .* (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
-	% 				P_propane(row, 1) = P_PROPANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_PROPANE;
-	% 				P_butane(row, 1) = P_BUTANE(select_1(row), select_2(row))* G_PER_KT .* MOLMASS_BUTANE;
-					F_ethane(row, 1) = F_ETHANE(select_1(row), select_2(row)) .* G_PER_KT .* (1/MOLMASS_ETHANE) * YR_PER_SEC;
 				end
-	% 			P_ethylene = ones(length(F_ethane(:, 1)), 1) .* P_ETHYLENE .* G_PER_KT .* MOLMASS_ETHYLENE;
-	
-	%  			P_flowrates_plant = [ P_hydrogen, P_methane, P_propane, P_butane];
-	% 			total_molFlow_plant = sum(P_flowrates_plant, 2) + F_steam + (P_ETHYLENE);
-				F_ethane;
-				F_soln(ETHANE);
-				% V_plant = V_soln(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
+				
+				% Calculate the volume of the plant sized reactor
 				V_plant = V_soln(:, 1) .* (P_ethylene(:, 1) ./ F_soln(:, ETHYLENE));
 
-				%cost of the reactor
-% 				M3_PER_L = 0.001;
+				% cost of the reactor
 				cost_rxt_vec = zeros(size(V_plant));
 				for row = 1:length(V_plant)	
 					cost_rxt_vec(row) = cost_reactor(V_plant(row,1) * M3_PER_L);
 					cost_rxt_vec(row) = cost_rxt_vec(row) / YEARS_IN_OPERATION;
 				end
 				
-				%flow of the plant
-				q0_plant = q0(:, 1) .* (F_ethane(:, 1) ./ F_soln(:, ETHANE));
+				% inlet flow of the plant
+				q0_plant = q0(:, 1) .* (P_ethylene(:, 1) ./ F_soln(:, ETHYLENE));
+
+				% CONVERT BACK TO MASS__________________________________________________________
 
 				% convert back to kta
 				% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
@@ -686,7 +686,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_soln(:, ETHYLENE) = F_soln(:, ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
 				F_soln(:, BUTANE) = F_soln(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
 				F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
-	% 			F_steam = MR_S_i * P_ETHYLENE;
+	% 			% ??? I am not converting the steam back into mass
 				
 				% Scaling all of the mass flowrates to the size of the plant
 				for i = 1:length(F_soln(:, 1))
@@ -699,7 +699,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				end
 
 				
-
+				% ECONOMIC CALCULATIONS____________________________________________________________
 				profit = zeros(length(F_soln(:,1)), 1);
 				for i = 1:length(F_soln(:, 1))
 
@@ -758,6 +758,8 @@ if (CALCULATE_REACTOR_FLOWS)
 
 
 				end
+
+				% PLOTTING_________________________________________________________________________
 
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
