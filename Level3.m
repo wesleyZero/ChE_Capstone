@@ -56,13 +56,14 @@ STEAM_TO_FEED_RATIO = 0.6;		% [ __ ] 0.6 to 1.0
 P_ETHYLENE_DES = 200;			% [	kta ]
 	% Note! This design parameter's units are changed prior to the matrix def 
 
-% Reactor Conditions | 3D PLOT & CONTOUR PLOT (S1 S2)
+% Reactor Conditions | 3D PLOT & CONTOUR PLOT (S1 S2) && THE LVL3 CALCS
 TEMP_RXTR = 800;				% [ C ] 
 PRESS_RXTR = 3;					% [ Bar ]  
 TEMP_ETHANE_FEED = 25;			% [ C ]
-CONVERSION = 0.8;				% [ __ ] % Level 2 & 3 Calculations 
-USERINPUT_S1 = 0.4;				% [ __ ] % Level 2 & 3 Calculations 
-USERINPUT_S2 = 0.2; 			% [ __ ] % Level 2 & 3 Calculations 
+CONVERSION = 0.65976;				% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S1 = 0.73531 ;				% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S2 = 0.00014985; 			% [ __ ] % Level 2 & 3 Calculations 
+
 STEAM_CHOICE = 2;
 % 	STEAM_30PSIA = 1;
 % 	STEAM_50PSIA = 2;
