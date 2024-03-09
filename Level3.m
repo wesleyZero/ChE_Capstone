@@ -3,7 +3,7 @@
 % Clear the console
 clc; 
 % Close all the windows
-close all;
+%close all;
 % Clear Workspace Variables
 clear;
 
@@ -95,7 +95,7 @@ NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
-	T_OVERRIDE = 825;			%[C]
+	T_OVERRIDE = 800;			%[C]
 	P_OVERRIDE = 3;				%[Bar]
 	STEAM_MR_OVERRIDE = 0.8;%	[__]
 
@@ -115,7 +115,7 @@ CALCULATE_ALL_SELECTIVITIES = true;
 CALCULATE_REACTOR_FLOWS = true;
 
 % PSA Toggle switch
-PSA_TOGGLE = false;
+PSA_TOGGLE = true;
 
 % Zeolite and waste stream
 % zeo 1.2 - 2.2 wt% absobtion = max of zeolite (g/g)
@@ -183,14 +183,14 @@ M3_PER_L = 0.001;
 % CONSTANTS | CHEMICAL_____________________________________________________
 
 % Chemical | Molar Mass
-MOLMASS_HYDROGEN = 2.01568;				% [ g / mol ]
-	% Source : ?? 
-MOLMASS_METHANE = 16.04;				% [ g / mol ]
-	% Source : ?? 
-MOLMASS_WATER = 18;						% [ g / mol ]
-	% source : ??
+MOLMASS_HYDROGEN = 2.01588;				% [ g / mol ]
+	% Source :  https://webbook.nist.gov/cgi/cbook.cgi?ID=1333-74-0
+MOLMASS_METHANE = 16.0425;				% [ g / mol ]
+	% Source :  https://webbook.nist.gov/cgi/cbook.cgi?ID=74-82-8
+MOLMASS_WATER = 18.015;						% [ g / mol ]
+	% source : https://pubchem.ncbi.nlm.nih.gov/compound/Water
 MOLMASS_CO2 = 44.01;					% [ g / mol ]
-	% Source : ??
+	% Source : https://pubchem.ncbi.nlm.nih.gov/compound/Carbon-dioxide-water
 MOLMASS_PROPANE = 44.0956;				% [ g / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
 MOLMASS_BUTANE = 58.1222;				% [ g / mol ]
@@ -216,8 +216,8 @@ R = 8.314;								% [ J / mol K ]
 R_2 = 0.0831446261815324;				% [ L bar / K mol ]
 
 % Heat capacities 
-HEAT_CAPACITY_WATER = 4.184 * 10^-3;	% [ kJ / mol K ] Ref Temp = ??
-	% Source : ??
+HEAT_CAPACITY_WATER = 33.79 * 10^-3;	% [ kJ / mol K ] Ref Temp = 298K
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C14940637&Mask=1&Type=JANAFG&Table=on
 HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
 
@@ -237,7 +237,6 @@ HEAT_FORMATION_BUTANE = -125.6;			% [ kJ / mol ] reference Temp = std
 % Enthalpy of combustion (std conditions)
 ENTHALPY_HYDROGEN = 286;
 	% Source : https://chem.libretexts.org/Courses/University_of_Kentucky/UK%3A_General_Chemistry/05%3A_Thermochemistry/5.3%3A_Enthalpy
-	% ?? Is this is a good source? 
 ENTHALPY_METHANE = 890;					% [ kJ / mol ]	
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1
 ENTHALPY_PROPANE = 2219.2;				% [ kJ / mol ]
@@ -245,7 +244,7 @@ ENTHALPY_PROPANE = 2219.2;				% [ kJ / mol ]
 ENTHALPY_BUTANE = 2877.5;				% [ kJ / mol ]
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 ENTHALPY_NAT_GAS = ENTHALPY_METHANE; 
-	% Source : ???
+	% Source : https://afdc.energy.gov/fuels/natural_gas_basics.html#:~:text=Natural%20gas%20is%20an%20odorless,used%20in%20the%20United%20States.
 	% Natural gas is mostly methane, so assumed to be 100% methane in the calcs
 
 % Enthalpy of Reactions [ kJ / extent rxn]
@@ -298,7 +297,7 @@ TAX_CO2_PER_MT = 125;				% [ $ / MT ]
 TAX_CO2_PER_GJ_METHANE = KJ_PER_GJ * (1 / ENTHALPY_METHANE) * CO2_TO_METHANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
 TAX_CO2_PER_GJ_PROPANE = KJ_PER_GJ * (1 / ENTHALPY_PROPANE) * CO2_TO_PROPANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
 TAX_CO2_PER_GJ_BUTANE = KJ_PER_GJ * (1 / ENTHALPY_BUTANE) * CO2_TO_BUTANE_COMBUSTION_STOICH * MOLMASS_CO2 * MT_PER_G * TAX_CO2_PER_MT;
-TAX_CO2_PER_GJ_NATGAS = TAX_CO2_PER_GJ_METHANE; % ???
+TAX_CO2_PER_GJ_NATGAS = TAX_CO2_PER_GJ_METHANE; %
 
 % Chemistry | MT of C02 per KT of Fuel used 
 % (MT CO2) = 1KT(basis) * (g / KT) * (mol gas/ g gas) * 
@@ -381,7 +380,7 @@ if (CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS)
 	EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_BUTANE_FUEL + TAX_CO2_PER_GJ_BUTANE
 	EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS
 % 	EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
-		% ?? Not using number 2 fuel bc its too expensive 
+
 end
 
 if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
@@ -516,7 +515,10 @@ if (CALCULATE_ALL_SELECTIVITIES)
 
 				% VALUE CREATED | Non-combusted fuels 
 				% profit(i) = profit(i) + value_methane(P_methane - combusted_methane);
-					% ?? I don't think you can sell methane
+					% ?? I don't think you can sell methane. IH - need to
+                    % determine energy requirements for compressors +
+                    % separation + cooling (will likely need to purchase
+                    % Nat Gas)
 				profit(i) = profit(i) + value_propane(P_propane - combusted_propane);
 				profit(i) = profit(i) + value_butane(P_butane - combusted_butane);	
 
@@ -1017,7 +1019,7 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 	global R_2 k1_f k1_r k2 k3 C_TO_K MOLMASS_METHANE MOLMASS_ETHANE MOLMASS_ETHYLENE ... 
 		MOLMASS_PROPANE MOLMASS_HYDROGEN MOLMASS_BUTANE YR_PER_SEC G_PER_KT SEC_PER_YR KT_PER_G
 	% INPUT UNITS 
-	% V [ ?? ]
+	% V [ L ]
 	% F [ kta ]
 	% T [ Celcius ]
 	% P [ bar ]
