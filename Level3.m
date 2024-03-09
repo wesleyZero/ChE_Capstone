@@ -1,4 +1,4 @@
-
+6
 
 % Clear the console
 clc; 
@@ -92,7 +92,7 @@ NUM_POINTS = 10^4;
 
 % Reactor Script Parameters | RXTR TABLE OUTPUT
 V_MIN = 0.1;					% [ L ]
-V_MAX = 10^3;					% [ L ]
+V_MAX = 10^5;					% [ L ]
 NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
@@ -612,6 +612,7 @@ if (CALCULATE_REACTOR_FLOWS)
 	
 				% override the T_i and P_i with user input 
 				if T_P_OVERRIDE
+					disp("WARNING: OVERRIDE HAS BEEN ACTIVATED")
 					T_i = T_OVERRIDE;
 					P_i = P_OVERRIDE;
 					MR_S_i = STEAM_MR_OVERRIDE;
@@ -674,6 +675,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				end
 				
 				% Calculate the scaling factor of the plant, from the basis
+				% mol / mol = ...
 				scaling_factor = P_ethylene(:, 1) ./ F_soln_ODE(:, ETHYLENE);
 				
 				% Calculate the volume of the plant sized reactor
@@ -693,8 +695,16 @@ if (CALCULATE_REACTOR_FLOWS)
 				q0_plant = q0(:, 1) .* scaling_factor;
 					% Eqn F.35 in 'Design PFR Algorithm Appendix' 
 
-				% CONVERT BACK TO MASS__________________________________________________________
+				% Scaling all of the molar flowrates to the size of the plant
+				F_soln_ODE(:, METHANE) = F_soln_ODE(:, METHANE) .* scaling_factor;
+				F_soln_ODE(:, HYDROGEN) = F_soln_ODE(:, HYDROGEN) .* scaling_factor;
+				F_soln_ODE(:, ETHANE) = F_soln_ODE(:, ETHANE) .* scaling_factor;
+				F_soln_ODE(:, ETHYLENE) = F_soln_ODE(:, ETHYLENE) .* scaling_factor;
+				F_soln_ODE(:, BUTANE) = F_soln_ODE(:, BUTANE) .* scaling_factor;
+				F_soln_ODE(:, PROPANE) = F_soln_ODE(:, PROPANE) .* scaling_factor;
 
+				% CONVERT BACK TO MASS__________________________________________________________
+				
 				% convert back to kta
 				% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
 				F_soln_ODE(:, METHANE) = F_soln_ODE(: ,METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
@@ -703,23 +713,13 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_soln_ODE(:, ETHYLENE) = F_soln_ODE(:, ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
 				F_soln_ODE(:, BUTANE) = F_soln_ODE(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
 				F_soln_ODE(:, PROPANE) = F_soln_ODE(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
-	% 			% ??? I am not converting the steam back into mass
-				
-				% Scaling all of the mass flowrates to the size of the plant
-				F_soln_ODE(:, METHANE) = F_soln_ODE(:, METHANE) .* scaling_factor;
-				F_soln_ODE(:, HYDROGEN) = F_soln_ODE(:, HYDROGEN) .* scaling_factor;
-				F_soln_ODE(:, ETHANE) = F_soln_ODE(:, ETHANE) .* scaling_factor;
-				F_soln_ODE(:, ETHYLENE) = F_soln_ODE(:, ETHYLENE) .* scaling_factor;
-				F_soln_ODE(:, BUTANE) = F_soln_ODE(:, BUTANE) .* scaling_factor;
-				F_soln_ODE(:, PROPANE) = F_soln_ODE(:, PROPANE) .* scaling_factor;
 
 				% ECONOMIC CALCULATIONS____________________________________________________________
 				profit = zeros(length(F_soln_ODE(:,1)), 1);
 				for i = 1:length(F_soln_ODE(:, 1))
 
 					% P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
-					Flowrates = F_soln_ODE(i,  :);
-					P_flowrates = Flowrates(HYDROGEN:ETHANE);
+					P_flowrates = F_soln_ODE(i , HYDROGEN:ETHANE);
 					
 					P_hydrogen = P_flowrates(HYDROGEN);
 					P_methane = P_flowrates(METHANE);
