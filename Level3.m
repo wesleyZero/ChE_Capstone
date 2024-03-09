@@ -584,7 +584,7 @@ P_RANGE = linspace(P_MIN, P_MAX, NUM_P_POINTS);
 STEAM_RANGE = linspace(STEAM_MIN, STEAM_MAX, NUM_STEAM_POINTS);
 V_RANGE = [V_MIN, V_MAX]; % WARNING THESE ARE IN LITERS
 % H2 Methane Ethane Propane Butane Ethylene 
-F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in mol / s
+F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in kta
 
 	% Product flow rate indicies 
 	HYDROGEN = 1;
@@ -631,28 +631,29 @@ if (CALCULATE_REACTOR_FLOWS)
 				% Solve the system ODE's 
 				%	(L, mol / s)           (L, mol/s, Celcius, Bar, mol/s)
 				odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
-				[V_soln, F_soln] = ode45(odes, V_RANGE, F_INTIAL_COND); 
+				[V_soln_ODE, F_soln_ODE] = ode45(odes, V_RANGE, F_INTIAL_COND); 
 	
 				% Calculate the conversion
-				conversion = (F_INTIAL_COND(ETHANE) - F_soln(:, ETHANE)) / F_INTIAL_COND(ETHANE);
+				conversion = (F_INTIAL_COND(ETHANE) - F_soln_ODE(:, ETHANE)) / F_INTIAL_COND(ETHANE);
 
 				% put handles length of the solution and the initial ethane flow
-				len = length(F_soln(:, 1));
+				len = length(F_soln_ODE(:, 1));
 				F_ethane_initial = ones(len, 1) * F_INTIAL_COND(ETHANE);
 
 				% Calculate the Selectivities, for each row (aka V_rxtr) 
-				select_1 = (F_soln(:, ETHYLENE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
-				select_2 = (F_soln(:, PROPANE) ) ./ (F_ethane_initial - F_soln(:, ETHANE));
+				select_1 = (F_soln_ODE(:, ETHYLENE) ) ./ (F_ethane_initial - F_soln_ODE(:, ETHANE));
+				select_2 = (F_soln_ODE(:, PROPANE) ) ./ (F_ethane_initial - F_soln_ODE(:, ETHANE));
 				
 				% Calculate the inlet volumetric flow rate 
 				% (L / s) ???????????????
-				P_sum = F_soln(:, HYDROGEN:BUTANE);
+				P_sum = F_soln_ODE(:, HYDROGEN:BUTANE);
 				% Turn these constants into vectors to operation is valid
-				F0_ethane = ones(length(P_sum(:,1)), 1) .* F_INTIAL_COND(ETHANE);
 				F_steam = ones(length(P_sum(:,1)), 1) .* F_steam;
-				sum_products_outOf_reactor = sum(F_soln(:, HYDROGEN:BUTANE));
-				sum_flowrates_into_reactor = sum_products_outOf_reactor + F_INTIAL_COND(ETHANE) + F_steam;
+				% put handles on terms, to make the code readable
+				sum_flowrates_into_reactor = F_INTIAL_COND(ETHANE) + F_steam;
+				% Calculate the flow rate into the reactor
 				q0 = (R_2  * (T_i + C_TO_K) / P_i) .* sum_flowrates_into_reactor;
+					% This is F.30 in the 'Design PFR Algorithm Appendix'
 			
 				% PLANT CALCULATIONS_______________________________________________________________
 
@@ -660,51 +661,56 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_ethane = [];
 				P_ethylene = [];
 				for row = 1:length(select_1)
+					% mol / s          = (kt / yr)   * (g / kt)  * (mol / g)            * (yr / s)
 					P_ethylene(row, 1) = P_ETHYLENE .* G_PER_KT .* (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
 				end
 				
+				% Calculate the scaling factor of the plant, from the basis
+				scaling_factor = P_ethylene(:, 1) ./ F_soln_ODE(:, ETHYLENE);
+				
 				% Calculate the volume of the plant sized reactor
-				V_plant = V_soln(:, 1) .* (P_ethylene(:, 1) ./ F_soln(:, ETHYLENE));
+				% L / s = ( L / s )         * (   (mol / s )  ) / (    (mol / s)         )
+				%         BASIS             *     PLANT_FLOW    /      BASIS_FLOW
+				V_plant = V_soln_ODE(:, 1) .* scaling_factor;
 
 				% cost of the reactor
 				cost_rxt_vec = zeros(size(V_plant));
 				for row = 1:length(V_plant)	
+					% ( $ )  
 					cost_rxt_vec(row) = cost_reactor(V_plant(row,1) * M3_PER_L);
 					cost_rxt_vec(row) = cost_rxt_vec(row) / YEARS_IN_OPERATION;
 				end
 				
-				% inlet flow of the plant
-				q0_plant = q0(:, 1) .* (P_ethylene(:, 1) ./ F_soln(:, ETHYLENE));
+				% inlet flow of the plant scaled reactor
+				q0_plant = q0(:, 1) .* scaling_factor;
+					% Eqn F.35 in 'Design PFR Algorithm Appendix' 
 
 				% CONVERT BACK TO MASS__________________________________________________________
 
 				% convert back to kta
 				% kt / yr =  mol / s    * g / mol         * kt / g   * s / yr
-				F_soln(:, METHANE) = F_soln(: ,METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
-				F_soln(:, ETHANE) = F_soln(:, ETHANE) * MOLMASS_ETHANE * KT_PER_G * SEC_PER_YR;	
-				F_soln(:, HYDROGEN) = F_soln(:, HYDROGEN) * MOLMASS_HYDROGEN * KT_PER_G * SEC_PER_YR;
-				F_soln(:, ETHYLENE) = F_soln(:, ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
-				F_soln(:, BUTANE) = F_soln(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
-				F_soln(:, PROPANE) = F_soln(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
+				F_soln_ODE(:, METHANE) = F_soln_ODE(: ,METHANE) * MOLMASS_METHANE * KT_PER_G * SEC_PER_YR;
+				F_soln_ODE(:, ETHANE) = F_soln_ODE(:, ETHANE) * MOLMASS_ETHANE * KT_PER_G * SEC_PER_YR;	
+				F_soln_ODE(:, HYDROGEN) = F_soln_ODE(:, HYDROGEN) * MOLMASS_HYDROGEN * KT_PER_G * SEC_PER_YR;
+				F_soln_ODE(:, ETHYLENE) = F_soln_ODE(:, ETHYLENE) * MOLMASS_ETHYLENE * KT_PER_G * SEC_PER_YR;
+				F_soln_ODE(:, BUTANE) = F_soln_ODE(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
+				F_soln_ODE(:, PROPANE) = F_soln_ODE(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
 	% 			% ??? I am not converting the steam back into mass
 				
 				% Scaling all of the mass flowrates to the size of the plant
-				for i = 1:length(F_soln(:, 1))
-					F_soln(i, METHANE) = F_soln(i, METHANE) * (V_plant(i,1) / V_soln(i, 1));
-					F_soln(i, HYDROGEN) = F_soln(i, HYDROGEN) * (V_plant(i, 1) / V_soln(i, 1));
-					F_soln(i, ETHANE) = F_soln(i, ETHANE) * (V_plant(i, 1) / V_soln(i, 1));
-					F_soln(i, ETHYLENE) = F_soln(i, ETHYLENE) * (V_plant(i, 1) / V_soln(i, 1));
-					F_soln(i, BUTANE) = F_soln(i, BUTANE) * (V_plant(i, 1) / V_soln(i, 1));
-					F_soln(i, PROPANE) = F_soln(i, PROPANE) * (V_plant(i, 1) / V_soln(i, 1));
-				end
+				F_soln_ODE(:, METHANE) = F_soln_ODE(:, METHANE) .* scaling_factor;
+				F_soln_ODE(:, HYDROGEN) = F_soln_ODE(:, HYDROGEN) .* scaling_factor;
+				F_soln_ODE(:, ETHANE) = F_soln_ODE(:, ETHANE) .* scaling_factor;
+				F_soln_ODE(:, ETHYLENE) = F_soln_ODE(:, ETHYLENE) .* scaling_factor;
+				F_soln_ODE(:, BUTANE) = F_soln_ODE(:, BUTANE) .* scaling_factor;
+				F_soln_ODE(:, PROPANE) = F_soln_ODE(:, PROPANE) .* scaling_factor;
 
-				
 				% ECONOMIC CALCULATIONS____________________________________________________________
-				profit = zeros(length(F_soln(:,1)), 1);
-				for i = 1:length(F_soln(:, 1))
+				profit = zeros(length(F_soln_ODE(:,1)), 1);
+				for i = 1:length(F_soln_ODE(:, 1))
 
 					% P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
-					Flowrates = F_soln(i,  :);
+					Flowrates = F_soln_ODE(i,  :);
 					P_flowrates = Flowrates(HYDROGEN:ETHANE);
 					
 					P_hydrogen = P_flowrates(HYDROGEN);
@@ -764,10 +770,10 @@ if (CALCULATE_REACTOR_FLOWS)
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
 					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit'};
-				soln_table = table( V_soln, F_soln(:, HYDROGEN), ...
-							F_soln(:, METHANE), F_soln(:, ETHYLENE), ...
-							F_soln(:, PROPANE), F_soln(:, BUTANE), ...
-							F_soln(:, ETHANE), conversion,select_1, ...
+				soln_table = table( V_soln_ODE, F_soln_ODE(:, HYDROGEN), ...
+							F_soln_ODE(:, METHANE), F_soln_ODE(:, ETHYLENE), ...
+							F_soln_ODE(:, PROPANE), F_soln_ODE(:, BUTANE), ...
+							F_soln_ODE(:, ETHANE), conversion,select_1, ...
 							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, 'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
 	
@@ -775,7 +781,7 @@ if (CALCULATE_REACTOR_FLOWS)
 	
 	
 				% Check if you're conserving mass
-				conserv_mass = sum(F_soln, 2);
+				conserv_mass = sum(F_soln_ODE, 2);
 	
 				% Computer Selectivity vs conversion relationships 
 	
