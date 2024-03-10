@@ -1198,6 +1198,62 @@ function cost = cost_reactor(V_plant_input)
 
 end
 
+function cost = separation_cost()
+	clear; clc;
+	R = 8.314; 		% [J / mol K ]
+	T = 173.15; 	% [ K ] 
+		% This is the average of boiling points non-wighted
+
+	TEMP_SEPARATION = 173.15;
+
+	%Using compositions from ASPEN [mol fraction ]
+	z_ethane = 0.105622966291020;
+	z_ethylene = 0.270187148320469;
+	z_hydrogen = 0.310508998651457;
+	z_methane = 1.25317745797863e-005;
+	z_propane = 1.25317745797863e-005;
+	z_butane = 4.03219013378326e-002;
+	z_water = 0.273333921850062;
+
+
+	x_water = 1;
+	x_ethane = 1;
+	x_propane = 0.9997;
+	x_butane = 0.0003;
+	x_ethylene = 1;
+	x_hydrogen = 1; 
+	x_methane = 4.03293090303065e-004;
+
+	P_in = 2;
+	P_H2 = 10;
+	P_ME = 1;
+
+	%Using flow rates from ASPEN [NOTE: FOR MATLAB USE THE VALUES FROM THE
+	%SOLN_TABLE. WE USED THESE AS EXPECTED COSTS)
+
+	F_water = 237.1; %mol/s
+	F_LPG = 34.97; %mol/s
+	F_ethylene = 234.3; %mol/s
+	F_ethane = 91.6; %mol/s
+	F_H2 = 0.8716; %mol/s
+	F_ME = 2.69e-5; %mol/s
+
+	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
+		F_LPG*R*T*log(x_propane/z_propane + x_butane/z_butane) + ...
+		F_ethylene*R*T*log(x_ethylene/z_ethylene) + ...
+		F_ethane*R*T*log(x_ethane/z_ethane) + ...
+		R*T*(F_H2*log(P_H2/P_in)+ F_H2*log(x_hydrogen/z_hydrogen) + ...
+		F_ME*log(x_methane/z_methane) + F_ME*log(P_ME/P_in)) ;
+
+	OPEX_MAX_Sep_System = W_min_Sep_System/1e9 * 50 * 3 * 30.24e6
+	OPEX_MIN_Sep_System = W_min_Sep_System/1e9 * 20 * 3 * 30.24e6
+
+	CAPEX_MAX_Sep_System = 50 * W_min_Sep_System
+	CAPEX_MIN_Sep_System = 30 * W_min_Sep_System
+
+	TFCI_Max_Sep_System = 2.5 * CAPEX_MAX_Sep_System 
+	TFCI_Min_Sep_System = 2.5 * CAPEX_MIN_Sep_System 
+end
 
 
 
