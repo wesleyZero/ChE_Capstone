@@ -1,4 +1,3 @@
-6
 
 % Clear the console
 clc; 
@@ -679,7 +678,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				scaling_factor = P_ethylene(:, 1) ./ F_soln_ODE(:, ETHYLENE);
 				
 				% Calculate the volume of the plant sized reactor
-				% L / s = ( L / s )         * (   (mol / s )  ) / (    (mol / s)         )
+				% L / s = ( L / s )         * (   (mol / s )  ) / (    (mol / s)         )   
 				%         BASIS             *     PLANT_FLOW    /      BASIS_FLOW
 				V_plant = V_soln_ODE(:, 1) .* scaling_factor;
 
@@ -735,8 +734,10 @@ if (CALCULATE_REACTOR_FLOWS)
 					P_butane = P_flowrates(BUTANE);
 
 % 					F_ethane = P_flowrates(ETHANE);
-					F_ethane = sum(P_flowrates(:)) + F_soln_ODE(i ,ETHANE);
+					% F_ethane = sum(P_flowrates(:)) + F_soln_ODE(i ,ETHANE);
 					% ?? WHAT IS THE FLOWRATE INTO THE PLANT ??
+					% F_ethane = F_ETHANE()
+					F_ethane = F_ETHANE(select_1(i), select_2(i));
 
 					if (~flowrates_valid(P_flowrates))
 						disp("WARNING SOME FLOWATES MAY BE INVALID")
