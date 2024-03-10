@@ -199,7 +199,7 @@ BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
 YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
 SEC_PER_YR = 3.154 * 10^7;			% [ s / yr ]
 
-% Volums 
+% Volumes 
 M3_PER_L = 0.001;
 
 % CONSTANTS | CHEMICAL_____________________________________________________
@@ -1302,24 +1302,27 @@ function cost = separation_cost(P_flowrates)
 	TFCI_Min_Sep_System = 2.5 * CAPEX_MIN_Sep_System 
 end
 
-%        [$]  =                 ([kta])
-function cost = cost_wast_stream(F_steam))
-	global MOLMASS_WATER G_PER_KT YR_PER_SEC
+%        [$]  =                  ( kta   , C, bar)
+function cost = cost_waste_stream(F_steam, T, P)
+	global MOLMASS_WATER G_PER_KT YR_PER_SEC R_2 M3_PER_L
 	% 15.15 is the flowrate from aspen 
 	% replace the 15.15 with the m^3 / s of the flowrate of steam out of the reactor 
 	% MAKE SURE ITS m^3 / s
+
+	% This is the OUTLET temperature and pressure of the sep SYSTEM
+	T_sep = T;
+	P_sep = P;
 
 	% q = 15.15/3600; %flow rate of waste water out of the plant m^3/s
 
 	% mol/s = ( kt / yr) * (g / kt) * (mol / g)   * (yr / s)
 	F_steam = F_steam * G_PER_KT * (MOLMASS_WATER) * YR_PER_SEC;
 
+	% L / s =  (mol / s) * [ L bar / K mol ] * (Kelvin) / (bar)
+	q = F_steam * R_2 * T / P
 
-	% m^3 /s =  (mol / s) * () * (Kelvin) / (bar ? )
-	q = FLOWRATE OF WATER 
-
-
-
+	% m^3 / s = (L / s) * (m^3 / L)
+	q = q * M3_PER_L;
 
 	a = 0.001 + 2e-4*q^(-0.6); %Source: Uldrich and Vasudevan
 	b=0.1; %Source: Uldrich and Vasudevan
@@ -1331,7 +1334,12 @@ function cost = cost_wast_stream(F_steam))
 
 	%$/yr = $/m^3 * m^3/hr * hr/yr
 	% cpy_waste_water = cost_waste_water*15.15*8760 
-	cpy_waste_water = cost_waste_water*(FLOWRATE WATER m^3 / yr)
+	
+	% m^3 / s = (m^3 / s) * (s / yr)
+	q = q * SEC_PER_YR;
+	% cpy_waste_water = cost_waste_water*(FLOWRATE WATER m^3 / yr)
+	cost = cost_waste_water * q;
+
 end
 
 
