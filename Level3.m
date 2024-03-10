@@ -780,6 +780,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
 					profit(i, 1) = profit(i, 1) - value_ethane(F_ethane);
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
+					% WASTE STREAM HERE 
 
 					if profit(i, 1) > 2 * 10^8
 						fprintf("Profit = %f \n", profit(i, 1))
@@ -1157,6 +1158,47 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 	
 end
 
+% function cost = cost_reactor(V_plant_input)
+% 	global FT_PER_METER STEAM_TO_FEED_RATIO
+% 	FT_PER_METER = 3.28084;
+% 	% ??? WHAT ARE THE UNITS OF TIME
+% 	%
+% 	pi = 3.14159;
+% 	D = 0.05;								% [m]
+% 	V_plant_max = pi * (0.025)^2 * 20; 		%[m^3]
+	
+% 	% Reactors have a max length, so calculate the number of full size reactors
+% 	% and add it to the cost of the one non-max length reactor
+
+% 	cost = 0;
+
+% 	% Find the Cost of the max-sized reactors
+% 	num_of_additional_reactors = int64(V_plant_input / V_plant_max);	
+% 	num_of_additional_reactors = double(num_of_additional_reactors);
+	
+% 	V_plant = V_plant_max;
+% 	factor_1 = 3.25;
+% 	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
+% 	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
+% 	factor_4 = (1800 / 280);
+% 	cost_max_reactor = factor_1 * factor_2 * factor_3 * factor_4; 
+% 	cost = cost + num_of_additional_reactors * cost_max_reactor;
+	
+
+% 	% Find the cost of the non-max size reactor 
+% 	V_plant = V_plant_input - V_plant_max * num_of_additional_reactors;
+% 	if V_plant < 0
+% 		V_plant = 0;
+% 	end
+% 	factor_1 = 3.25;
+% 	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
+% 	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
+% 	factor_4 = (1800 / 280);
+% 	cost = cost + factor_1 * factor_2 * factor_3 * factor_4;
+
+
+% end
+
 function cost = cost_reactor(V_plant_input)
 	global FT_PER_METER STEAM_TO_FEED_RATIO
 	FT_PER_METER = 3.28084;
@@ -1176,7 +1218,7 @@ function cost = cost_reactor(V_plant_input)
 	num_of_additional_reactors = double(num_of_additional_reactors);
 	
 	V_plant = V_plant_max;
-	factor_1 = 3.25;
+	factor_1 = 4.18;
 	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
 	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
 	factor_4 = (1800 / 280);
@@ -1189,7 +1231,7 @@ function cost = cost_reactor(V_plant_input)
 	if V_plant < 0
 		V_plant = 0;
 	end
-	factor_1 = 3.25;
+	factor_1 = 4.18;
 	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
 	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
 	factor_4 = (1800 / 280);
@@ -1198,7 +1240,7 @@ function cost = cost_reactor(V_plant_input)
 
 end
 
-function cost = separation_cost()
+function cost = separation_cost(P_flowrates)
 	clear; clc;
 	R = 8.314; 		% [J / mol K ]
 	T = 173.15; 	% [ K ] 
@@ -1215,7 +1257,7 @@ function cost = separation_cost()
 	z_butane = 4.03219013378326e-002;
 	z_water = 0.273333921850062;
 
-
+	% mol fractions AFTER separationS
 	x_water = 1;
 	x_ethane = 1;
 	x_propane = 0.9997;
@@ -1224,6 +1266,7 @@ function cost = separation_cost()
 	x_hydrogen = 1; 
 	x_methane = 4.03293090303065e-004;
 
+	% PSA pressure system (system not at current pressure)
 	P_in = 2;
 	P_H2 = 10;
 	P_ME = 1;
@@ -1231,13 +1274,17 @@ function cost = separation_cost()
 	%Using flow rates from ASPEN [NOTE: FOR MATLAB USE THE VALUES FROM THE
 	%SOLN_TABLE. WE USED THESE AS EXPECTED COSTS)
 
+	% INPUT MY FLOWRATES INSTEAD OF USING THESE
 	F_water = 237.1; %mol/s
+		% Steam coming out of the reactor 
 	F_LPG = 34.97; %mol/s
+		% 
 	F_ethylene = 234.3; %mol/s
 	F_ethane = 91.6; %mol/s
 	F_H2 = 0.8716; %mol/s
 	F_ME = 2.69e-5; %mol/s
 
+	% j / s = ...
 	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
 		F_LPG*R*T*log(x_propane/z_propane + x_butane/z_butane) + ...
 		F_ethylene*R*T*log(x_ethylene/z_ethylene) + ...
@@ -1254,6 +1301,80 @@ function cost = separation_cost()
 	TFCI_Max_Sep_System = 2.5 * CAPEX_MAX_Sep_System 
 	TFCI_Min_Sep_System = 2.5 * CAPEX_MIN_Sep_System 
 end
+
+%        [$]  =                 ([kta])
+function cost = cost_wast_stream(F_steam))
+	global MOLMASS_WATER G_PER_KT YR_PER_SEC
+	% 15.15 is the flowrate from aspen 
+	% replace the 15.15 with the m^3 / s of the flowrate of steam out of the reactor 
+	% MAKE SURE ITS m^3 / s
+
+	% q = 15.15/3600; %flow rate of waste water out of the plant m^3/s
+
+	% mol/s = ( kt / yr) * (g / kt) * (mol / g)   * (yr / s)
+	F_steam = F_steam * G_PER_KT * (MOLMASS_WATER) * YR_PER_SEC;
+
+
+	% m^3 /s =  (mol / s) * () * (Kelvin) / (bar ? )
+	q = FLOWRATE OF WATER 
+
+
+
+
+	a = 0.001 + 2e-4*q^(-0.6); %Source: Uldrich and Vasudevan
+	b=0.1; %Source: Uldrich and Vasudevan
+	CEPCI = 820; %Source: Lecture slides
+	C_f = 3.0; %$/GJ
+
+	%$/m^3 waste water
+	cost_waste_water = a*CEPCI + b*C_f
+
+	%$/yr = $/m^3 * m^3/hr * hr/yr
+	% cpy_waste_water = cost_waste_water*15.15*8760 
+	cpy_waste_water = cost_waste_water*(FLOWRATE WATER m^3 / yr)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
