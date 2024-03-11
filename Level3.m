@@ -750,16 +750,11 @@ if (CALCULATE_REACTOR_FLOWS)
 					P_propane = P_flowrates(PROPANE);
 					P_butane = P_flowrates(BUTANE);
 
-					% ?? WHAT IS THE FLOWRATE INTO THE PLANT ??
-					% F_ethane = F_ETHANE(select_1(i), select_2(i));
-
-					% F_fresh_ethane = F_ethane;
-					% F_ethane_rxtr = F_ethane(i) * ( conversion(i) / (1 - conversion(i)) );
-					% R_ethane = F_fresh_ethane * ( ( 1 - conversion(i)) / conversion(i) );
-
 					F_fresh_ethane = F_ETHANE(select_1(i), select_2(i)); 
 					R_ethane = F_fresh_ethane * ( ( 1 - conversion(i)) / conversion(i) );
-
+					R_ethane = P_flowrates(ETHANE);
+						% ?? These two values R should be the same
+ 
 					if (~flowrates_valid(P_flowrates))
 						disp("WARNING SOME FLOWATES MAY BE INVALID")
 					end
@@ -769,7 +764,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					xi = get_xi(P_flowrates);
 					F_steam = STEAM_TO_FEED_RATIO_MASS * (F_fresh_ethane + R_ethane);
 					heat_flux = heat_flux + heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
-					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION, TEMP_RXTR);
+					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION - C_TO_K, TEMP_RXTR);
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 					heat_flux = heat_flux + heat_rxn(xi);
 
@@ -780,7 +775,6 @@ if (CALCULATE_REACTOR_FLOWS)
 					F_natural_gas = natgas_combustion(heat_flux_remaining);
 
 					% Determine how much of the product streams were combusted to keep the reactor isothermal	
-
 					combusted_hydrogen = combusted_fuel_flow_rates(HYDROGEN);
 					combusted_methane = combusted_fuel_flow_rates(METHANE);
 					combusted_propane = combusted_fuel_flow_rates(PROPANE);
@@ -793,7 +787,6 @@ if (CALCULATE_REACTOR_FLOWS)
 					% VALUE CREATED | Non-combusted fuels 
 					% The commented line can be removed or modified as per the context.
 					% profit(i, 1) = profit(i, 1) + value_methane(P_methane - combusted_methane);
-					
 					profit(i, 1) = profit(i, 1) + value_propane(P_propane - combusted_propane);
 					profit(i, 1) = profit(i, 1) + value_butane(P_butane - combusted_butane);  
 					
@@ -803,38 +796,13 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - value_ethane(F_fresh_ethane);
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
-					% WASTE STREAM HERE 
+					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane)
 
-					% if profit(i, 1) > 2 * 10^8
-					% 	fprintf("Profit = %f \n", profit(i, 1))
-					% 	% VALUE CREATED | Primary Products
-					% 	disp("value")
-					% 	value_ethylene(P_ethylene)
-					% 	value_h2_chem(P_hydrogen - combusted_hydrogen)
-						
-					% 	% VALUE CREATED | Non-combusted fuels 
-					% 	% The commented line can be removed or modified as per the context.
-					% 	% profit(i, 1) = profit(i, 1) + value_methane(P_methane - combusted_methane);
-						
-					% 	value_propane(P_propane - combusted_propane)
-					% 	value_butane(P_butane - combusted_butane) 
-					% 	disp("costs")
-					% 	% COSTS INCURRED
-					% 	tax_C02(combusted_fuel_flow_rates, F_natural_gas)
-					% 	cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL))
-					% 	value_ethane(F_ethane)
-					% 	cost_natural_gas_fuel(F_natural_gas)
-					% end 
-					% Sanity checking
+					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
 				end
 
 				% PLOTTING_________________________________________________________________________
-				
-
-				
-
-
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
 					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit', 'conserv mass'};
@@ -844,12 +812,7 @@ if (CALCULATE_REACTOR_FLOWS)
 							F_soln_ODE(:, ETHANE), conversion,select_1, ...
 							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
-	
-	
-	
-	
-				
-	
+
 				% Computer Selectivity vs conversion relationships 
 	
 				% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
@@ -1250,7 +1213,8 @@ function cost = cost_waste_stream(F_steam)
 
 end
 
-function cost = cost_separation_system(P_rxtr_out)
+function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
+	% P_flowrates + 
 	global TEMP_SEPARATION R PRESS_RXTR R ...
 	 MAX_OPEX MAX_TFCI MAX_CAPEX
 	% Product flow rate indicies 
@@ -1271,6 +1235,7 @@ function cost = cost_separation_system(P_rxtr_out)
 	%Component mole flow rate out of rxtr over total mole flow rate out of reactor
 	% Mol fractions out of the reactoor
 
+	
 	z_ethane = 0.105622966291020;
 	z_ethylene = 0.270187148320469;
 	z_hydrogen = 0.310508998651457;
@@ -1279,8 +1244,11 @@ function cost = cost_separation_system(P_rxtr_out)
 	z_butane = 4.03219013378326e-002;
 	z_water = 0.273333921850062;
 
-	P_total = 1;
+	%CONVERT TO_MOLES
+	% P_total = 1;
+	P_total = sum(P_f)
 
+	z_ethane = 
 	
 	%Mol fractions leaving each separation system (refer to Isa's drawing in GN)
 	% leaving sep 1
@@ -1325,23 +1293,6 @@ function cost = cost_separation_system(P_rxtr_out)
 					F_ME*log(x_methane/z_methane) +...
 					F_ME*log(P_ME/P_in));
 
-	% lamdba_min = 20;
-	% lambda_max = 50;	
-	% cost_energy = 3;		% ( $ / GJ )
-
-	% %($/yr)             =   (J/s)     * (GJ/J) * (Work Efficiency) *($/GJ)* (s/yr)
-	% OPEX_MAX_Sep_System = W_min_Sep_System*1e-9 * lambda_max * cost_energy * 30.24e6
-	% OPEX_MIN_Sep_System = W_min_Sep_System*1e-9 * lamdba_min * cost_energy * 30.24e6
-	
-	% %($) 				 = ($/W)    (Efficiency) * (J/s) 
-	% CAPEX_MAX_Sep_System = 1 * lambda_max * W_min_Sep_System
-	% CAPEX_MIN_Sep_System = 0.5 * lamdba_min * W_min_Sep_System
-	
-	% TFCI_Max_Sep_System = 2.5 * CAPEX_MAX_Sep_System 
-	% TFCI_Min_Sep_System = 2.5 * CAPEX_MIN_Sep_System 
-
-	
-	
 
 	lamdba_min = 20;
 	lambda_max = 50;	
