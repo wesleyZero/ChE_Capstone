@@ -32,7 +32,7 @@ global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
-global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L
+global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
 
 % USER NOTES____________________________________________________________________
 
@@ -206,6 +206,10 @@ SEC_PER_YR = 3.154 * 10^7;			% [ s / yr ]
 % Volumes 
 M3_PER_L = 0.001;
 
+% CONSTANTS | PHYSICAL______________________________________________________
+
+DENSITY_LIQ_WATER = 10^3;			% [ kg / m^3 ]
+
 % CONSTANTS | CHEMICAL_____________________________________________________
 
 % Chemical | Molar Mass
@@ -234,6 +238,7 @@ CO2_TO_PROPANE_COMBUSTION_STOICH = 3;
 CO2_TO_BUTANE_COMBUSTION_STOICH = 4;
 C02_TO_NATGAS_COMBUSTION_STOICH = CO2_TO_METHANE_COMBUSTION_STOICH;
 	% Natural gas is asuumed to be entirely methane
+
 
 % CONSTANTS | THERMODYNAMICS_______________________________________________
 
@@ -558,6 +563,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				profit(i) = profit(i) - value_ethane(F_ethane);
 				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
 				profit(i) = profit(i) - cost_waste_stream(F_steam);
+				cost_waste_stream(F_steam)
 
 			else
 				profit(i) = INVALID_FLOWRATE;
@@ -1268,20 +1274,14 @@ end
 %        [$]  =                  ( kta   )
 function cost = cost_waste_stream(F_steam)
 	global MOLMASS_WATER G_PER_KT YR_PER_SEC R_2 M3_PER_L T_SEPARATION ... 
-			P_SEPARATION SEC_PER_YR C_TO_K;
+			P_SEPARATION SEC_PER_YR C_TO_K DENSITY_LIQ_WATER KG_PER_KT
 
 	% This is the OUTLET temperature and pressure of the sep SYSTEM
 	T = T_SEPARATION;
 	P = P_SEPARATION;
 
-	% mol/s = ( kt / yr) * (g / kt) * (mol / g)   * (yr / s)
-	F_steam = F_steam * G_PER_KT * (1 / MOLMASS_WATER) * YR_PER_SEC;
-
-	% L / s =  (mol / s) * [ L bar / K mol ] * (Kelvin) / (bar)
-	q = F_steam * R_2 * T / P;
-
-	% m^3 / s = (L / s) * (m^3 / L)
-	q = q * M3_PER_L;
+	% m^3 / s = (kt / yr) * (kg / kt)   * (m^3 / kg)  * (yr / s)
+	q = F_steam * KG_PER_KT * (1 / DENSITY_LIQ_WATER) * YR_PER_SEC;
 
 	a = 0.001 + 2e-4*q^(-0.6); 
 		%Source: Uldrich and Vasudevan
