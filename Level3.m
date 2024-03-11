@@ -798,6 +798,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
 					profit(i, 1) = profit(i, 1) - value_ethane(F_fresh_ethane);
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
+					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
 					% WASTE STREAM HERE 
 
 					% if profit(i, 1) > 2 * 10^8
