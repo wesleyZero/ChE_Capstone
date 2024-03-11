@@ -823,11 +823,21 @@ if (CALCULATE_REACTOR_FLOWS)
 	
 				% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
 				% to calculate the true feed flow rates into the reactor 
-	
+				npv.ethyleneValue = value_ethylene(P_ethylene);
+				npv.hydrogenValue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
+				npv.ethane = value_ethane(F_fresh_ethane);
+				npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
+				npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
+				npv.conversion = conversion(i);
+				npv.isbl = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
+				% NPV CALCS 
+				npv_graphs(npv)	
+
 			end 
 		end 
 	end
 end 
+
 
 
 
