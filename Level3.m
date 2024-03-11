@@ -32,7 +32,7 @@ global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
-global PSA_TOGGLE ENTHALPY_HYDROGEN
+global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION
 
 % USER NOTES____________________________________________________________________
 
@@ -61,7 +61,7 @@ YEARS_IN_OPERATION = 10 ;
 % Reactor Conditions | 3D PLOT & CONTOUR PLOT (S1 S2) && THE LVL3 CALCS
 STEAM_TO_FEED_RATIO_MOLS = 0.6;		% [ __ ] 0.6 to 1.0
 TEMP_RXTR = 825;				% [ C ] 
-PRESS_RXTR = 2;					% [ Bar ]  
+PRESS_RXTR = 2;					% [ Bar ] 2 to 5 bar
 TEMP_ETHANE_FEED = 25;			% [ C ]
 CONVERSION =  0.17053;			% [ __ ] % Level 2 & 3 Calculations 
 USERINPUT_S1 = 0.96971 ;		% [ __ ] % Level 2 & 3 Calculations 
@@ -133,6 +133,10 @@ PSA_TOGGLE = true;
 % Do you want to add the work of the compressor to the heat flux of heating 
 % the steam from the temp it's avilable at, to the temp of the reactor?
 ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX = true;
+
+% Separation System Thermodynamics 
+T_SEPARATION = 173.15; 			% [ K ] 
+P_SEPARATION = PRESS_RXTR; 				% [ bar ]
 
 % Zeolite and waste stream
 % zeo 1.2 - 2.2 wt% absobtion = max of zeolite (g/g)
@@ -1304,16 +1308,12 @@ end
 
 %        [$]  =                  ( kta   , C, bar)
 function cost = cost_waste_stream(F_steam, T, P)
-	global MOLMASS_WATER G_PER_KT YR_PER_SEC R_2 M3_PER_L
-	% 15.15 is the flowrate from aspen 
-	% replace the 15.15 with the m^3 / s of the flowrate of steam out of the reactor 
-	% MAKE SURE ITS m^3 / s
+	global MOLMASS_WATER G_PER_KT YR_PER_SEC R_2 M3_PER_L T_SEPARATION ... 
+			P_SEPARATION
 
 	% This is the OUTLET temperature and pressure of the sep SYSTEM
-	T_sep = T;
-	P_sep = P;
-
-	% q = 15.15/3600; %flow rate of waste water out of the plant m^3/s
+	T = T_SEPARATION;
+	P = P_SEPARATION;
 
 	% mol/s = ( kt / yr) * (g / kt) * (mol / g)   * (yr / s)
 	F_steam = F_steam * G_PER_KT * (MOLMASS_WATER) * YR_PER_SEC;
@@ -1324,20 +1324,19 @@ function cost = cost_waste_stream(F_steam, T, P)
 	% m^3 / s = (L / s) * (m^3 / L)
 	q = q * M3_PER_L;
 
-	a = 0.001 + 2e-4*q^(-0.6); %Source: Uldrich and Vasudevan
-	b=0.1; %Source: Uldrich and Vasudevan
-	CEPCI = 820; %Source: Lecture slides
-	C_f = 3.0; %$/GJ
+	a = 0.001 + 2e-4*q^(-0.6); 
+		%Source: Uldrich and Vasudevan
+	b=0.1; 
+		%Source: Uldrich and Vasudevan
+	CEPCI = 820; 
+		%Source: Lecture slides
+	C_f = 3.0; 						% [ $ / GJ ]
 
 	%$/m^3 waste water
 	cost_waste_water = a*CEPCI + b*C_f
-
-	%$/yr = $/m^3 * m^3/hr * hr/yr
-	% cpy_waste_water = cost_waste_water*15.15*8760 
 	
 	% m^3 / s = (m^3 / s) * (s / yr)
 	q = q * SEC_PER_YR;
-	% cpy_waste_water = cost_waste_water*(FLOWRATE WATER m^3 / yr)
 	cost = cost_waste_water * q;
 
 end
