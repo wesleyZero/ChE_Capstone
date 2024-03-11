@@ -138,9 +138,9 @@ ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX = true;
 % Separation System Thermodynamics 
 T_SEPARATION = 173.15; 			% [ K ] 
 P_SEPARATION = PRESS_RXTR; 		% [ bar ]
-MAX_OPEX = true;		% [ __ ]
-MAX_TFCI = true;
-MAX_CAPEX = true;
+MAX_OPEX = false;		% [ __ ]
+MAX_TFCI = false;
+MAX_CAPEX = false;
 
 % Zeolite and waste stream
 % zeo 1.2 - 2.2 wt% absobtion = max of zeolite (g/g)
@@ -800,7 +800,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					cost_sep = cost_separation_system(P_flowrates, F_steam, R_ethane) ;
 					if cost_sep > 0 
 						
-						fprintf("cost sep = %3.3f\n",cost_sep)
+						fprintf("cost sep = %3.3e \n",cost_sep)
 					end
 					% fprintf("cost %s\n", cost_separation_system(P_flowrates, F_steam, R_ethane)')
 
@@ -1300,12 +1300,16 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 
 	%(J/s) =    (mol/s) * (J/mol K) * (T) 
 	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
-					F_LPG*R*T*log(x_propane/z_propane + x_butane/z_butane) + ...
+					F_LPG*R*T*log(x_propane/z_propane + ...
+								  x_butane/z_butane) + ...
 					F_ethylene*R*T*log(x_ethylene/z_ethylene) + ...
 					F_ethane*R*T*log(x_ethane/z_ethane) + ...
-					R*T*(F_H2*log(P_H2/P_in)+ F_H2*log(x_hydrogen/z_hydrogen) +...
-					F_ME*log(x_methane/z_methane) +...
-					F_ME*log(P_ME/P_in));
+					R*T*( ... 
+						F_H2*log(P_H2/P_in)+ ...
+						F_H2*log(x_hydrogen/z_hydrogen) +...
+						F_ME*log(x_methane/z_methane) +...
+						F_ME*log(P_ME/P_in)...
+						);
 
 
 	lamdba_min = 20;
@@ -1326,14 +1330,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 		capex = 0.5 * lamdba_min * W_min_Sep_System;
 	end
 
-	if MAX_TFCI
-		cost = 2.5 * capex ;
-	else
-		cost = 2.5 * capex ;
-	end
-
-	% cost = cost * YR_PER_SEC;
-
+	cost = 2.5 * capex ;
+	
 end
 
 
