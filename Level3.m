@@ -33,6 +33,7 @@ global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
+global MAX_CAPEX MAX_OPEX MAX_TFCI
 
 % USER NOTES____________________________________________________________________
 
@@ -136,7 +137,10 @@ ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX = true;
 
 % Separation System Thermodynamics 
 T_SEPARATION = 173.15; 			% [ K ] 
-P_SEPARATION = PRESS_RXTR; 				% [ bar ]
+P_SEPARATION = PRESS_RXTR; 		% [ bar ]
+MAX_OPEX = true;		% [ __ ]
+MAX_TFCI = true;
+MAX_CAPEX = true;
 
 % Zeolite and waste stream
 % zeo 1.2 - 2.2 wt% absobtion = max of zeolite (g/g)
@@ -1220,68 +1224,6 @@ function cost = cost_reactor(V_plant_input)
 
 end
 
-function cost = separation_cost(P_flowrates)
-	clear; clc;
-	R = 8.314; 		% [J / mol K ]
-	T = 173.15; 	% [ K ] 
-		% This is the average of boiling points non-wighted
-
-	TEMP_SEPARATION = 173.15;
-
-	%Using compositions from ASPEN [mol fraction ]
-	z_ethane = 0.105622966291020;
-	z_ethylene = 0.270187148320469;
-	z_hydrogen = 0.310508998651457;
-	z_methane = 1.25317745797863e-005;
-	z_propane = 1.25317745797863e-005;
-	z_butane = 4.03219013378326e-002;
-	z_water = 0.273333921850062;
-
-	% mol fractions AFTER separationS
-	x_water = 1;
-	x_ethane = 1;
-	x_propane = 0.9997;
-	x_butane = 0.0003;
-	x_ethylene = 1;
-	x_hydrogen = 1; 
-	x_methane = 4.03293090303065e-004;
-
-	% PSA pressure system (system not at current pressure)
-	P_in = 2;
-	P_H2 = 10;
-	P_ME = 1;
-
-	%Using flow rates from ASPEN [NOTE: FOR MATLAB USE THE VALUES FROM THE
-	%SOLN_TABLE. WE USED THESE AS EXPECTED COSTS)
-
-	% INPUT MY FLOWRATES INSTEAD OF USING THESE
-	F_water = 237.1; %mol/s
-		% Steam coming out of the reactor 
-	F_LPG = 34.97; %mol/s
-		% 
-	F_ethylene = 234.3; %mol/s
-	F_ethane = 91.6; %mol/s
-	F_H2 = 0.8716; %mol/s
-	F_ME = 2.69e-5; %mol/s
-
-	% j / s = ...
-	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
-		F_LPG*R*T*log(x_propane/z_propane + x_butane/z_butane) + ...
-		F_ethylene*R*T*log(x_ethylene/z_ethylene) + ...
-		F_ethane*R*T*log(x_ethane/z_ethane) + ...
-		R*T*(F_H2*log(P_H2/P_in)+ F_H2*log(x_hydrogen/z_hydrogen) + ...
-		F_ME*log(x_methane/z_methane) + F_ME*log(P_ME/P_in)) ;
-
-	OPEX_MAX_Sep_System = W_min_Sep_System/1e9 * 50 * 3 * 30.24e6
-	OPEX_MIN_Sep_System = W_min_Sep_System/1e9 * 20 * 3 * 30.24e6
-
-	CAPEX_MAX_Sep_System = 50 * W_min_Sep_System
-	CAPEX_MIN_Sep_System = 30 * W_min_Sep_System
-
-	TFCI_Max_Sep_System = 2.5 * CAPEX_MAX_Sep_System 
-	TFCI_Min_Sep_System = 2.5 * CAPEX_MIN_Sep_System 
-end
-
 %        [$]  =                  ( kta   )
 function cost = cost_waste_stream(F_steam)
 	global MOLMASS_WATER G_PER_KT YR_PER_SEC R_2 M3_PER_L T_SEPARATION ... 
@@ -1308,9 +1250,9 @@ function cost = cost_waste_stream(F_steam)
 
 end
 
-
 function cost = cost_separation_system(P_rxtr_out)
-	global TEMP_SEPARATION R PRESS_RXTR SEPARATION_EFFICIENCY_FACTOR
+	global TEMP_SEPARATION R PRESS_RXTR R ...
+	 MAX_OPEX MAX_TFCI MAX_CAPEX
 	% Product flow rate indicies 
 	HYDROGEN = 1;
 	METHANE = 2;
@@ -1321,15 +1263,14 @@ function cost = cost_separation_system(P_rxtr_out)
 	% Feed flow rate index
 	ETHANE = 6;
  
-	SEPARATION_EFFICIENCY_FACTOR = 30;
-	% R = 8.314; %J/mol K
-	% T = 173.15; %K
-	T = TEMP_SEPARATION;
+	% SEPARATION_EFFICIENCY_FACTOR = 30;
+	T = TEMP_SEPARATION; % [ K ]
 	
 
 	%Using compositions from ASPEN
 	%Component mole flow rate out of rxtr over total mole flow rate out of reactor
 	% Mol fractions out of the reactoor
+
 	z_ethane = 0.105622966291020;
 	z_ethylene = 0.270187148320469;
 	z_hydrogen = 0.310508998651457;
@@ -1366,7 +1307,8 @@ function cost = cost_separation_system(P_rxtr_out)
 	
 	%Using flow rates from ASPEN [NOTE: FOR MATLAB USE THE VALUES FROM THE
 	%SOLN_TABLE. WE USED THESE AS EXPECTED COSTS)
-	
+
+	% Flowrates of each exiting stream from the sep system	
 	F_water = 237.1; %mol/s
 	F_LPG = 34.97; %mol/s
 	F_ethylene = 234.3; %mol/s
@@ -1381,17 +1323,49 @@ function cost = cost_separation_system(P_rxtr_out)
 					F_ethane*R*T*log(x_ethane/z_ethane) + ...
 					R*T*(F_H2*log(P_H2/P_in)+ F_H2*log(x_hydrogen/z_hydrogen) +...
 					F_ME*log(x_methane/z_methane) +...
-					 F_ME*log(P_ME/P_in));
+					F_ME*log(P_ME/P_in));
+
+	% lamdba_min = 20;
+	% lambda_max = 50;	
+	% cost_energy = 3;		% ( $ / GJ )
+
+	% %($/yr)             =   (J/s)     * (GJ/J) * (Work Efficiency) *($/GJ)* (s/yr)
+	% OPEX_MAX_Sep_System = W_min_Sep_System*1e-9 * lambda_max * cost_energy * 30.24e6
+	% OPEX_MIN_Sep_System = W_min_Sep_System*1e-9 * lamdba_min * cost_energy * 30.24e6
 	
-	%($/GJ) =   (J/s) * (J/GJ) * (Work Efficiency)
-	OPEX_MAX_Sep_System = W_min_Sep_System/1e9 * 50 * 3 * 30.24e6
-	OPEX_MIN_Sep_System = W_min_Sep_System/1e9 * 20 * 3 * 30.24e6
+	% %($) 				 = ($/W)    (Efficiency) * (J/s) 
+	% CAPEX_MAX_Sep_System = 1 * lambda_max * W_min_Sep_System
+	% CAPEX_MIN_Sep_System = 0.5 * lamdba_min * W_min_Sep_System
 	
-	CAPEX_MAX_Sep_System = 50 * W_min_Sep_System
-	CAPEX_MIN_Sep_System = 30 * W_min_Sep_System
+	% TFCI_Max_Sep_System = 2.5 * CAPEX_MAX_Sep_System 
+	% TFCI_Min_Sep_System = 2.5 * CAPEX_MIN_Sep_System 
+
 	
-	TFCI_Max_Sep_System = 2.5 * CAPEX_MAX_Sep_System 
-	TFCI_Min_Sep_System = 2.5 * CAPEX_MIN_Sep_System 
+	
+
+	lamdba_min = 20;
+	lambda_max = 50;	
+	cost_energy = 3;		% ( $ / GJ )
+
+	if MAX_OPEX
+	%($/yr)             =   (J/s)     * (GJ/J) * (Work Efficiency) *($/GJ)* (s/yr)
+		opex =  W_min_Sep_System*1e-9 * lambda_max * cost_energy * 30.24e6;
+	else
+		opex = W_min_Sep_System*1e-9 * lamdba_min * cost_energy * 30.24e6;
+	end
+
+	if MAX_CAPEX
+	%($) 				 = ($/W)    (Efficiency) * (J/s) 
+		capex = 1 * lambda_max * W_min_Sep_System;
+	else
+		capex = 0.5 * lamdba_min * W_min_Sep_System
+	end
+
+	if MAX_TFCI
+		cost = 2.5 * capex ;
+	else
+		cost = 2.5 * capex ;
+	end
 
 end
 
