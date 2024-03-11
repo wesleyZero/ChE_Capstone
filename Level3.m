@@ -32,7 +32,7 @@ global STEAM_PRESSURE_COL STEAM_TEMP_COL;
 global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
-global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION
+global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L
 
 % USER NOTES____________________________________________________________________
 
@@ -557,8 +557,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
  				profit(i) = profit(i) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
 				profit(i) = profit(i) - value_ethane(F_ethane);
 				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
-% 				profit(i) = profit(i) - cost_reactor(P_flowrates, P, T, S1, S2);	
-	% 			profit(i) = profit(i) - cost_waste_stream(F_steam, F_waste)
+				profit(i) = profit(i) - cost_waste_stream(F_steam);
 
 			else
 				profit(i) = INVALID_FLOWRATE;
@@ -742,6 +741,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					% ?? WHAT IS THE FLOWRATE INTO THE PLANT ??
 					% F_ethane = F_ETHANE()
 					F_ethane = F_ETHANE(select_1(i), select_2(i));
+					% ?? This is currently the fresh feed not the reactor feed flow ethane
 
 					if (~flowrates_valid(P_flowrates))
 						disp("WARNING SOME FLOWATES MAY BE INVALID")
@@ -1162,47 +1162,6 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 	
 end
 
-% function cost = cost_reactor(V_plant_input)
-% 	global FT_PER_METER STEAM_TO_FEED_RATIO
-% 	FT_PER_METER = 3.28084;
-% 	% ??? WHAT ARE THE UNITS OF TIME
-% 	%
-% 	pi = 3.14159;
-% 	D = 0.05;								% [m]
-% 	V_plant_max = pi * (0.025)^2 * 20; 		%[m^3]
-	
-% 	% Reactors have a max length, so calculate the number of full size reactors
-% 	% and add it to the cost of the one non-max length reactor
-
-% 	cost = 0;
-
-% 	% Find the Cost of the max-sized reactors
-% 	num_of_additional_reactors = int64(V_plant_input / V_plant_max);	
-% 	num_of_additional_reactors = double(num_of_additional_reactors);
-	
-% 	V_plant = V_plant_max;
-% 	factor_1 = 3.25;
-% 	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
-% 	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
-% 	factor_4 = (1800 / 280);
-% 	cost_max_reactor = factor_1 * factor_2 * factor_3 * factor_4; 
-% 	cost = cost + num_of_additional_reactors * cost_max_reactor;
-	
-
-% 	% Find the cost of the non-max size reactor 
-% 	V_plant = V_plant_input - V_plant_max * num_of_additional_reactors;
-% 	if V_plant < 0
-% 		V_plant = 0;
-% 	end
-% 	factor_1 = 3.25;
-% 	factor_2 = (V_plant / (pi * (D/2)^2) * FT_PER_METER)^0.82;
-% 	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
-% 	factor_4 = (1800 / 280);
-% 	cost = cost + factor_1 * factor_2 * factor_3 * factor_4;
-
-
-% end
-
 function cost = cost_reactor(V_plant_input)
 	global FT_PER_METER STEAM_TO_FEED_RATIO
 	FT_PER_METER = 3.28084;
@@ -1306,20 +1265,20 @@ function cost = separation_cost(P_flowrates)
 	TFCI_Min_Sep_System = 2.5 * CAPEX_MIN_Sep_System 
 end
 
-%        [$]  =                  ( kta   , C, bar)
-function cost = cost_waste_stream(F_steam, T, P)
+%        [$]  =                  ( kta   )
+function cost = cost_waste_stream(F_steam)
 	global MOLMASS_WATER G_PER_KT YR_PER_SEC R_2 M3_PER_L T_SEPARATION ... 
-			P_SEPARATION
+			P_SEPARATION SEC_PER_YR C_TO_K;
 
 	% This is the OUTLET temperature and pressure of the sep SYSTEM
 	T = T_SEPARATION;
 	P = P_SEPARATION;
 
 	% mol/s = ( kt / yr) * (g / kt) * (mol / g)   * (yr / s)
-	F_steam = F_steam * G_PER_KT * (MOLMASS_WATER) * YR_PER_SEC;
+	F_steam = F_steam * G_PER_KT * (1 / MOLMASS_WATER) * YR_PER_SEC;
 
 	% L / s =  (mol / s) * [ L bar / K mol ] * (Kelvin) / (bar)
-	q = F_steam * R_2 * T / P
+	q = F_steam * R_2 * T / P;
 
 	% m^3 / s = (L / s) * (m^3 / L)
 	q = q * M3_PER_L;
@@ -1333,7 +1292,7 @@ function cost = cost_waste_stream(F_steam, T, P)
 	C_f = 3.0; 						% [ $ / GJ ]
 
 	%$/m^3 waste water
-	cost_waste_water = a*CEPCI + b*C_f
+	cost_waste_water = a*CEPCI + b*C_f;
 	
 	% m^3 / s = (m^3 / s) * (s / yr)
 	q = q * SEC_PER_YR;
