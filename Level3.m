@@ -521,6 +521,10 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				propane_flowrates(i) = P_PROPANE(s1, s2);
 				butane_flowrates(i) = P_BUTANE(s1, s2);
 				ethane_flowrates(i) = F_ETHANE(s1, s2);
+
+				% F_ethane = F_ETHANE(select_1(i), select_2(i));
+				% F_fresh_ethane = F_ethane;
+				% F_ethane_rxtr = F_ethane(i) * ( conversion(i) / (1 - conversion(i)) );
 				
 				xi = [];
 				% Calculate the heat flux needed to keep reactor isothermal 
@@ -528,6 +532,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				xi = get_xi(P_flowrates);
 				F_steam = STEAM_TO_FEED_RATIO_MASS * F_ethane;
 				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
+				% heat_flux = heat_flux + heat_ethane(F_ethane_into_reactor, TEMP_SEPARATION, TEMP_RXTR);
 				heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 				heat_flux = heat_flux + heat_rxn(xi);
 
@@ -741,12 +746,15 @@ if (CALCULATE_REACTOR_FLOWS)
 					P_propane = P_flowrates(PROPANE);
 					P_butane = P_flowrates(BUTANE);
 
-% 					F_ethane = P_flowrates(ETHANE);
-					% F_ethane = sum(P_flowrates(:)) + F_soln_ODE(i ,ETHANE);
 					% ?? WHAT IS THE FLOWRATE INTO THE PLANT ??
-					% F_ethane = F_ETHANE()
-					F_ethane = F_ETHANE(select_1(i), select_2(i));
-					% ?? This is currently the fresh feed not the reactor feed flow ethane
+					% F_ethane = F_ETHANE(select_1(i), select_2(i));
+
+					% F_fresh_ethane = F_ethane;
+					% F_ethane_rxtr = F_ethane(i) * ( conversion(i) / (1 - conversion(i)) );
+					% R_ethane = F_fresh_ethane * ( ( 1 - conversion(i)) / conversion(i) );
+
+					F_fresh_ethane = F_ETHANE(select_1(i), select_2(i)); 
+					R_ethane = F_fresh_ethane * ( ( 1 - conversion(i)) / conversion(i) );
 
 					if (~flowrates_valid(P_flowrates))
 						disp("WARNING SOME FLOWATES MAY BE INVALID")
@@ -755,8 +763,9 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Calculate the heat flux needed to keep reactor isothermal 
 					heat_flux = 0;
 					xi = get_xi(P_flowrates);
-					F_steam = STEAM_TO_FEED_RATIO_MASS * F_ethane;
-					heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
+					F_steam = STEAM_TO_FEED_RATIO_MASS * (F_fresh_ethane + R_ethane);
+					heat_flux = heat_flux + heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
+					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION, TEMP_RXTR);
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 					heat_flux = heat_flux + heat_rxn(xi);
 
@@ -787,32 +796,32 @@ if (CALCULATE_REACTOR_FLOWS)
 					% COSTS INCURRED
 					profit(i, 1) = profit(i, 1) - tax_C02(combusted_fuel_flow_rates, F_natural_gas);
 					profit(i, 1) = profit(i, 1) - cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
-					profit(i, 1) = profit(i, 1) - value_ethane(F_ethane);
+					profit(i, 1) = profit(i, 1) - value_ethane(F_fresh_ethane);
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 					% WASTE STREAM HERE 
 
-					if profit(i, 1) > 2 * 10^8
-						fprintf("Profit = %f \n", profit(i, 1))
-						% VALUE CREATED | Primary Products
-						disp("value")
-						value_ethylene(P_ethylene)
-						value_h2_chem(P_hydrogen - combusted_hydrogen)
+					% if profit(i, 1) > 2 * 10^8
+					% 	fprintf("Profit = %f \n", profit(i, 1))
+					% 	% VALUE CREATED | Primary Products
+					% 	disp("value")
+					% 	value_ethylene(P_ethylene)
+					% 	value_h2_chem(P_hydrogen - combusted_hydrogen)
 						
-						% VALUE CREATED | Non-combusted fuels 
-						% The commented line can be removed or modified as per the context.
-						% profit(i, 1) = profit(i, 1) + value_methane(P_methane - combusted_methane);
+					% 	% VALUE CREATED | Non-combusted fuels 
+					% 	% The commented line can be removed or modified as per the context.
+					% 	% profit(i, 1) = profit(i, 1) + value_methane(P_methane - combusted_methane);
 						
-						value_propane(P_propane - combusted_propane)
-						value_butane(P_butane - combusted_butane) 
-						disp("costs")
-						% COSTS INCURRED
-						tax_C02(combusted_fuel_flow_rates, F_natural_gas)
-						cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL))
-						value_ethane(F_ethane)
-						cost_natural_gas_fuel(F_natural_gas)
-					end 
+					% 	value_propane(P_propane - combusted_propane)
+					% 	value_butane(P_butane - combusted_butane) 
+					% 	disp("costs")
+					% 	% COSTS INCURRED
+					% 	tax_C02(combusted_fuel_flow_rates, F_natural_gas)
+					% 	cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL))
+					% 	value_ethane(F_ethane)
+					% 	cost_natural_gas_fuel(F_natural_gas)
+					% end 
 					% Sanity checking
-					conserv_mass(i, 1) = F_ethane - sum(P_flowrates);
+					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
 				end
 
 				% PLOTTING_________________________________________________________________________
@@ -1066,6 +1075,8 @@ function W = compressor_work(T, P_0, P_f)
 
 	W = - n * R * T * log(P_f / P_0);
 
+	% ?? THIS ALWAYS RETURNS 0 OR NULL, NOT IMPLEMENTED YET
+
 end
 
 % HELPER FUNCTIONS | TAXES______________________________________________
@@ -1297,9 +1308,19 @@ function cost = cost_waste_stream(F_steam)
 end
 
 
-function cost = cost_separation_system()
-	global TEMP_SEPARATION R PRESS_RXTR
+function cost = cost_separation_system(P_rxtr_out)
+	global TEMP_SEPARATION R PRESS_RXTR SEPARATION_EFFICIENCY_FACTOR
+	% Product flow rate indicies 
+	HYDROGEN = 1;
+	METHANE = 2;
+	ETHYLENE = 3;
+	PROPANE = 4;
+	BUTANE = 5;
 
+	% Feed flow rate index
+	ETHANE = 6;
+ 
+	SEPARATION_EFFICIENCY_FACTOR = 30;
 	% R = 8.314; %J/mol K
 	% T = 173.15; %K
 	T = TEMP_SEPARATION;
@@ -1315,16 +1336,11 @@ function cost = cost_separation_system()
 	z_propane = 1.25317745797863e-005;
 	z_butane = 4.03219013378326e-002;
 	z_water = 0.273333921850062;
-	
-	%Mol fractions leaving each separation system
-	x_water = 1;
-	x_ethane = 1;
-	x_propane = 0.9997;
-	x_butane = 0.0003;
-	x_ethylene = 1;
-	x_hydrogen = 1; 
-	x_methane = 4.03293090303065e-004;
 
+	P_total = 1;
+
+	
+	%Mol fractions leaving each separation system (refer to Isa's drawing in GN)
 	% leaving sep 1
 	x_water = 1;
 
@@ -1345,6 +1361,7 @@ function cost = cost_separation_system()
 	P_in = PRESS_RXTR;
 	P_H2 = 10;				% [ bar ]
 	P_ME = 1;				% [ bar ]
+		% These outlet pressures are constant for PSA system. DONT change 
 	
 	%Using flow rates from ASPEN [NOTE: FOR MATLAB USE THE VALUES FROM THE
 	%SOLN_TABLE. WE USED THESE AS EXPECTED COSTS)
