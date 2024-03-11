@@ -33,7 +33,7 @@ global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
-global MAX_CAPEX MAX_OPEX MAX_TFCI
+global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR
 
 % USER NOTES____________________________________________________________________
 
@@ -752,7 +752,7 @@ if (CALCULATE_REACTOR_FLOWS)
 
 					F_fresh_ethane = F_ETHANE(select_1(i), select_2(i)); 
 					R_ethane = F_fresh_ethane * ( ( 1 - conversion(i)) / conversion(i) );
-					R_ethane = P_flowrates(ETHANE);
+					R_ethane = F_soln_ODE(i, ETHANE);
 						% ?? These two values R should be the same
  
 					if (~flowrates_valid(P_flowrates))
@@ -796,7 +796,13 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - value_ethane(F_fresh_ethane);
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
-					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane)
+					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane);
+					cost_sep = cost_separation_system(P_flowrates, F_steam, R_ethane) ;
+					if cost_sep > 0 
+						
+						fprintf("cost sep = %3.3f\n",cost_sep)
+					end
+					% fprintf("cost %s\n", cost_separation_system(P_flowrates, F_steam, R_ethane)')
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
@@ -1214,9 +1220,11 @@ function cost = cost_waste_stream(F_steam)
 end
 
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
-	% P_flowrates + 
-	global TEMP_SEPARATION R PRESS_RXTR R ...
-	 MAX_OPEX MAX_TFCI MAX_CAPEX
+	global MOLMASS_METHANE MOLMASS_HYDROGEN MOLMASS_ETHANE MOLMASS_ETHYLENE ...
+		 MOLMASS_PROPANE MOLMASS_BUTANE YR_PER_SEC
+	global T_SEPARATION R PRESS_RXTR R ...
+	 MAX_OPEX MAX_TFCI MAX_CAPEX G_PER_KT MOLMASS_WATER 
+
 	% Product flow rate indicies 
 	HYDROGEN = 1;
 	METHANE = 2;
@@ -1228,27 +1236,32 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	ETHANE = 6;
  
 	% SEPARATION_EFFICIENCY_FACTOR = 30;
-	T = TEMP_SEPARATION; % [ K ]
-	
+	T = T_SEPARATION; % [ K ]
 
 	%Using compositions from ASPEN
 	%Component mole flow rate out of rxtr over total mole flow rate out of reactor
 	% Mol fractions out of the reactoor
 
-	
-	z_ethane = 0.105622966291020;
-	z_ethylene = 0.270187148320469;
-	z_hydrogen = 0.310508998651457;
-	z_methane = 1.25317745797863e-005;
-	z_propane = 1.25317745797863e-005;
-	z_butane = 4.03219013378326e-002;
-	z_water = 0.273333921850062;
+	% (mol / s) = (kt / yr) * (g / kt) * (mol / g) * (yr / s)
+	P_flowrates(METHANE) = P_flowrates(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
+	P_flowrates(HYDROGEN) = P_flowrates(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
+	R_ethane = R_ethane * G_PER_KT * (1/MOLMASS_ETHANE) * YR_PER_SEC;
+	P_flowrates(ETHYLENE) = P_flowrates(ETHYLENE) * G_PER_KT * (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
+	P_flowrates(PROPANE) = P_flowrates(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
+	P_flowrates(BUTANE) = P_flowrates(BUTANE) * G_PER_KT * (1/MOLMASS_BUTANE) * YR_PER_SEC; % Add this line for butane
+	F_steam = F_steam * G_PER_KT * (1/MOLMASS_WATER) * YR_PER_SEC;
 
 	%CONVERT TO_MOLES
-	% P_total = 1;
-	P_total = sum(P_f)
 
-	z_ethane = 
+	P_tot = sum(P_flowrates(HYDROGEN:BUTANE)) + F_steam + R_ethane;
+
+	z_methane = P_flowrates(METHANE) / P_tot;
+	z_hydrogen = P_flowrates(HYDROGEN) / P_tot;
+	z_ethane = R_ethane / P_tot;
+	z_ethylene = P_flowrates(ETHYLENE) / P_tot;
+	z_propane = P_flowrates(PROPANE) / P_tot;
+	z_butane = P_flowrates(BUTANE) / P_tot;
+	z_water = F_steam / P_tot;
 	
 	%Mol fractions leaving each separation system (refer to Isa's drawing in GN)
 	% leaving sep 1
@@ -1277,13 +1290,14 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	%SOLN_TABLE. WE USED THESE AS EXPECTED COSTS)
 
 	% Flowrates of each exiting stream from the sep system	
-	F_water = 237.1; %mol/s
-	F_LPG = 34.97; %mol/s
-	F_ethylene = 234.3; %mol/s
-	F_ethane = 91.6; %mol/s
-	F_H2 = 0.8716; %mol/s
-	F_ME = 2.69e-5; %mol/s
-	
+
+	F_water = F_steam; 									% mol/s
+	F_LPG = P_flowrates(BUTANE) + P_flowrates(PROPANE); % (mol / s)
+	F_ethylene = P_flowrates(ETHYLENE);					% (mol / s)
+	F_ethane = R_ethane;						% (mol / s)
+	F_H2 = P_flowrates(HYDROGEN);						% (mol / s)
+	F_ME = P_flowrates(METHANE);						% (mol / s); 
+
 	%(J/s) =    (mol/s) * (J/mol K) * (T) 
 	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
 					F_LPG*R*T*log(x_propane/z_propane + x_butane/z_butane) + ...
@@ -1309,7 +1323,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	%($) 				 = ($/W)    (Efficiency) * (J/s) 
 		capex = 1 * lambda_max * W_min_Sep_System;
 	else
-		capex = 0.5 * lamdba_min * W_min_Sep_System
+		capex = 0.5 * lamdba_min * W_min_Sep_System;
 	end
 
 	if MAX_TFCI
@@ -1317,6 +1331,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	else
 		cost = 2.5 * capex ;
 	end
+
+	% cost = cost * YR_PER_SEC;
 
 end
 
