@@ -1345,7 +1345,45 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 end
 
 
+function void = npv_graphs(npv)
 
+	% npv.ethyleneValue = value_ethylene(P_ethylene);
+	% npv.hydrogenValue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
+	% npv.ethane = value_ethane(F_fresh_ethane);
+	% npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
+	% npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
+	% npv.conversion = conversion(i);
+	% npv.isbl = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
+
+	% NPV CALCS 
+
+	filename = 'npv_code.xlsx';
+	data = readtable(filename);
+
+	sheetName = 'cf'; % Specify the sheet name or number
+	data = readtable(filename, 'Sheet', sheetName);
+
+	n = 5; % Number of times to duplicate the sheet
+	for i = 1:n
+		% Assuming 'data' is the table you want to duplicate
+		writetable(data, filename, 'Sheet', ['DuplicatedSheet' num2str(i)]);
+	end
+
+	cellRow = 10; % Row of the cell to modify
+	cellCol = 'C'; % Column of the cell to modify, use column index if numerical indexing preferred
+	newValue = 69; % New value to assign
+
+	for i = 1:n
+		modifiedData = data; % Make a copy of the original data
+		modifiedData{cellRow, cellCol} = newValue; % Modify the specific cell
+		
+		% Export the modified data to a new sheet
+		writetable(modifiedData, filename, 'Sheet', ['ModifiedSheet' num2str(i)]);
+	end
+
+	
+
+end
 
 
 
