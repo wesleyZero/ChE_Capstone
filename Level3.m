@@ -33,7 +33,7 @@ global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
-global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION
+global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ
 
 % USER NOTES____________________________________________________________________
 
@@ -209,6 +209,9 @@ SEC_PER_YR = 3.154 * 10^7;			% [ s / yr ]
 
 % Volumes 
 M3_PER_L = 0.001;
+
+% heat 
+MILLIONBTU_PER_GJ = 947817; 		% [ ]
 
 % CONSTANTS | PHYSICAL______________________________________________________
 
@@ -798,15 +801,11 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
 					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane);
-					% cost_sep = cost_separation_system(P_flowrates, F_steam, R_ethane) ;
-					% if cost_sep > 0 
-						
-					% 	fprintf("cost sep = %3.3e \n",cost_sep)
-					% end
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
 
+					% NPV params
 					npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
 					npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
 					npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
@@ -814,10 +813,31 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
 					npv_params.conversion = conversion(i);
 					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
-					% NPV CALCS 
+
+					% NPV calculations 
 					npv(i, 1) = get_npv(npv_params);
 
 				end
+
+				% Debugging 
+				if true
+					
+					npv_params
+					fprintf(" npv = ($ MM) %3.3f \n", npv(i ,1))
+					% % NPV params
+					% npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA
+					% npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA 
+					% npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA
+					% npv_params.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) * MMDOLLA_PER_DOLLA
+					% npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA 
+					% npv_params.conversion = conversion(i)
+					% npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA
+
+					% NPV calculations 
+					% npv(i + 1, 1) = get_npv(npv_params)
+				end
+
+
 
 				% PLOTTING_________________________________________________________________________
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
@@ -851,6 +871,36 @@ if (CALCULATE_REACTOR_FLOWS)
 	end
 end 
 
+% viewMultiDimensionalArray()
+% 
+% function z = viewMultiDimensionalArray()
+%     % Example 3D array
+%     data = rand(100, 100, 50); % A 100x100x50 array
+%     
+%     % Create figure
+%     f = figure('Name', '3D Array Viewer', 'NumberTitle', 'off');
+%     
+%     % Create axes for image
+%     ax = axes('Parent', f, 'Position', [0.1 0.2 0.8 0.7]);
+%     
+%     % Initial slice display
+%     sliceNum = 1;
+%     imagesc(data(:, :, sliceNum), 'Parent', ax);
+%     colormap(ax, 'jet');
+%     colorbar(ax);
+%     
+%     % Create slider
+%     slider = uicontrol('Parent', f, 'Style', 'slider', 'Position', [150, 50, 300, 20], ...
+%                        'value', sliceNum, 'min', 1, 'max', size(data, 3), ...
+%                        'SliderStep', [1/size(data, 3) , 10/size(data, 3) ], ...
+%                        'Callback', @(es,ed) updateSlice(es, data, ax));
+%     
+%     % Update function
+%     function updateSlice(slider, data, ax)
+%         sliceNum = round(slider.Value);
+%         imagesc(data(:, :, sliceNum), 'Parent', ax);
+%     end
+% end
 
 
 
@@ -1515,7 +1565,6 @@ function lifetime_npv = get_npv(npv)
 		% Cummulative Cash Flow
 		cash_flow_matrix(row, CUM_CASH_FLOW) = sum( cash_flow_matrix( 1 : row, CASH_FLOW) );
 		
-
 		% PV of CF 
 		cash_flow_matrix(row, PV_OF_CF) = cash_flow_matrix(row, CASH_FLOW) / ( 1 + npv.discountRate)^yr;
 
@@ -1537,7 +1586,8 @@ end
 
 
 
-function installedCost = calculate_installed_cost(Q, F_d, F_m, F_p)
+function installedCost = calculate_installed_cost(Q)
+	global MILLIONBTU_PER_GJ
 
 	Q = Q * MILLIONBTU_PER_GJ * yr/hr;	
     % Constants
