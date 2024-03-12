@@ -1358,19 +1358,20 @@ end
 
 function void = npv_graphs(npv)
 	global YEARS_IN_OPERATION
-	% All inputs are in units of $MM
-
-	% npv.mainProductRevenue = value_ethylene(P_ethylene);
-	% npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
-	% npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
-	% npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
-	% npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
-	% npv.conversion = conversion(i);
-	% npv.isbl = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
+	% USER_INPUTS | All inputs are in units of $MM
+		% npv.mainProductRevenue = value_ethylene(P_ethylene);
+		% npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
+		% npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
+		% npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
+		% npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
+		% npv.conversion = conversion(i);
+		% npv.isbl = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
+	
 	WORKING_CAP_PERCENT_OF_FCI = 0.15; 		% [ % in decimal ]
 	STARTUP_COST_PERCENT_OF_FCI = 0.10;		% [ % in decimal ]
-	YEARS_OF_CONSTRUCTION = 6;
-	LAST_ROW_CONSTRUCTION = YEARS_OF_CONSTRUCTION; 
+	LENGTH_CONSTRUCTION_TABLE = 6;
+	LAST_ROW_CONSTRUCTION = LENGTH_CONSTRUCTION_TABLE; 
+	YEARS_OF_CONSTUCTION = 3;
 
 	% Revenues & Production Costs	
 	npv.consummablesCost = 0;
@@ -1413,10 +1414,10 @@ function void = npv_graphs(npv)
 	SU = 4;
 	FCOP = 5;
 	VCOP = 6;
-	construction_matrix = zeros(YEARS_OF_CONSTRUCTION + 1, VCOP);
+	construction_matrix = zeros(LENGTH_CONSTRUCTION_TABLE + 1, VCOP);
 	
 	% Generate the construction schedule matrix
-	for yr = 0:YEARS_OF_CONSTRUCTION
+	for yr = 0:LENGTH_CONSTRUCTION_TABLE
 		row = yr + 1;
 		if yr > 0 && yr < 4
 			construction_matrix(row, FC) = 0.33;
@@ -1467,14 +1468,14 @@ function void = npv_graphs(npv)
 		end
 
 		% Revenue Column
-		if yr <= YEARS_OF_CONSTRUCTION
+		if yr <= LENGTH_CONSTRUCTION_TABLE % ?? 
 			cash_flow_matrix(row, REVENUE) = npv.mainProductRevenue * construction_matrix(row, VCOP);
 		else
 			cash_flow_matrix(row, REVENUE) = npv.mainProductRevenue * construction_matrix(LAST_ROW_CONSTRUCTION, VCOP);
 		end
 
 		% COM Column 
-		if yr <= YEARS_OF_CONSTRUCTION
+		if yr <= LENGTH_CONSTRUCTION_TABLE
 			cash_flow_matrix(row, COM) = npv.VCOP * construction_matrix(row, VCOP);
 			cash_flow_matrix(row, COM) = npv.FCOP * construction_matrix(row, FCOP);
 		else
@@ -1482,6 +1483,15 @@ function void = npv_graphs(npv)
 			cash_flow_matrix(row, COM) = npv.FCOP * construction_matrix(LAST_ROW_CONSTRUCTION, FCOP);
 		end
 
+		% Gross Profit
+		cash_flow_matrix(row, GROSS_PROFIT) = cash_flow_matrix(row,REVENUE) - cash_flow_matrix(row, COM);
+		
+		% Depreciation
+		if yr > YEARS_OF_CONSTUCTION
+			cash_flow_matrix(row, DEPRECIATION) = 0.1*(npv.totalFixedCapitalCost + npv.startupCost - 0.05*npv.totalFixedCapitalCost);
+		end
+
+		
 	end
 
 
