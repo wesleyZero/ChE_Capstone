@@ -116,6 +116,9 @@ T_P_OVERRIDE = true;
 % Output fuel costs 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
 
+% output the cashflow matrix
+CASHFLOW_MATRIX_OUTPUT = false ;
+
 % Output the level 2 and 3 calculations 
 OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
 	SANITY_CHECK_CALCULATIONS = true;
@@ -141,6 +144,7 @@ P_SEPARATION = PRESS_RXTR; 		% [ bar ]
 MAX_OPEX = false;		% [ __ ]
 MAX_TFCI = false;
 MAX_CAPEX = false;
+
 
 % Zeolite and waste stream
 % zeo 1.2 - 2.2 wt% absobtion = max of zeolite (g/g)
@@ -828,7 +832,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				end
 
 				% Debugging 
-				if true
+				if CASHFLOW_MATRIX_OUTPUT 
 					fprintf("\n\nnpv = ($ MM) %3.3f \n", cf.lifetime_npv)
 					format short
 					% disp(ideal_cf.matrix)
