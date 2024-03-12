@@ -742,6 +742,8 @@ if (CALCULATE_REACTOR_FLOWS)
 				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
 				npv = zeros(length(F_soln_ODE(:,1)), 1); 
 
+				xi = [ 0 , 0, 0];	%init
+
 				% ECONOMIC CALCULATIONS____________________________________________________________
 				profit = zeros(length(F_soln_ODE(:,1)), 1);
 				for i = 1:length(F_soln_ODE(:, 1))
@@ -1604,7 +1606,7 @@ function cf = get_npv(npv)
 	% cash_flow_matrix
 % 	[cf_matrix, lifetime_npv] = [cash_flow_matrix, cash_flow_matrix(LAST_ROW_CASHFLOW, NPV)];
 	cf.matrix = cash_flow_matrix;
-	cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
+	% cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
 	% lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
 end
 
