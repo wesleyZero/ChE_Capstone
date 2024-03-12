@@ -1496,6 +1496,13 @@ function void = npv_graphs(npv)
 			cash_flow_matrix(row, TAXABLE_INC) = cash_flow_matrix(row, GROSS_PROFIT) - cash_flow_matrix(row,DEPRECIATION);
 		end
 
+		% Taxes Paid 
+		if yr >= YEARS_OF_CONSTUCTION
+			cash_flow_matrix(row, TAXES_PAID) = cash_flow_matrix(row, TAXABLE_INC) * npv.taxRate;
+		end
+
+		% Cash Flow
+
 
 		
 	end
