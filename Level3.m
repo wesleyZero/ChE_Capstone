@@ -819,6 +819,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					cf = get_npv(npv_params);
 					npv(i, 1) = cf.lifetime_npv;
 					if conversion(i) > 0.67 && conversion(i) < 0.70
+						cf = get_npv(npv_params);
 						ideal_cf = cf;
 						ideal_params = npv_params;
 						ideal_conversion = conversion(i);
@@ -1449,7 +1450,7 @@ function cf = get_npv(npv)
 	npv.interest = 15;
 	npv.AGS = (npv.mainProductRevenue + npv.byProductRevenue)*0.05;		% ~5% revenue
 	npv.FCOP = npv.salaryAndOverhead + npv.maintenenace +...
-						 npv.AGS + npv.interest + npv.AGS;
+						 npv.AGS + npv.interest;
 
 	% Capital Costs 
 	npv.OSBLcapitalCost = npv.ISBLcapitalCost * 0.40;
@@ -1528,6 +1529,8 @@ function cf = get_npv(npv)
 				= npv.totalFixedCapitalCost * construction_matrix(row,FC) + ...
 				  npv.workingCapital * construction_matrix(row, WC) + ... 
 				  npv.startupCost * construction_matrix(row, SU) ;
+		elseif yr == YEARS_IN_OPERATION
+			cash_flow_matrix(row, CAPITAL_EXPENSE) = - npv.salvageValue * npv.totalFixedCapitalCost;
 		else
 			cash_flow_matrix(row, CAPITAL_EXPENSE) ...
 				= npv.totalFixedCapitalCost * construction_matrix(LAST_ROW_CONSTRUCTION,FC) + ...
@@ -1544,11 +1547,11 @@ function cf = get_npv(npv)
 
 		% COM Column 
 		if yr <= LENGTH_CONSTRUCTION_TABLE
-			cash_flow_matrix(row, COM) = npv.VCOP * construction_matrix(row, VCOP);
-			cash_flow_matrix(row, COM) = npv.FCOP * construction_matrix(row, FCOP);
+			cash_flow_matrix(row, COM) = npv.VCOP * construction_matrix(row, VCOP) + ...
+											npv.FCOP * construction_matrix(row, FCOP);
 		else
-			cash_flow_matrix(row, COM) = npv.VCOP * construction_matrix(LAST_ROW_CONSTRUCTION, VCOP);
-			cash_flow_matrix(row, COM) = npv.FCOP * construction_matrix(LAST_ROW_CONSTRUCTION, FCOP);
+			cash_flow_matrix(row, COM) = npv.VCOP * construction_matrix(LAST_ROW_CONSTRUCTION, VCOP) + ...
+									npv.FCOP * construction_matrix(LAST_ROW_CONSTRUCTION, FCOP);
 		end
 
 		% Gross Profit
