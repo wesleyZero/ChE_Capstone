@@ -805,6 +805,16 @@ if (CALCULATE_REACTOR_FLOWS)
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
+
+					npv.mainProductRevenue = value_ethylene(P_ethylene);
+					npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
+					npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
+					npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
+					npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
+					npv.conversion = conversion(i);
+					npv.ISBLcapitalCost = cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane);
+					% NPV CALCS 
+					npv_graphs(npv)	
 				end
 
 				% PLOTTING_________________________________________________________________________
@@ -821,18 +831,18 @@ if (CALCULATE_REACTOR_FLOWS)
 				% Computer Selectivity vs conversion relationships 
 	
 				% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
-				% to calculate the true feed flow rates into the reactor 
+				% % to calculate the true feed flow rates into the reactor 
 
-				% ?? MODIFY ALL OF THESE TO BE IN MILLIONS OF DOLLARS
-				npv.mainProductRevenue = value_ethylene(P_ethylene);
-				npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
-				npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
-				npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
-				npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
-				npv.conversion = conversion(i);
-				npv.ISBLcapitalCost = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
-				% NPV CALCS 
-				npv_graphs(npv)	
+				% % ?? MODIFY ALL OF THESE TO BE IN MILLIONS OF DOLLARS
+				% npv.mainProductRevenue = value_ethylene(P_ethylene);
+				% npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
+				% npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
+				% npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
+				% npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
+				% npv.conversion = conversion(i);
+				% npv.ISBLcapitalCost = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
+				% % NPV CALCS 
+				
 
 			end 
 		end 
@@ -1360,6 +1370,7 @@ function void = npv_graphs(npv)
 	WORKING_CAP_PERCENT_OF_FCI = 0.15; 		% [ % in decimal ]
 	STARTUP_COST_PERCENT_OF_FCI = 0.10;		% [ % in decimal ]
 	YEARS_OF_CONSTRUCTION = 6;
+	LAST_ROW_CONSTRUCTION = YEARS_OF_CONSTRUCTION; 
 
 	% Revenues & Production Costs	
 	npv.consummablesCost = 0;
@@ -1443,9 +1454,18 @@ function void = npv_graphs(npv)
 		% Capital Expenses Column
 		if yr == 0
 			cash_flow_matrix(row, CAPITAL_EXPENSE) = npv.land;
-		% elif yr >= 1 && yr <= 5
-
+		elseif yr >= 1 && yr <= 5
+			cash_flow_matrix(row, CAPITAL_EXPENSE) ...
+				= npv.totalFixedCapitalCost * construction_matrix(row,FC) + ...
+				  npv.workingCapital * construction_matrix(row, WC) + ... 
+				  npv.startupCost * construction_matrix(row, SU) ;
+		else
+			cash_flow_matrix(row, CAPITAL_EXPENSE) ...
+				= npv.totalFixedCapitalCost * construction_matrix(LAST_ROW_CONSTRUCTION,FC) + ...
+				  npv.workingCapital * construction_matrix(LAST_ROW_CONSTRUCTION, WC) + ... 
+				  npv.startupCost * construction_matrix(LAST_ROW_CONSTRUCTION, SU) ;
 		end
+		
 	end
 
 	cash_flow_matrix
