@@ -53,7 +53,7 @@ global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION
 P_ETHYLENE_DES = 200;			% [	kta ]
 	% Note! This design parameter's units are changed prior to the matrix def 
 
-YEARS_IN_OPERATION = 10 ;
+YEARS_IN_OPERATION = 15 ;
 
 % USER INPUTS | GLOBAL CONSTANTS___________________________________________
 
@@ -806,13 +806,13 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
 
-					npv.mainProductRevenue = value_ethylene(P_ethylene);
-					npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
-					npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
-					npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
-					npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
+					npv.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
+					npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
+					npv.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
+					npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) * MMDOLLA_PER_DOLLA;
+					npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
 					npv.conversion = conversion(i);
-					npv.ISBLcapitalCost = cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane);
+					npv.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
 					% NPV CALCS 
 					npv_graphs(npv)	
 				end
@@ -1473,7 +1473,14 @@ function void = npv_graphs(npv)
 			cash_flow_matrix(row, REVENUE) = npv.mainProductRevenue * construction_matrix(LAST_ROW_CONSTRUCTION, VCOP);
 		end
 
-		%  
+		% COM Column 
+		if yr <= YEARS_OF_CONSTRUCTION
+			cash_flow_matrix(row, COM) = npv.VCOP * construction_matrix(row, VCOP);
+			cash_flow_matrix(row, COM) = npv.FCOP * construction_matrix(row, FCOP);
+		else
+			cash_flow_matrix(row, COM) = npv.VCOP * construction_matrix(LAST_ROW_CONSTRUCTION, VCOP);
+			cash_flow_matrix(row, COM) = npv.FCOP * construction_matrix(LAST_ROW_CONSTRUCTION, FCOP);
+		end
 
 	end
 
