@@ -830,7 +830,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
 				npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
 				npv.conversion = conversion(i);
-				npv.ISBLcapitalCosts = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
+				npv.ISBLcapitalCost = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
 				% NPV CALCS 
 				npv_graphs(npv)	
 
@@ -1420,7 +1420,6 @@ function void = npv_graphs(npv)
 		end
 	end
 
-
 	% NPV COLUMN INDICIES 
 	YEAR = 1;
 	CAPITAL_EXPENSE = 2;
@@ -1440,7 +1439,13 @@ function void = npv_graphs(npv)
 	for yr = 0:YEARS_IN_OPERATION
 		row = yr + 1;
 		cash_flow_matrix(row, YEAR) = yr;
-		% cash_flow_matrix(yr + 1,CAPITAL_EXPENSE) = 
+
+		% Capital Expenses Column
+		if yr == 0
+			cash_flow_matrix(row, CAPITAL_EXPENSE) = npv.land;
+		% elif yr >= 1 && yr <= 5
+
+		end
 	end
 
 	cash_flow_matrix
