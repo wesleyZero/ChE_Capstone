@@ -822,13 +822,15 @@ if (CALCULATE_REACTOR_FLOWS)
 	
 				% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
 				% to calculate the true feed flow rates into the reactor 
-				npv.ethyleneValue = value_ethylene(P_ethylene);
-				npv.hydrogenValue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
-				npv.ethane = value_ethane(F_fresh_ethane);
+
+				% ?? MODIFY ALL OF THESE TO BE IN MILLIONS OF DOLLARS
+				npv.mainProductRevenue = value_ethylene(P_ethylene);
+				npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
+				npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
 				npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
 				npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
 				npv.conversion = conversion(i);
-				npv.isbl = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
+				npv.ISBLcapitalCosts = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
 				% NPV CALCS 
 				npv_graphs(npv)	
 
@@ -1347,15 +1349,47 @@ end
 function void = npv_graphs(npv)
 	global YEARS_IN_OPERATION
 
-	% npv.ethyleneValue = value_ethylene(P_ethylene);
-	% npv.hydrogenValue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
-	% npv.ethane = value_ethane(F_fresh_ethane);
+	% npv.mainProductRevenue = value_ethylene(P_ethylene);
+	% npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
+	% npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
 	% npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
 	% npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
 	% npv.conversion = conversion(i);
 	% npv.isbl = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
+	WORKING_CAP_PERCENT_OF_FCI = 0.15;
+	STARTUP_COST_PERCENT_OF_FCI = 0.10;
 
-	% NPV CALCS 
+	% Revenues & Production Costs	
+	npv.consummablesCost = 0;
+	npv.VCOP = npv.rawMaterialsCost + npv.utilitiesCost + ...
+				npv.consummablesCost + npv.CO2sustainabilityCharge - ...
+														npv.byProductRevenue;
+	npv.salaryAndOverhead = 0;
+	npv.maintenenace = 0;
+	npv.interest = 15;
+	npv.AGS = (npv.mainProductRevenue + npv.byProductRevenue)*0.05;		% ~5% revenue
+	npv.FCOP = npv.salaryAndOverhead + npv.maintenenace +...
+						 npv.AGS + npv.interest + npv.AGS;
+
+	% Capital Costs 
+	npv.OSBLcapitalCost = npv.ISBLcapitalCost * 0.40;
+	npv.contingency = (npv.ISBLcapitalCost + npv.OSBLcapitalCost) * 0.25;
+	npv.indirectCost = (npv.ISBLcapitalCost + npv.OSBLcapitalCost + ...
+													npv.contingency) * 0.30;
+	npv.totalFixedCapitalCost = npv.ISBLcapitalCost + ...
+								npv.OSBLcapitalCost + ...
+								npv.indirectCost + ... 
+								npv.contingency;
+
+	npv.workingCapital = npv.totalFixedCapitalCost * WORKING_CAP_PERCENT_OF_FCI;
+	npv.startupCost = npv.totalFixedCapitalCost * STARTUP_COST_PERCENT_OF_FCI;
+	npv.land = 10;
+	npv.totalCapitalInvestment = npv.totalFixedCapitalCost + ...
+									npv.workingCapital + ...
+									npv.startupCost + ...
+									npv.land;
+
+	% NPV COLUMN INDICIES 
 	YEAR = 1;
 	CAPITAL_EXPENSE = 2;
 	REVENUE = 3;
@@ -1373,11 +1407,14 @@ function void = npv_graphs(npv)
 	cash_flow_matrix = zeros(YEARS_IN_OPERATION, NPV);
 
 	for yr = 0:YEARS_IN_OPERATION
-		cash_flow_matrix(yr + 1,YEAR) = yr;
+		row = yr + 1;
+		cash_flow_matrix(row, YEAR) = yr;
+		% cash_flow_matrix(yr + 1,CAPITAL_EXPENSE) = 
 	end
 
 	cash_flow_matrix
 	disp("")	
+
 
 	
 
