@@ -33,7 +33,7 @@ global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
-global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR
+global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION
 
 % USER NOTES____________________________________________________________________
 
@@ -797,12 +797,11 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
 					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane);
-					cost_sep = cost_separation_system(P_flowrates, F_steam, R_ethane) ;
-					if cost_sep > 0 
+					% cost_sep = cost_separation_system(P_flowrates, F_steam, R_ethane) ;
+					% if cost_sep > 0 
 						
-						fprintf("cost sep = %3.3e \n",cost_sep)
-					end
-					% fprintf("cost %s\n", cost_separation_system(P_flowrates, F_steam, R_ethane)')
+					% 	fprintf("cost sep = %3.3e \n",cost_sep)
+					% end
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
@@ -1346,6 +1345,7 @@ end
 
 
 function void = npv_graphs(npv)
+	global YEARS_IN_OPERATION
 
 	% npv.ethyleneValue = value_ethylene(P_ethylene);
 	% npv.hydrogenValue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
@@ -1356,30 +1356,28 @@ function void = npv_graphs(npv)
 	% npv.isbl = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
 
 	% NPV CALCS 
+	YEAR = 1;
+	CAPITAL_EXPENSE = 2;
+	REVENUE = 3;
+	COM = 4;
+	GROSS_PROFIT = 5;
+	DEPRECIATION = 6;
+	TAXABLE_INC = 7;
+	TAXES_PAID = 8;
+	CASH_FLOW = 9;
+	CUM_CASH_FLOW = 10;
+	PV_OF_CV = 11;
+	CUM_PV_OF_CV = 12;
+	NPV = 13;
 
-	filename = 'npv_code.xlsx';
-	data = readtable(filename);
+	cash_flow_matrix = zeros(YEARS_IN_OPERATION, NPV);
 
-	sheetName = 'cf'; % Specify the sheet name or number
-	data = readtable(filename, 'Sheet', sheetName);
-
-	n = 5; % Number of times to duplicate the sheet
-	for i = 1:n
-		% Assuming 'data' is the table you want to duplicate
-		writetable(data, filename, 'Sheet', ['DuplicatedSheet' num2str(i)]);
+	for yr = 0:YEARS_IN_OPERATION
+		cash_flow_matrix(yr + 1,YEAR) = yr;
 	end
 
-	cellRow = 10; % Row of the cell to modify
-	cellCol = 'C'; % Column of the cell to modify, use column index if numerical indexing preferred
-	newValue = 69; % New value to assign
-
-	for i = 1:n
-		modifiedData = data; % Make a copy of the original data
-		modifiedData{cellRow, cellCol} = newValue; % Modify the specific cell
-		
-		% Export the modified data to a new sheet
-		writetable(modifiedData, filename, 'Sheet', ['ModifiedSheet' num2str(i)]);
-	end
+	cash_flow_matrix
+	disp("")	
 
 	
 
@@ -1387,6 +1385,20 @@ end
 
 
 
+function installedCost = calculate_installed_cost(Q, F_d, F_m, F_p)
+
+	Q = Q * MILLIONBTU_PER_GJ * yr/hr;	
+    % Constants
+    M_and_S = 1800; % Marshall and Swift index
+    base_cost = 5.52 * 10^3;
+	
+    % Purchased cost calculation
+    % F_c = F_d + F_m + F_p;
+	F_c = 1.1;
+
+    % Installed cost calculation
+    installedCost = (M_and_S / 280) * (base_cost * Q^0.85 * (1.27 + F_c));
+end
 
 
 
