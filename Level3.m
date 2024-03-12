@@ -1348,6 +1348,7 @@ end
 
 function void = npv_graphs(npv)
 	global YEARS_IN_OPERATION
+	% All inputs are in units of $MM
 
 	% npv.mainProductRevenue = value_ethylene(P_ethylene);
 	% npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
@@ -1356,8 +1357,9 @@ function void = npv_graphs(npv)
 	% npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
 	% npv.conversion = conversion(i);
 	% npv.isbl = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
-	WORKING_CAP_PERCENT_OF_FCI = 0.15;
-	STARTUP_COST_PERCENT_OF_FCI = 0.10;
+	WORKING_CAP_PERCENT_OF_FCI = 0.15; 		% [ % in decimal ]
+	STARTUP_COST_PERCENT_OF_FCI = 0.10;		% [ % in decimal ]
+	YEARS_OF_CONSTRUCTION = 6;
 
 	% Revenues & Production Costs	
 	npv.consummablesCost = 0;
@@ -1388,6 +1390,36 @@ function void = npv_graphs(npv)
 									npv.workingCapital + ...
 									npv.startupCost + ...
 									npv.land;
+	% Economic Assumptions 
+	npv.discountRate = 0.15;		% [ % in decimal ]
+	npv.taxRate = 0.27;				% [ % in decimal ]
+	npv.salvageValue = 0.05;		% [ % in decimal ]	
+
+	% CONSTRUCTION SCHEDULE INDICIES 
+	YEAR = 1;
+	FC = 2;
+	WC = 3;
+	SU = 4;
+	FCOP = 5;
+	VCOP = 6;
+	construction_matrix = zeros(YEARS_OF_CONSTRUCTION + 1, VCOP);
+	
+	% Generate the construction schedule matrix
+	for yr = 0:YEARS_OF_CONSTRUCTION
+		row = yr + 1;
+		if yr > 0 && yr < 4
+			construction_matrix(row, FC) = 0.33;
+		end
+		if yr == 3
+			construction_matrix(row, WC) = 1.00;
+			construction_matrix(row, SU) = 1.00;
+		end
+		if yr > 3 && yr <= 6
+			construction_matrix(row, FCOP) = 1.00;
+			construction_matrix(row, VCOP) = 1.00;
+		end
+	end
+
 
 	% NPV COLUMN INDICIES 
 	YEAR = 1;
@@ -1403,8 +1435,7 @@ function void = npv_graphs(npv)
 	PV_OF_CV = 11;
 	CUM_PV_OF_CV = 12;
 	NPV = 13;
-
-	cash_flow_matrix = zeros(YEARS_IN_OPERATION, NPV);
+	cash_flow_matrix = zeros(YEARS_IN_OPERATION + 1, NPV);
 
 	for yr = 0:YEARS_IN_OPERATION
 		row = yr + 1;
