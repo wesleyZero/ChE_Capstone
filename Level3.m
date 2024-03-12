@@ -1502,6 +1502,16 @@ function void = npv_graphs(npv)
 		end
 
 		% Cash Flow
+		cash_flow_matrix(row, CASH_FLOW) = -cash_flow_matrix(row, CAPITAL_EXPENSE) + ...
+				( cash_flow_matrix(row,REVENUE) ...
+					- cash_flow_matrix(row, COM) ...
+					- cash_flow_matrix(row, DEPRECIATION) ... 
+				) * ( 1 - npv.taxRate) + cash_flow_matrix(row, DEPRECIATION);
+		
+		% Cummulative Cash Flow
+		cash_flow_matrix(row, CUM_CASH_FLOW) = sum( cash_flow_matrix( 1 : row, CASH_FLOW) );
+
+
 
 
 		
