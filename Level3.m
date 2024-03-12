@@ -1510,6 +1510,12 @@ function void = npv_graphs(npv)
 		
 		% Cummulative Cash Flow
 		cash_flow_matrix(row, CUM_CASH_FLOW) = sum( cash_flow_matrix( 1 : row, CASH_FLOW) );
+		
+
+		% PV of CF 
+		cash_flow_matrix(row, PV_OF_CV) = cash_flow_matrix(row, CASH_FLOW) / ( 1 + npv.discountRate)^yr;
+		
+
 
 
 
