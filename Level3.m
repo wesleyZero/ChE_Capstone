@@ -1487,9 +1487,15 @@ function void = npv_graphs(npv)
 		cash_flow_matrix(row, GROSS_PROFIT) = cash_flow_matrix(row,REVENUE) - cash_flow_matrix(row, COM);
 		
 		% Depreciation
-		if yr > YEARS_OF_CONSTUCTION
+		if yr >= YEARS_OF_CONSTUCTION
 			cash_flow_matrix(row, DEPRECIATION) = 0.1*(npv.totalFixedCapitalCost + npv.startupCost - 0.05*npv.totalFixedCapitalCost);
 		end
+
+		% Taxable Inc
+		if yr >= YEARS_OF_CONSTUCTION
+			cash_flow_matrix(row, TAXABLE_INC) = cash_flow_matrix(row, GROSS_PROFIT) - cash_flow_matrix(row,DEPRECIATION);
+		end
+
 
 		
 	end
