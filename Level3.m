@@ -92,7 +92,7 @@ NUM_POINTS = 10^4;
 
 % Reactor Script Parameters | RXTR TABLE OUTPUT
 V_MIN = 0.1;					% [ L ]
-V_MAX = 10^4;					% [ L ]
+V_MAX = 4 * 10^3;					% [ L ]
 NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
@@ -815,26 +815,39 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
 
 					% NPV calculations 
-					npv(i, 1) = get_npv(npv_params);
+					cf = get_npv(npv_params);
+					npv(i, 1) = cf.lifetime_npv;
+					if conversion(i) > 0.67 && conversion(i) < 0.70
+						ideal_cf = cf;
+						ideal_params = npv_params;
+						ideal_conversion = conversion(i);
+					end
 
 				end
 
 				% Debugging 
 				if true
+					fprintf("\n\nnpv = ($ MM) %3.3f \n", cf.lifetime_npv)
+					format short
+					% disp(ideal_cf.matrix)
 					
-					npv_params
-					fprintf(" npv = ($ MM) %3.3f \n", npv(i ,1))
-					% % NPV params
-					% npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA
-					% npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA 
-					% npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA
-					% npv_params.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) * MMDOLLA_PER_DOLLA
-					% npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA 
-					% npv_params.conversion = conversion(i)
-					% npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA
+					disp(ideal_params)
+					fprintf("conversion = %1.4f\n", ideal_conversion)
 
-					% NPV calculations 
-					% npv(i + 1, 1) = get_npv(npv_params)
+					A = [123456789, 987654321; 12345, 67890]; % Example 2D array
+
+					% Loop through each element and print
+					A = ideal_cf.matrix;
+					[row, col] = size(A);
+					for i = 1:row
+						for j = 1:col
+							fprintf('%6.1f\t', A(i,j)); % Adjust the format specifier as needed
+						end
+						fprintf('\n');
+					end
+
+					% cf.matrix 
+					% cf.lifetime_npv					
 				end
 
 
@@ -1408,7 +1421,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 end
 
 
-function lifetime_npv = get_npv(npv)
+function cf = get_npv(npv)
 	global YEARS_IN_OPERATION
 	% USER_INPUTS | All inputs are in units of $MM
 		% npv.mainProductRevenue = value_ethylene(P_ethylene);
@@ -1581,7 +1594,10 @@ function lifetime_npv = get_npv(npv)
 
 	% RETURN 
 	% cash_flow_matrix
-	lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
+% 	[cf_matrix, lifetime_npv] = [cash_flow_matrix, cash_flow_matrix(LAST_ROW_CASHFLOW, NPV)];
+	cf.matrix = cash_flow_matrix;
+	cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
+	% lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
 end
 
 
