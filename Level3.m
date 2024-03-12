@@ -247,6 +247,7 @@ C02_TO_NATGAS_COMBUSTION_STOICH = CO2_TO_METHANE_COMBUSTION_STOICH;
 	% Natural gas is asuumed to be entirely methane
 
 
+	
 % CONSTANTS | THERMODYNAMICS_______________________________________________
 
 % Gas Constant 
