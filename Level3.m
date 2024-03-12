@@ -732,6 +732,7 @@ if (CALCULATE_REACTOR_FLOWS)
 
 								% Check if you're conserving mass
 				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
+				npv = zeros(length(F_soln_ODE(:,1)), 1); 
 
 				% ECONOMIC CALCULATIONS____________________________________________________________
 				profit = zeros(length(F_soln_ODE(:,1)), 1);
@@ -806,26 +807,27 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
 
-					npv.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
-					npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
-					npv.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
-					npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) * MMDOLLA_PER_DOLLA;
-					npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
-					npv.conversion = conversion(i);
-					npv.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
+					npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
+					npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
+					npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
+					npv_params.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) * MMDOLLA_PER_DOLLA;
+					npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
+					npv_params.conversion = conversion(i);
+					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
 					% NPV CALCS 
-					npv_graphs(npv)	
+					npv(i, 1) = get_npv(npv_params);
+
 				end
 
 				% PLOTTING_________________________________________________________________________
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
-					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit', 'conserv mass'};
+					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit', 'conserv mass', 'npv'};
 				soln_table = table( V_soln_ODE, F_soln_ODE(:, HYDROGEN), ...
 							F_soln_ODE(:, METHANE), F_soln_ODE(:, ETHYLENE), ...
 							F_soln_ODE(:, PROPANE), F_soln_ODE(:, BUTANE), ...
 							F_soln_ODE(:, ETHANE), conversion,select_1, ...
-							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,'VariableNames',col_names)
+							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
 
 				% Computer Selectivity vs conversion relationships 
@@ -1356,7 +1358,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 end
 
 
-function void = npv_graphs(npv)
+function lifetime_npv = get_npv(npv)
 	global YEARS_IN_OPERATION
 	% USER_INPUTS | All inputs are in units of $MM
 		% npv.mainProductRevenue = value_ethylene(P_ethylene);
@@ -1443,10 +1445,12 @@ function void = npv_graphs(npv)
 	TAXES_PAID = 8;
 	CASH_FLOW = 9;
 	CUM_CASH_FLOW = 10;
-	PV_OF_CV = 11;
-	CUM_PV_OF_CV = 12;
+	PV_OF_CF = 11;
+	CUM_PV_OF_CF = 12;
 	NPV = 13;
 	cash_flow_matrix = zeros(YEARS_IN_OPERATION + 1, NPV);
+	LAST_ROW_CASHFLOW = YEARS_IN_OPERATION + 1; 
+
 
 	for yr = 0:YEARS_IN_OPERATION
 		row = yr + 1;
@@ -1513,24 +1517,22 @@ function void = npv_graphs(npv)
 		
 
 		% PV of CF 
-		cash_flow_matrix(row, PV_OF_CV) = cash_flow_matrix(row, CASH_FLOW) / ( 1 + npv.discountRate)^yr;
-		
+		cash_flow_matrix(row, PV_OF_CF) = cash_flow_matrix(row, CASH_FLOW) / ( 1 + npv.discountRate)^yr;
 
+		% Cummulative PV of CF
+		cash_flow_matrix(row , CUM_PV_OF_CF) = sum( cash_flow_matrix(1:row, PV_OF_CF) );
 
-
-
-
-		
+		% NPV
+		if row > 1
+			cash_flow_matrix(row , NPV) = cash_flow_matrix(row - 1, NPV) + cash_flow_matrix(row, PV_OF_CF);
+		else
+			cash_flow_matrix(row, NPV) = cash_flow_matrix(row, PV_OF_CF);
+		end
 	end
 
-
-
-	cash_flow_matrix
-	disp("")	
-
-
-	
-
+	% RETURN 
+	% cash_flow_matrix
+	lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
 end
 
 
