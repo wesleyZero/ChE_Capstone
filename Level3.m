@@ -1465,8 +1465,19 @@ function void = npv_graphs(npv)
 				  npv.workingCapital * construction_matrix(LAST_ROW_CONSTRUCTION, WC) + ... 
 				  npv.startupCost * construction_matrix(LAST_ROW_CONSTRUCTION, SU) ;
 		end
-		
+
+		% Revenue Column
+		if yr <= YEARS_OF_CONSTRUCTION
+			cash_flow_matrix(row, REVENUE) = npv.mainProductRevenue * construction_matrix(row, VCOP);
+		else
+			cash_flow_matrix(row, REVENUE) = npv.mainProductRevenue * construction_matrix(LAST_ROW_CONSTRUCTION, VCOP);
+		end
+
+		%  
+
 	end
+
+
 
 	cash_flow_matrix
 	disp("")	
