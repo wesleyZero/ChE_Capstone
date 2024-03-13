@@ -1805,19 +1805,40 @@ function void = plot_conversion_fxns(fxns)
 	% Mol fraction of each component entering the separation system
 	hold on 
 	figure;
-	tit = "Total flow rate to the separation system[ kta ]";
+	tit = "Mol fraction of each component entering the separation system [ kta ]";
 	xlab = "\chi";
-	ylab = "F_{separation system}" ;
+	ylab = "F_{i}" ;
 	% for i = 1 : 15 
 	% 	fxns.F_sep(i,:) = 0;
 	% end
 	plot(x, [fxns.x_hydrogen_sep, fxns.x_methane_sep, fxns.x_ethylene_sep, fxns.x_propane_sep, fxns.x_ethane_sep, fxns.x_water_sep]);
-	legend("Hydrogen", "Methane", "Ethylene", "Propane", "Butane", "Ethane", "Water")
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
 	hold off
+
 	% NPV 
+	hold on 
+	figure;
+	tit = "NPV [ $ MM ]";
+	xlab = "\chi";
+	ylab = "NPV [ $ MM ]" ;
+	i = 1;
+	fxns.npv(fxns.npv(:, 1) < 0, 1) = 0;
+	fxns.npv(isnan(fxns.npv(:, 1)), 1) = 0;
+
+	% while (fxns.npv(i , : ) < 0) 
+		% fxns.npv(i, : ) = 0;
+		% i = i + 1;
+	% end
+	plot(x, fxns.npv)
+	% legend("Hydrogen", "Methane", "Ethylene", "Propane", "Butane", "Ethane", "Water")
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
+
+	% Return
 	void = NaN;
 end 
 
