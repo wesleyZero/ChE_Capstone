@@ -1756,8 +1756,22 @@ function void = plot_conversion_fxns(fxns)
 	xlabel(xlab);
 	ylabel(ylab);
 	hold off
-	% Recycle flow rate of LR 
 
+	% Recycle flow rate of LR 
+	hold on 
+	figure;
+	tit = "Recycle flow rate of Ethane [ kta ]";
+	xlab = "\chi";
+	ylab = "R_{Ethane}" ;
+	for i = 1 : 15 
+		x_conversion_recycle(i,1) = 0;
+		fxns.recycle(i,1) = 0;
+	end
+	plot(x, fxns.recycle);
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
 	% Total flow rate to reactor 
 
 	% Total flow rate to the separation system
