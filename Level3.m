@@ -33,7 +33,7 @@ global MOLMASS_METHANE MOLMASS_WATER BAR_PER_PSIA;
 global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
-global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ
+global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ YR_PER_HR HR_PER_YR 
 
 % USER NOTES____________________________________________________________________
 
@@ -53,7 +53,7 @@ global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_
 P_ETHYLENE_DES = 200;			% [	kta ]
 	% Note! This design parameter's units are changed prior to the matrix def 
 
-YEARS_IN_OPERATION = 15 ;
+YEARS_IN_OPERATION = 1500 ;
 
 % USER INPUTS | GLOBAL CONSTANTS___________________________________________
 
@@ -210,12 +210,14 @@ BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
 % Time
 YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
 SEC_PER_YR = 3.154 * 10^7;			% [ s / yr ]
+YR_PER_HR = (1/8760 )				% [ yr / hr ]
+HR_PER_YR = 8760;					% [ hr / yr ]
 
 % Volumes 
 M3_PER_L = 0.001;
 
 % heat 
-MILLIONBTU_PER_GJ = 947817; 		% [ ]
+MILLIONBTU_PER_GJ = 1.0551; 		% [ ]
 
 % CONSTANTS | PHYSICAL______________________________________________________
 
@@ -580,6 +582,9 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				profit(i) = profit(i) - value_ethane(F_ethane);
 				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
 				profit(i) = profit(i) - cost_waste_stream(F_steam);
+				
+				% profit(i) = profit(i) - cost
+
 
 			else
 				profit(i) = INVALID_FLOWRATE;
@@ -808,6 +813,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
 					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane);
+					profit(i, 1) = profit(i, 1) - calculate_installed_cost(heat_flux);
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
@@ -829,6 +835,7 @@ if (CALCULATE_REACTOR_FLOWS)
 						ideal_cf = cf;
 						ideal_params = npv_params;
 						ideal_conversion = conversion(i);
+						ideal_lifetimeNpv = cf.lifetime_npv;
 					end
 
 				end
@@ -1606,16 +1613,17 @@ function cf = get_npv(npv)
 	% cash_flow_matrix
 % 	[cf_matrix, lifetime_npv] = [cash_flow_matrix, cash_flow_matrix(LAST_ROW_CASHFLOW, NPV)];
 	cf.matrix = cash_flow_matrix;
-	% cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
+	cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
 	% lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
 end
 
 
 
 function installedCost = calculate_installed_cost(Q)
-	global MILLIONBTU_PER_GJ
+	global MILLIONBTU_PER_GJ MILLIONBTU_PER_GJ YR_PER_HR HR_PER_YR
 
-	Q = Q * MILLIONBTU_PER_GJ * yr/hr;	
+	Q = Q * MILLIONBTU_PER_GJ * YR_PER_HR;	
+	
     % Constants
     M_and_S = 1800; % Marshall and Swift index
     base_cost = 5.52 * 10^3;
@@ -1626,6 +1634,8 @@ function installedCost = calculate_installed_cost(Q)
 
     % Installed cost calculation
     installedCost = (M_and_S / 280) * (base_cost * Q^0.85 * (1.27 + F_c));
+
+	installedCost = installedCost;
 end
 
 
