@@ -53,7 +53,7 @@ global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_
 P_ETHYLENE_DES = 200;			% [	kta ]
 	% Note! This design parameter's units are changed prior to the matrix def 
 
-YEARS_IN_OPERATION = 1500 ;
+YEARS_IN_OPERATION = 15 ;
 
 % USER INPUTS | GLOBAL CONSTANTS___________________________________________
 
@@ -117,7 +117,7 @@ T_P_OVERRIDE = true;
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
 
 % output the cashflow matrix
-CASHFLOW_MATRIX_OUTPUT = false ;
+CASHFLOW_MATRIX_OUTPUT = true;
 
 % Output the level 2 and 3 calculations 
 OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
@@ -748,6 +748,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				npv = zeros(length(F_soln_ODE(:,1)), 1); 
 				fxns.separationCosts = zeros(length(F_soln_ODE(:,1)), 1); 
 				fxns.furnaceCosts = zeros(length(F_soln_ODE(:,1)), 1); 
+				fxns.F_steam = zeros(length(F_soln_ODE(:,1)), 1); 
 				xi = [ 0 , 0, 0];	%init
 
 				% ECONOMIC CALCULATIONS____________________________________________________________
@@ -819,6 +820,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Store Data For analysis
 					fxns.separationCosts(i, 1) = cost_separation_system(P_flowrates, F_steam, R_ethane); 
 					fxns.furnaceCosts(i, 1)  = calculate_installed_cost(heat_flux);
+					fxns.F_steam(i, 1) = F_steam;
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
@@ -857,7 +859,8 @@ if (CALCULATE_REACTOR_FLOWS)
 				fxns.npv = npv;
 				fxns.recycle = F_soln_ODE( : , ETHANE);
 				F_fresh_ethane = F_ETHANE(select_1(:), select_2(:)); 
-% 				fxns.freshFeedRawMaterials = F_fresh_ethane +  
+				fxns.freshFeedRawMaterials = F_fresh_ethane + fxns.F_steam; 
+				fxns.productionRateRxnProducts = F_soln_ODE( : , HYDROGEN : BUTANE);
 				plot_conversion_fxns(fxns);
 
 
@@ -874,6 +877,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					A = [123456789, 987654321; 12345, 67890]; % Example 2D array
 
 					% Loop through each element and print
+					disp("CASH FLOW MATRIX")
 					A = ideal_cf.matrix;
 					[row, col] = size(A);
 					for i = 1:row
