@@ -110,9 +110,12 @@ NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
-	T_OVERRIDE = 825;			%[C]
-	P_OVERRIDE = 2;				%[Bar]
-	STEAM_MR_OVERRIDE = 0.6;%	[__]
+	T_P_OVERRIDE_T = true;
+		T_OVERRIDE = 825;			%[C]
+	T_P_OVERRIDE_P = true;
+		P_OVERRIDE = 2;				%[Bar]
+	T_P_OVERRIDE_MR = true;
+		STEAM_MR_OVERRIDE = 0.6;%	[__]
 
 % Output fuel costs 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
@@ -633,7 +636,11 @@ F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in kta
 
 	% Feed flow rate index
 	ETHANE = 6;
+npv_T_P_MR = zeros(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE));
 
+i = 1;
+j = 1;
+k = 1;
 if (CALCULATE_REACTOR_FLOWS)
 	disp("Reactor Script ")
 	for T_i = T_RANGE
@@ -643,9 +650,15 @@ if (CALCULATE_REACTOR_FLOWS)
 				% override the T_i and P_i with user input 
 				if T_P_OVERRIDE
 					disp("WARNING: OVERRIDE HAS BEEN ACTIVATED")
-					T_i = T_OVERRIDE;
-					P_i = P_OVERRIDE;
-					MR_S_i = STEAM_MR_OVERRIDE;
+					if T_P_OVERRIDE_T
+						T_i = T_OVERRIDE;
+					end
+					if T_P_OVERRIDE_P
+						P_i = P_OVERRIDE;
+					end
+					if T_P_OVERRIDE_MR
+						MR_S_i = STEAM_MR_OVERRIDE;
+					end
 				end
 
 				fprintf("\n\nT = %f [C], P = %f [bar] MR = %f [__]\n", T_i, P_i, MR_S_i)
@@ -788,7 +801,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 					heat_flux = heat_flux + heat_rxn(xi);
 
-		% 			% Use the heat flux to calculate the fuel cost	
+		 			% Use the heat flux to calculate the fuel cost	
 					[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
 
 					% Calculate how much natural gas you needed to combust
@@ -800,7 +813,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					combusted_propane = combusted_fuel_flow_rates(PROPANE);
 					combusted_butane = combusted_fuel_flow_rates(BUTANE);
 
-		% 			% VALUE CREATED | Primary Products
+		 			% VALUE CREATED | Primary Products
 					profit(i, 1) = profit(i, 1) + value_ethylene(P_ethylene);
 					profit(i, 1) = profit(i, 1) + value_h2_chem(P_hydrogen - combusted_hydrogen);
 					
@@ -853,8 +866,19 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				end
 
-				% % Plotting the Capstone plots
-				
+				% Assuming A is your matrix
+				% A = [1 2 3; 4 5 6; 7 8 9; 10 11 12]; % Example matrix
+
+				% Find the maximum value in the 3rd column and its row index
+				% [maxValue, rowIndex] = max(A(:,3));
+
+				[maxValue, maxRowIndex] = max(npv(:,1));
+
+				% max value NPV for all T P MR
+				npv_T_P_MR(i,j,k) = npv(maxRowIndex, 1); 
+
+
+				% % Plotting the Capstone plots				
 				% fxns.conversion = conversion;
 				% fxns.V_plant = V_plant;
 				% fxns.select_1 = select_1;
@@ -915,7 +939,7 @@ if (CALCULATE_REACTOR_FLOWS)
 							F_soln_ODE(:, PROPANE), F_soln_ODE(:, BUTANE), ...
 							F_soln_ODE(:, ETHANE), conversion,select_1, ...
 							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,fxns.furnaceCosts,'VariableNames',col_names)
-	% 			soln_table.Properties.VariableNames = col_names;
+	 			soln_table.Properties.VariableNames = col_names;
 
 				% Computer Selectivity vs conversion relationships 
 	
@@ -932,9 +956,11 @@ if (CALCULATE_REACTOR_FLOWS)
 				% npv.ISBLcapitalCost = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
 				% % NPV CALCS 
 				
-
+			k = k + 1;
 			end 
+		j = j + 1;
 		end 
+	i = i + 1;
 	end
 end 
 
@@ -957,6 +983,7 @@ fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
 fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
 fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
 fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
+fxns.npv_T_P_MR = npv_T_P_MR;
 
 plot_conversion_fxns(fxns);
 
