@@ -636,7 +636,8 @@ F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in kta
 
 	% Feed flow rate index
 	ETHANE = 6;
-npv_T_P_MR = zeros(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE));
+% npv_T_P_MR = zeros(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE), 1);
+npv_T_P_MR = cell(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE), 1);
 
 i = 1;
 j = 1;
@@ -872,10 +873,12 @@ if (CALCULATE_REACTOR_FLOWS)
 				% Find the maximum value in the 3rd column and its row index
 				% [maxValue, rowIndex] = max(A(:,3));
 
-				[maxValue, maxRowIndex] = max(npv(:,1));
+				% [maxValue, maxRowIndex] = max(npv(:,1));
 
 				% max value NPV for all T P MR
-				npv_T_P_MR(i,j,k) = npv(maxRowIndex, 1); 
+				% npv_T_P_MR(i,j,k) = npv(maxRowIndex, 1); 
+				% npv_T_P_MR(i,j,k) = npv(:,1);
+				npv_T_P_MR{i,j,k} = npv(:,1);
 
 
 				% % Plotting the Capstone plots				
@@ -1762,12 +1765,10 @@ function void = plot_conversion_fxns(fxns)
 	tit = "Fresh Feed of of Raw Materials into the Reactor [ kta ]";
 	xlab = "\chi";
 	ylab = "F_{FreshFeedRawMaterials}";
-	x_conversion_freshFeed = x;
 	for i = 1 : 15 
-		x_conversion_freshFeed(i,1) = 0;
 		fxns.freshFeedRawMaterials(i,1) = 0;
 	end
-	plot(x_conversion_freshFeed, fxns.freshFeedRawMaterials);
+	plot(x, fxns.freshFeedRawMaterials);
 	% tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	title(tit);
 	xlabel(xlab);
@@ -1874,6 +1875,35 @@ function void = plot_conversion_fxns(fxns)
 	xlabel(xlab);
 	ylabel(ylab);
 	hold off
+	
+
+
+	% NPV (T, P, MR) | Varying T
+	hold on 
+	figure;
+	tit = "NPV [ $ MM ]";
+	xlab = "\chi";
+	ylab = "NPV [ $ MM ]" ;
+	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
+
+	y = [];
+	for i = 1:length(fxns.npv_T_P_MR(: , 1, 1 ))
+% 		y = [ y ; fxns.npv_T_P_MR( i , 1, 1) ];
+	end
+
+	% Choose a colormap
+	cmap = jet(size(y, 2)); % Using 'jet' colormap; adjust the number of colors based on the number of columns in y
+	
+	for i = 1:size(y, 2) % Iterate through each column (dataset) in y
+		plot(x, y(:,i), 'Color', cmap(i,:), 'LineWidth', 2);
+	end
+
+	plot(x, y)
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
+
 
 	% Return
 	void = NaN;
