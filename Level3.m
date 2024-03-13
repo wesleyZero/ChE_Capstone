@@ -825,7 +825,10 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_params.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) * MMDOLLA_PER_DOLLA;
 					npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
 					npv_params.conversion = conversion(i);
-					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
+					% npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
+					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + ...
+											cost_separation_system(P_flowrates, F_steam, R_ethane) + ...
+											calculate_installed_cost(heat_flux)) * MMDOLLA_PER_DOLLA;
 
 					% NPV calculations 
 					cf = get_npv(npv_params);
