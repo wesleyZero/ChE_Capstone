@@ -871,7 +871,6 @@ if (CALCULATE_REACTOR_FLOWS)
 				fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
 				fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
 				fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
-				% fxns.molFracEnteringSep = f_sol
 
 				plot_conversion_fxns(fxns);
 
@@ -1679,8 +1678,41 @@ end
 
 
 function void = plot_conversion_fxns(fxns)
-	
+	% USER INPUT
+		% fxns.conversion = conversion;
+		% fxns.V_plant = V_plant;
+		% fxns.select_1 = select_1;
+		% fxns.select_2 = select_2;
+		% fxns.npv = npv;
+		% fxns.recycle = F_soln_ODE( : , ETHANE);
+		% fxns.freshFeedRawMaterials = fxns.F_fresh_ethane + fxns.F_steam; 
+		% fxns.productionRateRxnProducts = F_soln_ODE( : , HYDROGEN : BUTANE);
+		% fxns.F_rxtr_in_total = fxns.F_fresh_ethane + fxns.recycle + fxns.F_steam;
+		% fxns.F_sep = sum(F_soln_ODE(: , HYDROGEN : ETHANE), 2) + fxns.F_steam;
+		% fxns.x_hydrogen_sep = F_soln_ODE( : , HYDROGEN) ./ fxns.F_sep;
+		% fxns.x_methane_sep = F_soln_ODE( : , METHANE) ./ fxns.F_sep;
+		% fxns.x_ethylene = F_soln_ODE( : , ETHYLENE) ./ fxns.F_sep;
+		% fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
+		% fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
+		% fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
+		% fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
+
+	x = fxns.conversion;
+
 	% Selectivity 1 & 2 
+	y.s1 = fxns.select_1
+	
+	
+	hold on 
+	figure
+	tit = "Selectivity 1";
+	xlab = "\chi";
+	ylab = "S_1"
+	plot(x, y.s1)
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
 
 	% Reactor Volume 
 
