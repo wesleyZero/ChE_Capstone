@@ -951,7 +951,7 @@ fxns.F_rxtr_in_total = fxns.F_fresh_ethane + fxns.recycle + fxns.F_steam;
 fxns.F_sep = sum(F_soln_ODE(: , HYDROGEN : ETHANE), 2) + fxns.F_steam;
 fxns.x_hydrogen_sep = F_soln_ODE( : , HYDROGEN) ./ fxns.F_sep;
 fxns.x_methane_sep = F_soln_ODE( : , METHANE) ./ fxns.F_sep;
-fxns.x_ethylene = F_soln_ODE( : , ETHYLENE) ./ fxns.F_sep;
+fxns.x_ethylene_sep = F_soln_ODE( : , ETHYLENE) ./ fxns.F_sep;
 fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
 fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
 fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
@@ -1763,9 +1763,7 @@ function void = plot_conversion_fxns(fxns)
 	tit = "Recycle flow rate of Ethane [ kta ]";
 	xlab = "\chi";
 	ylab = "R_{Ethane}" ;
-	% x_conversion_recycle = x;
 	for i = 1 : 15 
-		% x_conversion_recycle(i,1) = 0;
 		fxns.recycle(i,1) = 0;
 	end
 	plot(x, fxns.recycle);
@@ -1795,7 +1793,6 @@ function void = plot_conversion_fxns(fxns)
 	tit = "Total flow rate to the separation system[ kta ]";
 	xlab = "\chi";
 	ylab = "F_{separation system}" ;
-	x_Ftotal = x;
 	for i = 1 : 15 
 		fxns.F_sep(i,1) = 0;
 	end
@@ -1806,7 +1803,20 @@ function void = plot_conversion_fxns(fxns)
 	hold off
 
 	% Mol fraction of each component entering the separation system
-
+	hold on 
+	figure;
+	tit = "Total flow rate to the separation system[ kta ]";
+	xlab = "\chi";
+	ylab = "F_{separation system}" ;
+	% for i = 1 : 15 
+	% 	fxns.F_sep(i,:) = 0;
+	% end
+	plot(x, [fxns.x_hydrogen_sep, fxns.x_methane_sep, fxns.x_ethylene_sep, fxns.x_propane_sep, fxns.x_ethane_sep, fxns.x_water_sep]);
+	legend("Hydrogen", "Methane", "Ethylene", "Propane", "Butane", "Ethane", "Water")
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
 	% NPV 
 	void = NaN;
 end 
