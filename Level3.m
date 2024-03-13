@@ -117,7 +117,7 @@ T_P_OVERRIDE = true;
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
 
 % output the cashflow matrix
-CASHFLOW_MATRIX_OUTPUT = true;
+CASHFLOW_MATRIX_OUTPUT = false;
 
 % Output the level 2 and 3 calculations 
 OUTPUT_LVL3_FLOWRATES_TO_CONSOLE = true;
@@ -743,12 +743,13 @@ if (CALCULATE_REACTOR_FLOWS)
 				F_soln_ODE(:, BUTANE) = F_soln_ODE(:, BUTANE) * MOLMASS_BUTANE * KT_PER_G * SEC_PER_YR;
 				F_soln_ODE(:, PROPANE) = F_soln_ODE(:, PROPANE) * MOLMASS_PROPANE * KT_PER_G * SEC_PER_YR;
 
-								% Check if you're conserving mass
+				% Check if you're conserving mass
 				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
 				npv = zeros(length(F_soln_ODE(:,1)), 1); 
 				fxns.separationCosts = zeros(length(F_soln_ODE(:,1)), 1); 
 				fxns.furnaceCosts = zeros(length(F_soln_ODE(:,1)), 1); 
 				fxns.F_steam = zeros(length(F_soln_ODE(:,1)), 1); 
+				fxns.F_fresh_ethane = zeros(length(F_soln_ODE(:,1)), 1); 
 				xi = [ 0 , 0, 0];	%init
 
 				% ECONOMIC CALCULATIONS____________________________________________________________
@@ -821,6 +822,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					fxns.separationCosts(i, 1) = cost_separation_system(P_flowrates, F_steam, R_ethane); 
 					fxns.furnaceCosts(i, 1)  = calculate_installed_cost(heat_flux);
 					fxns.F_steam(i, 1) = F_steam;
+					fxns.F_fresh_ethane(i, 1) = F_fresh_ethane;
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
@@ -858,9 +860,19 @@ if (CALCULATE_REACTOR_FLOWS)
 				fxns.select_2 = select_2;
 				fxns.npv = npv;
 				fxns.recycle = F_soln_ODE( : , ETHANE);
-				F_fresh_ethane = F_ETHANE(select_1(:), select_2(:)); 
-				fxns.freshFeedRawMaterials = F_fresh_ethane + fxns.F_steam; 
+				fxns.freshFeedRawMaterials = fxns.F_fresh_ethane + fxns.F_steam; 
 				fxns.productionRateRxnProducts = F_soln_ODE( : , HYDROGEN : BUTANE);
+				fxns.F_rxtr_in_total = fxns.F_fresh_ethane + fxns.recycle + fxns.F_steam;
+				fxns.F_sep = sum(F_soln_ODE(: , HYDROGEN : ETHANE), 2) + fxns.F_steam;
+				fxns.x_hydrogen_sep = F_soln_ODE( : , HYDROGEN) ./ fxns.F_sep;
+				fxns.x_methane_sep = F_soln_ODE( : , METHANE) ./ fxns.F_sep;
+				fxns.x_ethylene = F_soln_ODE( : , ETHYLENE) ./ fxns.F_sep;
+				fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
+				fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
+				fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
+				fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
+				% fxns.molFracEnteringSep = f_sol
+
 				plot_conversion_fxns(fxns);
 
 
