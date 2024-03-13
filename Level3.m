@@ -1741,6 +1741,7 @@ function void = plot_conversion_fxns(fxns)
 		fxns.freshFeedRawMaterials(i,1) = 0;
 	end
 	plot(x_conversion_freshFeed, fxns.freshFeedRawMaterials);
+	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
@@ -1754,6 +1755,7 @@ function void = plot_conversion_fxns(fxns)
 	ylab = "Production Rate" ;
 	plot(x, fxns.productionRateRxnProducts);
 	legend("Hydrogen", "Methane", "Ethylene", "Propane", "Butane")
+	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
@@ -1769,6 +1771,7 @@ function void = plot_conversion_fxns(fxns)
 		fxns.recycle(i,1) = 0;
 	end
 	plot(x, fxns.recycle);
+	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
@@ -1784,6 +1787,7 @@ function void = plot_conversion_fxns(fxns)
 		fxns.F_rxtr_in_total(i,1) = 0;
 	end
 	plot(x, fxns.F_rxtr_in_total);
+	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
@@ -1799,6 +1803,7 @@ function void = plot_conversion_fxns(fxns)
 		fxns.F_sep(i,1) = 0;
 	end
 	plot(x, fxns.F_sep);
+	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
@@ -1815,6 +1820,7 @@ function void = plot_conversion_fxns(fxns)
 	% end
 	plot(x, [fxns.x_hydrogen_sep, fxns.x_methane_sep, fxns.x_ethylene_sep, fxns.x_propane_sep, fxns.x_ethane_sep, fxns.x_water_sep]);
 	legend("Hydrogen", "Methane", "Ethylene", "Propane", "Butane", "Ethane", "Water")
+	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
@@ -1826,7 +1832,7 @@ function void = plot_conversion_fxns(fxns)
 	tit = "NPV [ $ MM ]";
 	xlab = "\chi";
 	ylab = "NPV [ $ MM ]" ;
-	tit = tit + " " + sprintf("(%3.1f C %3.1f Bar %0.3f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
+	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	i = 1;
 	fxns.npv(fxns.npv(:, 1) < 0, 1) = 0;
 	fxns.npv(isnan(fxns.npv(:, 1)), 1) = 0;
