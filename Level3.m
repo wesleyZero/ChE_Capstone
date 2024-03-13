@@ -867,7 +867,7 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				% Debugging 
 				if CASHFLOW_MATRIX_OUTPUT 
-					fprintf("\n\nnpv = ($ MM) %3.3f \n", cf.lifetime_npv)
+					fprintf("\n\nnpv = ($ MM) %3.3f \n", ideal_lifetimeNpv)
 					format short
 					% disp(ideal_cf.matrix)
 					
