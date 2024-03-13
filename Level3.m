@@ -65,7 +65,7 @@ TEMP_RXTR = 825;				% [ C ]
 PRESS_RXTR = 2;					% [ Bar ] 2 to 5 bar
 TEMP_ETHANE_FEED = 25;			% [ C ]
 CONVERSION =  0.17053;			% [ __ ] % Level 2 & 3 Calculations 
-USERINPUT_S1 = 0.96971 ;		% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S1 = 0.96971 ;		% [ __ ] % Level 2 & 3 Calculation	s 
 USERINPUT_S2 = 0.00011843; 		% [ __ ] % Level 2 & 3 Calculations 
 STEAM_CHOICE = 1;
 % 	STEAM_30PSIA = 1;
@@ -1763,8 +1763,9 @@ function void = plot_conversion_fxns(fxns)
 	tit = "Recycle flow rate of Ethane [ kta ]";
 	xlab = "\chi";
 	ylab = "R_{Ethane}" ;
+	% x_conversion_recycle = x;
 	for i = 1 : 15 
-		x_conversion_recycle(i,1) = 0;
+		% x_conversion_recycle(i,1) = 0;
 		fxns.recycle(i,1) = 0;
 	end
 	plot(x, fxns.recycle);
@@ -1772,9 +1773,37 @@ function void = plot_conversion_fxns(fxns)
 	xlabel(xlab);
 	ylabel(ylab);
 	hold off
+
 	% Total flow rate to reactor 
+	hold on 
+	figure;
+	tit = "Total flow rate to reactor [ kta ]";
+	xlab = "\chi";
+	ylab = "F_{RxtrIn}" ;
+	for i = 1 : 15 
+		fxns.F_rxtr_in_total(i,1) = 0;
+	end
+	plot(x, fxns.F_rxtr_in_total);
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
 
 	% Total flow rate to the separation system
+	hold on 
+	figure;
+	tit = "Total flow rate to the separation system[ kta ]";
+	xlab = "\chi";
+	ylab = "F_{separation system}" ;
+	x_Ftotal = x;
+	for i = 1 : 15 
+		fxns.F_sep(i,1) = 0;
+	end
+	plot(x, fxns.F_sep);
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
 
 	% Mol fraction of each component entering the separation system
 
