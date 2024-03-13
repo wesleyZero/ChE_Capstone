@@ -747,6 +747,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
 				npv = zeros(length(F_soln_ODE(:,1)), 1); 
 				fxns.separationCosts = zeros(length(F_soln_ODE(:,1)), 1); 
+				fxns.furnaceCosts = zeros(length(F_soln_ODE(:,1)), 1); 
 				xi = [ 0 , 0, 0];	%init
 
 				% ECONOMIC CALCULATIONS____________________________________________________________
@@ -817,6 +818,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					
 					% Store Data For analysis
 					fxns.separationCosts(i, 1) = cost_separation_system(P_flowrates, F_steam, R_ethane); 
+					fxns.furnaceCosts(i, 1)  = calculate_installed_cost(heat_flux);
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
@@ -890,12 +892,12 @@ if (CALCULATE_REACTOR_FLOWS)
 				% PLOTTING_________________________________________________________________________
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
-					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit', 'conserv mass', 'npv', 'separationCosts'};
+					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit', 'conserv mass', 'npv', 'separationCosts', 'Furnace Costs'};
 				soln_table = table( V_soln_ODE, F_soln_ODE(:, HYDROGEN), ...
 							F_soln_ODE(:, METHANE), F_soln_ODE(:, ETHYLENE), ...
 							F_soln_ODE(:, PROPANE), F_soln_ODE(:, BUTANE), ...
 							F_soln_ODE(:, ETHANE), conversion,select_1, ...
-							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,'VariableNames',col_names)
+							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,fxns.furnaceCosts,'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
 
 				% Computer Selectivity vs conversion relationships 
