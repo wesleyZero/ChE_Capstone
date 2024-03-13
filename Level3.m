@@ -34,6 +34,7 @@ global C_TO_K HEAT_CAPACITY_WATER;
 global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
 global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ YR_PER_HR HR_PER_YR 
+global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
 
 % USER NOTES____________________________________________________________________
 
@@ -43,7 +44,7 @@ global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_
 % Pressure 		Bar
 % Temperature 	Celcius
 % Moles			Moles
-% Value			Dollars
+% Value			Dollars	global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
 
 % [ __ ] THIS MEANS DIMENSIONLESS UNITS
 
@@ -1670,6 +1671,7 @@ end
 
 
 function void = plot_conversion_fxns(fxns)
+	global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
 	global M3_PER_L
 	% USER INPUT
 		% fxns.conversion = conversion;
@@ -1824,6 +1826,7 @@ function void = plot_conversion_fxns(fxns)
 	tit = "NPV [ $ MM ]";
 	xlab = "\chi";
 	ylab = "NPV [ $ MM ]" ;
+	tit = tit + " " + sprintf("(%3.1f C %3.1f Bar %0.3f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 	i = 1;
 	fxns.npv(fxns.npv(:, 1) < 0, 1) = 0;
 	fxns.npv(isnan(fxns.npv(:, 1)), 1) = 0;
