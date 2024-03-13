@@ -1790,7 +1790,7 @@ function void = plot_conversion_fxns(fxns)
 	% Total flow rate to the separation system
 	hold on 
 	figure;
-	tit = "Total flow rate to the separation system[ kta ]";
+	tit = "Total flow rate to the separation system [ kta ]";
 	xlab = "\chi";
 	ylab = "F_{separation system}" ;
 	for i = 1 : 15 
@@ -1812,6 +1812,7 @@ function void = plot_conversion_fxns(fxns)
 	% 	fxns.F_sep(i,:) = 0;
 	% end
 	plot(x, [fxns.x_hydrogen_sep, fxns.x_methane_sep, fxns.x_ethylene_sep, fxns.x_propane_sep, fxns.x_ethane_sep, fxns.x_water_sep]);
+	legend("Hydrogen", "Methane", "Ethylene", "Propane", "Butane", "Ethane", "Water")
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
@@ -1841,36 +1842,3 @@ function void = plot_conversion_fxns(fxns)
 	% Return
 	void = NaN;
 end 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
