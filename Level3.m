@@ -210,7 +210,7 @@ BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
 % Time
 YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
 SEC_PER_YR = 3.154 * 10^7;			% [ s / yr ]
-YR_PER_HR = (1/8760 )				% [ yr / hr ]
+YR_PER_HR = (1/8760 );				% [ yr / hr ]
 HR_PER_YR = 8760;					% [ hr / yr ]
 
 % Volumes 
@@ -852,27 +852,28 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				end
 
-				% Plotting the Capstone plots
+				% % Plotting the Capstone plots
 				
-				fxns.conversion = conversion;
-				fxns.V_plant = V_plant;
-				fxns.select_1 = select_1;
-				fxns.select_2 = select_2;
-				fxns.npv = npv;
-				fxns.recycle = F_soln_ODE( : , ETHANE);
-				fxns.freshFeedRawMaterials = fxns.F_fresh_ethane + fxns.F_steam; 
-				fxns.productionRateRxnProducts = F_soln_ODE( : , HYDROGEN : BUTANE);
-				fxns.F_rxtr_in_total = fxns.F_fresh_ethane + fxns.recycle + fxns.F_steam;
-				fxns.F_sep = sum(F_soln_ODE(: , HYDROGEN : ETHANE), 2) + fxns.F_steam;
-				fxns.x_hydrogen_sep = F_soln_ODE( : , HYDROGEN) ./ fxns.F_sep;
-				fxns.x_methane_sep = F_soln_ODE( : , METHANE) ./ fxns.F_sep;
-				fxns.x_ethylene = F_soln_ODE( : , ETHYLENE) ./ fxns.F_sep;
-				fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
-				fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
-				fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
-				fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
+				% fxns.conversion = conversion;
+				% fxns.V_plant = V_plant;
+				% fxns.select_1 = select_1;
+				% fxns.select_2 = select_2;
+				% fxns.npv = npv;
+				% fxns.recycle = F_soln_ODE( : , ETHANE);
+				% fxns.freshFeedRawMaterials = fxns.F_fresh_ethane + fxns.F_steam; 
+				% fxns.productionRateRxnProducts = F_soln_ODE( : , HYDROGEN : BUTANE);
+				% fxns.F_rxtr_in_total = fxns.F_fresh_ethane + fxns.recycle + fxns.F_steam;
+				% fxns.F_sep = sum(F_soln_ODE(: , HYDROGEN : ETHANE), 2) + fxns.F_steam;
+				% fxns.x_hydrogen_sep = F_soln_ODE( : , HYDROGEN) ./ fxns.F_sep;
+				% fxns.x_methane_sep = F_soln_ODE( : , METHANE) ./ fxns.F_sep;
+				% fxns.x_ethylene = F_soln_ODE( : , ETHYLENE) ./ fxns.F_sep;
+				% fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
+				% fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
+				% fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
+				% fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
 
-				plot_conversion_fxns(fxns);
+				% plot_conversion_fxns(fxns);
+
 
 
 
@@ -936,36 +937,27 @@ if (CALCULATE_REACTOR_FLOWS)
 	end
 end 
 
-% viewMultiDimensionalArray()
-% 
-% function z = viewMultiDimensionalArray()
-%     % Example 3D array
-%     data = rand(100, 100, 50); % A 100x100x50 array
-%     
-%     % Create figure
-%     f = figure('Name', '3D Array Viewer', 'NumberTitle', 'off');
-%     
-%     % Create axes for image
-%     ax = axes('Parent', f, 'Position', [0.1 0.2 0.8 0.7]);
-%     
-%     % Initial slice display
-%     sliceNum = 1;
-%     imagesc(data(:, :, sliceNum), 'Parent', ax);
-%     colormap(ax, 'jet');
-%     colorbar(ax);
-%     
-%     % Create slider
-%     slider = uicontrol('Parent', f, 'Style', 'slider', 'Position', [150, 50, 300, 20], ...
-%                        'value', sliceNum, 'min', 1, 'max', size(data, 3), ...
-%                        'SliderStep', [1/size(data, 3) , 10/size(data, 3) ], ...
-%                        'Callback', @(es,ed) updateSlice(es, data, ax));
-%     
-%     % Update function
-%     function updateSlice(slider, data, ax)
-%         sliceNum = round(slider.Value);
-%         imagesc(data(:, :, sliceNum), 'Parent', ax);
-%     end
-% end
+% Plotting the Capstone plots
+
+fxns.conversion = conversion;
+fxns.V_plant = V_plant;
+fxns.select_1 = select_1;
+fxns.select_2 = select_2;
+fxns.npv = npv;
+fxns.recycle = F_soln_ODE( : , ETHANE);
+fxns.freshFeedRawMaterials = fxns.F_fresh_ethane + fxns.F_steam; 
+fxns.productionRateRxnProducts = F_soln_ODE( : , HYDROGEN : BUTANE);
+fxns.F_rxtr_in_total = fxns.F_fresh_ethane + fxns.recycle + fxns.F_steam;
+fxns.F_sep = sum(F_soln_ODE(: , HYDROGEN : ETHANE), 2) + fxns.F_steam;
+fxns.x_hydrogen_sep = F_soln_ODE( : , HYDROGEN) ./ fxns.F_sep;
+fxns.x_methane_sep = F_soln_ODE( : , METHANE) ./ fxns.F_sep;
+fxns.x_ethylene = F_soln_ODE( : , ETHYLENE) ./ fxns.F_sep;
+fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
+fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
+fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
+fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
+
+plot_conversion_fxns(fxns);
 
 
 
@@ -1678,6 +1670,7 @@ end
 
 
 function void = plot_conversion_fxns(fxns)
+	global M3_PER_L
 	% USER INPUT
 		% fxns.conversion = conversion;
 		% fxns.V_plant = V_plant;
@@ -1700,27 +1693,63 @@ function void = plot_conversion_fxns(fxns)
 	x = fxns.conversion;
 
 	% Selectivity 1 & 2 
-	y.s1 = fxns.select_1
-	
-	
 	hold on 
-	figure
+	figure;
 	tit = "Selectivity 1";
 	xlab = "\chi";
-	ylab = "S_1"
-	plot(x, y.s1)
+	ylab = "S_1";
+	plot(x, fxns.select_1);
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
+
+	hold on 
+	figure;
+	tit = "Selectivity 2";
+	xlab = "\chi";
+	ylab = "S_2";
+	plot(x, fxns.select_2);
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
 	hold off
 
 	% Reactor Volume 
+	hold on 
+	figure;
+	tit = "Reactor Volume";
+	xlab = "\chi";
+	ylab = "V_{Reactor} [ m^3 ]";
+	plot(x, fxns.V_plant .* M3_PER_L);
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
 
 	% Fresh feed flow rate of raw materials 
-
+	hold on 
+	figure;
+	tit = "Fresh Feed of of Raw Materials into the Reactor [ kta ]";
+	xlab = "\chi";
+	ylab = "F_{FreshFeedRawMaterials}";
+	plot(x, fxns.freshFeedRawMaterials);
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
 
 	% Production Rate of all reaction products leaving the reactor 
-
+	hold on 
+	figure;
+	tit = "Production Rate [ kta ]";
+	xlab = "\chi";
+	ylab = "S_1";
+	plot(x, fxns.productionRateRxnProducts);
+	title(tit);
+	xlabel(xlab);
+	ylabel(ylab);
+	hold off
 	% Recycle flow rate of LR 
 
 	% Total flow rate to reactor 
