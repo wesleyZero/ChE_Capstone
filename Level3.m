@@ -1733,7 +1733,12 @@ function void = plot_conversion_fxns(fxns)
 	tit = "Fresh Feed of of Raw Materials into the Reactor [ kta ]";
 	xlab = "\chi";
 	ylab = "F_{FreshFeedRawMaterials}";
-	plot(x, fxns.freshFeedRawMaterials);
+	x_conversion_freshFeed = x;
+	for i = 1 : 15 
+		x_conversion_freshFeed(i,1) = 0;
+		fxns.freshFeedRawMaterials(i,1) = 0;
+	end
+	plot(x_conversion_freshFeed, fxns.freshFeedRawMaterials);
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
@@ -1744,8 +1749,9 @@ function void = plot_conversion_fxns(fxns)
 	figure;
 	tit = "Production Rate [ kta ]";
 	xlab = "\chi";
-	ylab = "S_1";
+	ylab = "Production Rate" ;
 	plot(x, fxns.productionRateRxnProducts);
+	legend("Hydrogen", "Methane", "Ethylene", "Propane", "Butane")
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
