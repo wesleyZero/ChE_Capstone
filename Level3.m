@@ -746,7 +746,7 @@ if (CALCULATE_REACTOR_FLOWS)
 								% Check if you're conserving mass
 				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
 				npv = zeros(length(F_soln_ODE(:,1)), 1); 
-
+				fxns.separationCosts = zeros(length(F_soln_ODE(:,1)), 1); 
 				xi = [ 0 , 0, 0];	%init
 
 				% ECONOMIC CALCULATIONS____________________________________________________________
@@ -814,6 +814,9 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
 					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane);
 					profit(i, 1) = profit(i, 1) - calculate_installed_cost(heat_flux);
+					
+					% Store Data For analysis
+					fxns.separationCosts(i, 1) = cost_separation_system(P_flowrates, F_steam, R_ethane); 
 
 					% Checking if I still have any sanity left after this, who knows...
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
@@ -842,6 +845,20 @@ if (CALCULATE_REACTOR_FLOWS)
 					end
 
 				end
+
+				% Plotting the Capstone plots
+				
+				fxns.conversion = conversion;
+				fxns.V_plant = V_plant;
+				fxns.select_1 = select_1;
+				fxns.select_2 = select_2;
+				fxns.npv = npv;
+				fxns.recycle = F_soln_ODE( : , ETHANE);
+				F_fresh_ethane = F_ETHANE(select_1(:), select_2(:)); 
+% 				fxns.freshFeedRawMaterials = F_fresh_ethane +  
+				plot_conversion_fxns(fxns);
+
+
 
 				% Debugging 
 				if CASHFLOW_MATRIX_OUTPUT 
@@ -873,12 +890,12 @@ if (CALCULATE_REACTOR_FLOWS)
 				% PLOTTING_________________________________________________________________________
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
 					'Ethylene', 'Propane', 'Butane','Ethane', 'conversion', ...
-					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit', 'conserv mass', 'npv'};
+					'S1', 'S2', 'q0 [ L /s ]', 'Vol_plant [ L ]', 'q0 plant', 'cost reactor', 'profit', 'net profit', 'conserv mass', 'npv', 'separationCosts'};
 				soln_table = table( V_soln_ODE, F_soln_ODE(:, HYDROGEN), ...
 							F_soln_ODE(:, METHANE), F_soln_ODE(:, ETHYLENE), ...
 							F_soln_ODE(:, PROPANE), F_soln_ODE(:, BUTANE), ...
 							F_soln_ODE(:, ETHANE), conversion,select_1, ...
-							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,'VariableNames',col_names)
+							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,'VariableNames',col_names)
 	% 			soln_table.Properties.VariableNames = col_names;
 
 				% Computer Selectivity vs conversion relationships 
@@ -1643,6 +1660,28 @@ end
 
 
 
+function void = plot_conversion_fxns(fxns)
+	
+	% Selectivity 1 & 2 
+
+	% Reactor Volume 
+
+	% Fresh feed flow rate of raw materials 
+
+
+	% Production Rate of all reaction products leaving the reactor 
+
+	% Recycle flow rate of LR 
+
+	% Total flow rate to reactor 
+
+	% Total flow rate to the separation system
+
+	% Mol fraction of each component entering the separation system
+
+	% NPV 
+	void = NaN;
+end 
 
 
 
