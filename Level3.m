@@ -93,7 +93,7 @@ NUM_POINTS = 10^4;
 
 % Reactor Script Parameters | RXTR TABLE OUTPUT
 V_MIN = 0.1;					% [ L ]
-V_MAX = 4 * 10^3;					% [ L ]
+V_MAX = 4 * 10^4;					% [ L ]
 NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
@@ -115,7 +115,7 @@ T_P_OVERRIDE = true;
 	T_P_OVERRIDE_P = true;
 		P_OVERRIDE = 2;				%[Bar]
 	T_P_OVERRIDE_MR = true;
-		STEAM_MR_OVERRIDE = 0.6;%	[__]
+		STEAM_MR_OVERRIDE = 1;%	[__]
 
 % Output fuel costs 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
@@ -637,7 +637,7 @@ F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in kta
 	% Feed flow rate index
 	ETHANE = 6;
 % npv_T_P_MR = zeros(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE), 1);
-npv_T_P_MR = cell(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE), 1);
+npv_T_P_MR = cell(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE) );
 
 i = 1;
 j = 1;
@@ -798,7 +798,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					xi = get_xi(P_flowrates);
 					F_steam = STEAM_TO_FEED_RATIO_MASS * (F_fresh_ethane + R_ethane);
 					heat_flux = heat_flux + heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
-					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION - C_TO_K, TEMP_RXTR);
+					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION + C_TO_K, TEMP_RXTR);
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 					heat_flux = heat_flux + heat_rxn(xi);
 
@@ -878,7 +878,8 @@ if (CALCULATE_REACTOR_FLOWS)
 				% max value NPV for all T P MR
 				% npv_T_P_MR(i,j,k) = npv(maxRowIndex, 1); 
 				% npv_T_P_MR(i,j,k) = npv(:,1);
-				npv_T_P_MR{i,j,k} = npv(:,1);
+% 				temp  = npv);
+% 				npv_T_P_MR{i,j,k} = npv;
 
 
 				% % Plotting the Capstone plots				
@@ -1879,30 +1880,56 @@ function void = plot_conversion_fxns(fxns)
 
 
 	% NPV (T, P, MR) | Varying T
+% 	hold on 
+% 	figure;
+% 	tit = "NPV [ $ MM ]";
+% 	xlab = "\chi";
+% 	ylab = "NPV [ $ MM ]" ;
+% 	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
+% 
+% 	y = [];
+% 	for i = 1:length(fxns.npv_T_P_MR(: , 1, 1 ))
+% 		temp =fxns.npv_T_P_MR( i , 1, 1) ;
+% 		y = [ y , fxns.npv_T_P_MR( i , 1, 1) ];
+% 	end
+% 
+% % 	% Choose a colormap
+% % 	cmap = jet(size(y, 2)); % Using 'jet' colormap; adjust the number of colors based on the number of columns in y
+% % 	
+% % 	for i = 1:size(y, 2) % Iterate through each column (dataset) in y
+% % % 		temp = 
+% % 		plot(x, cell2mat(y(:,i)), 'Color', cmap(i,:), 'LineWidth', 2);
+% % 	end
+% 
+% 	plot(x, y)
+% 	title(tit);
+% 	xlabel(xlab);
+% 	ylabel(ylab);
+% 	hold off
+
+
+	% Sep cost vs conversion
 	hold on 
 	figure;
-	tit = "NPV [ $ MM ]";
+	tit = "Separation Cost [ $ MM ]";
 	xlab = "\chi";
-	ylab = "NPV [ $ MM ]" ;
-	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
+	ylab = "Cost [ $ MM ]" ;
+	% tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
+	% i = 1;
+	% fxns.npv(fxns.npv(:, 1) < 0, 1) = 0;
+	% fxns.npv(isnan(fxns.npv(:, 1)), 1) = 0;
 
-	y = [];
-	for i = 1:length(fxns.npv_T_P_MR(: , 1, 1 ))
-% 		y = [ y ; fxns.npv_T_P_MR( i , 1, 1) ];
-	end
-
-	% Choose a colormap
-	cmap = jet(size(y, 2)); % Using 'jet' colormap; adjust the number of colors based on the number of columns in y
-	
-	for i = 1:size(y, 2) % Iterate through each column (dataset) in y
-		plot(x, y(:,i), 'Color', cmap(i,:), 'LineWidth', 2);
-	end
-
-	plot(x, y)
+	% while (fxns.npv(i , : ) < 0) 
+		% fxns.npv(i, : ) = 0;
+		% i = i + 1;
+	% end
+	fxns.separationCosts(fxns.separationCosts(:, 1) > 10^9, 1) = 0;
+	plot(x, fxns.separationCosts)
+	% legend("Hydrogen", "Methane", "Ethylene", "Propane", "Butane", "Ethane", "Water")
 	title(tit);
 	xlabel(xlab);
 	ylabel(ylab);
-	hold off
+	hold off	
 
 
 	% Return
