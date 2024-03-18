@@ -558,7 +558,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				try
 					heat_flux = heat_flux + heat_rxn(xi);
 				catch E 
-					fprint("Rerun")
+					fprintf("Rerun")
 					xi = get_xi(P_flowrates);
 					heat_flux = heat_flux + heat_rxn(xi);
 				end
@@ -856,7 +856,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
 					npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
 					npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
-					npv_params.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) * MMDOLLA_PER_DOLLA;
+					npv_params.utilitiesCost = (cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) + cost_waste_stream(F_steam)) * MMDOLLA_PER_DOLLA;
 					npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
 					npv_params.conversion = conversion(i);
 					% npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
