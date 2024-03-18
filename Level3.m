@@ -35,6 +35,7 @@ global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
 global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ YR_PER_HR HR_PER_YR 
 global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
+global CONV_MIN CONV_MAX
 
 % USER NOTES____________________________________________________________________
 
@@ -65,9 +66,9 @@ STEAM_TO_FEED_RATIO_MOLS = 0.6;		% [ __ ] 0.6 to 1.0
 TEMP_RXTR = 825;				% [ C ] 
 PRESS_RXTR = 2;					% [ Bar ] 2 to 5 bar
 TEMP_ETHANE_FEED = 25;			% [ C ]
-CONVERSION =  0.17053;			% [ __ ] % Level 2 & 3 Calculations 
-USERINPUT_S1 = 0.96971 ;		% [ __ ] % Level 2 & 3 Calculation	s 
-USERINPUT_S2 = 0.00011843; 		% [ __ ] % Level 2 & 3 Calculations 
+CONVERSION =  0.704829107777399;			% [ __ ] % Level 2 & 3 Calculations 
+USERINPUT_S1 = 0.888387288555317;		% [ __ ] % Level 2 & 3 Calculation	s 
+USERINPUT_S2 = 6.95817447345796e-05; 		% [ __ ] % Level 2 & 3 Calculations 
 STEAM_CHOICE = 1;
 % 	STEAM_30PSIA = 1;
 % 	STEAM_50PSIA = 2;
@@ -111,11 +112,13 @@ NUM_STEAM_POINTS = 2;			% [ __ ]
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
 	T_P_OVERRIDE_T = true;
-		T_OVERRIDE = 825;			%[C]
+		T_OVERRIDE = 825;			% [C]
 	T_P_OVERRIDE_P = true;
-		P_OVERRIDE = 2;				%[Bar]
+		P_OVERRIDE = 2;				% [Bar]
 	T_P_OVERRIDE_MR = true;
-		STEAM_MR_OVERRIDE = 1;%	[__]
+		STEAM_MR_OVERRIDE = 1;		% [__]
+	CONV_MIN = 0.70;
+	CONV_MAX = 0.71;
 
 % Output fuel costs 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
@@ -857,54 +860,16 @@ if (CALCULATE_REACTOR_FLOWS)
 					% NPV calculations 
 					cf = get_npv(npv_params);
 					npv(i, 1) = cf.lifetime_npv;
-					if conversion(i) > 0.67 && conversion(i) < 0.70
+					if conversion(i) > CONV_MIN && conversion(i) < CONV_MAX
 						cf = get_npv(npv_params);
 						ideal_cf = cf;
-						ideal_params = npv_params;
-						ideal_conversion = conversion(i);
-						ideal_lifetimeNpv = cf.lifetime_npv;
+						ideal_params = npv_params
+						ideal_conversion = conversion(i)
+						ideal_lifetimeNpv = cf.lifetime_npv
+						fprintf("Annual C02 Tax $ MM %3.3f\n", npv_params.CO2sustainabilityCharge)
 					end
 
 				end
-
-				% Assuming A is your matrix
-				% A = [1 2 3; 4 5 6; 7 8 9; 10 11 12]; % Example matrix
-
-				% Find the maximum value in the 3rd column and its row index
-				% [maxValue, rowIndex] = max(A(:,3));
-
-				% [maxValue, maxRowIndex] = max(npv(:,1));
-
-				% max value NPV for all T P MR
-				% npv_T_P_MR(i,j,k) = npv(maxRowIndex, 1); 
-				% npv_T_P_MR(i,j,k) = npv(:,1);
-% 				temp  = npv);
-% 				npv_T_P_MR{i,j,k} = npv;
-
-
-				% % Plotting the Capstone plots				
-				% fxns.conversion = conversion;
-				% fxns.V_plant = V_plant;
-				% fxns.select_1 = select_1;
-				% fxns.select_2 = select_2;
-				% fxns.npv = npv;
-				% fxns.recycle = F_soln_ODE( : , ETHANE);
-				% fxns.freshFeedRawMaterials = fxns.F_fresh_ethane + fxns.F_steam; 
-				% fxns.productionRateRxnProducts = F_soln_ODE( : , HYDROGEN : BUTANE);
-				% fxns.F_rxtr_in_total = fxns.F_fresh_ethane + fxns.recycle + fxns.F_steam;
-				% fxns.F_sep = sum(F_soln_ODE(: , HYDROGEN : ETHANE), 2) + fxns.F_steam;
-				% fxns.x_hydrogen_sep = F_soln_ODE( : , HYDROGEN) ./ fxns.F_sep;
-				% fxns.x_methane_sep = F_soln_ODE( : , METHANE) ./ fxns.F_sep;
-				% fxns.x_ethylene = F_soln_ODE( : , ETHYLENE) ./ fxns.F_sep;
-				% fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
-				% fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
-				% fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
-				% fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
-
-				% plot_conversion_fxns(fxns);
-
-
-
 
 				% Debugging 
 				if CASHFLOW_MATRIX_OUTPUT 
@@ -928,11 +893,7 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf('\n');
 					end
 
-					% cf.matrix 
-					% cf.lifetime_npv					
 				end
-
-
 
 				% PLOTTING_________________________________________________________________________
 				col_names = {'V_rxtr [L] ', 'Hydrogen [kta]', 'Methane', ...
@@ -945,20 +906,6 @@ if (CALCULATE_REACTOR_FLOWS)
 							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,fxns.furnaceCosts,'VariableNames',col_names)
 	 			soln_table.Properties.VariableNames = col_names;
 
-				% Computer Selectivity vs conversion relationships 
-	
-				% Use Selectivity vs Conversion Relationships with lvl 2 & 3 balances 
-				% % to calculate the true feed flow rates into the reactor 
-
-				% % ?? MODIFY ALL OF THESE TO BE IN MILLIONS OF DOLLARS
-				% npv.mainProductRevenue = value_ethylene(P_ethylene);
-				% npv.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen); 
-				% npv.rawMaterialsCost = value_ethane(F_fresh_ethane);
-				% npv.utilitiesCost = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)); 
-				% npv.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas); 
-				% npv.conversion = conversion(i);
-				% npv.ISBLcapitalCost = cost_rxt_vec + cost_separation_system(P_flowrates, F_steam, R_ethane);
-				% % NPV CALCS 
 				
 			k = k + 1;
 			end 
@@ -1434,12 +1381,12 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	x_ethylene = 1;
 
 	% leaving sep 2
-	x_butane = 0.0003;
+	x_butane = 0.9995;
 	x_propane = 1 - x_butane;
 
 	% leaving sep 5 (PSA)
-	x_methane = 4.03293090303065e-004;
-	x_hydrogen = 1 - x_methane;
+	x_methane = 3.01809372499680e-004;
+	x_hydrogen = 1;
 		% ?? How should I implement the PSA toggle switch on this
 	
 	%Pressures of PSA system [bar]
