@@ -1845,7 +1845,8 @@ figure
 		y(y <= 0) = NaN;
 
 % 		lbls(i) = num2str(fxns.npv_T_P_MR_lbls.steamRatios(i));
-		lgd{i} = "MR = " + num2str(lbls(i));
+% 		lgd{i} = "MR = " + num2str(lbls(i));
+		lgd{i} = "MR = " + sprintf("%3.3f", lbls(i));
 		plot(x,y)
 	end
 	legend(lgd)
