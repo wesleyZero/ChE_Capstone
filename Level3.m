@@ -94,7 +94,7 @@ NUM_POINTS = 10^4;
 
 % Reactor Script Parameters | RXTR TABLE OUTPUT
 V_MIN = 0.1;					% [ L ]
-V_MAX = 4 * 10^4;					% [ L ]
+V_MAX = 1 * 10^3;					% [ L ]
 NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
@@ -165,7 +165,6 @@ MAX_CAPEX = false;
 %_______________________________________________________________________________
 % DON'T TOUCH ANYTHING BELOW THIS LINE
 %_______________________________________________________________________________
-
 
 % CONSTANTS | PLOTTING_____________________________________________________
 
@@ -259,8 +258,6 @@ CO2_TO_BUTANE_COMBUSTION_STOICH = 4;
 C02_TO_NATGAS_COMBUSTION_STOICH = CO2_TO_METHANE_COMBUSTION_STOICH;
 	% Natural gas is asuumed to be entirely methane
 
-
-	
 % CONSTANTS | THERMODYNAMICS_______________________________________________
 
 % Gas Constant 
@@ -420,10 +417,8 @@ k1_r = @(T) (9.91 * 10^8) * exp( (-137800 / (R * (T ))));
 k2 = @(T) (4.652 * 10^11) * exp( (-273000 / (R * (T ))));
 k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T ))));
 
-
 % DESIGN PARAMS____________________________________________________________
 STEAM_TO_FEED_RATIO_MASS = (MOLMASS_WATER / MOLMASS_ETHANE) * STEAM_TO_FEED_RATIO_MOLS;
-
 
 % SCRIPT___________________________________________________________________
 
@@ -436,7 +431,6 @@ if (CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS)
 	EFFECTIVE_VALUE_BUTANE_FUEL = VALUE_BUTANE_FUEL + TAX_CO2_PER_GJ_BUTANE
 	EFFECTIVE_VALUE_NAT_GAS_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NATGAS
 % 	EFFECTIVE_VALUE_NUM2_FUEL = VALUE_NATGAS_FUEL + TAX_CO2_PER_GJ_NUM2;
-
 end
 
 if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
@@ -473,7 +467,6 @@ if (OUTPUT_LVL3_FLOWRATES_TO_CONSOLE)
 		disp("Recycle Stream Flowrate")
 
 		R_ethane = F_ethane * ((1-CONVERSION) / (CONVERSION))
-		% R_ethane = (P_ethylene/USERINPUT_S1) * ((1-CONVERSION)/CONVERSION)
 
 		disp("Reactor Flowrates")
 
@@ -543,10 +536,6 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				butane_flowrates(i) = P_BUTANE(s1, s2);
 				ethane_flowrates(i) = F_ETHANE(s1, s2);
 
-				% F_ethane = F_ETHANE(select_1(i), select_2(i));
-				% F_fresh_ethane = F_ethane;
-				% F_ethane_rxtr = F_ethane(i) * ( conversion(i) / (1 - conversion(i)) );
-				
 				xi = [];
 				% Calculate the heat flux needed to keep reactor isothermal 
 				heat_flux = 0;
@@ -558,26 +547,23 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				try
 					heat_flux = heat_flux + heat_rxn(xi);
 				catch E 
-					fprintf("Rerun")
 					xi = get_xi(P_flowrates);
 					heat_flux = heat_flux + heat_rxn(xi);
 				end
 
-
-	% 			% Use the heat flux to calculate the fuel cost	
+	 			% Use the heat flux to calculate the fuel cost	
 				[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
 
 				% Calculate how much natural gas you needed to combust
 				F_natural_gas = natgas_combustion(heat_flux_remaining);
 
 				% Determine how much of the product streams were combusted to keep the reactor isothermal	
-
 				combusted_hydrogen = combusted_fuel_flow_rates(HYDROGEN);
 				combusted_methane = combusted_fuel_flow_rates(METHANE);
 				combusted_propane = combusted_fuel_flow_rates(PROPANE);
 				combusted_butane = combusted_fuel_flow_rates(BUTANE);
 
-	% 			% VALUE CREATED | Primary Products
+	 			% VALUE CREATED | Primary Products
 				profit(i) = profit(i) + value_ethylene(P_ethylene);
 				profit(i) = profit(i) + value_h2_chem(P_hydrogen - combusted_hydrogen);
 
@@ -596,13 +582,7 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				profit(i) = profit(i) - value_ethane(F_ethane);
 				profit(i) = profit(i) - cost_natural_gas_fuel(F_natural_gas);
 				profit(i) = profit(i) - cost_waste_stream(F_steam);
-				
-				% profit(i) = profit(i) - cost
 
-
-			else
-				profit(i) = INVALID_FLOWRATE;
-				ethylene_flowrates(i) = INVALID_FLOWRATE;
 			end 
 			i = i + 1;
 		end 
@@ -620,11 +600,6 @@ if (CALCULATE_ALL_SELECTIVITIES)
 		plot_3D(s1_mesh, s2_mesh, profit, PROFIT_S1S2_OPT);
 	end
 
-	% Prepare the array of flow rate matrices
-	% flowRatesArray = {hydrogen_flowrates, methane_flowrates, ethylene_flowrates, propane_flowrates, butane_flowrates, ethane_flowrates};
-
-	% Call the function with the desired row
-	% plotFlowRatesForRow(4, flowRatesArray); % To plot the first row across all matrices
 end
 
 
@@ -646,8 +621,6 @@ F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in kta
 
 	% Feed flow rate index
 	ETHANE = 6;
-% npv_T_P_MR = zeros(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE), 1);
-npv_T_P_MR = cell(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE) );
 
 i = 1;
 j = 1;
@@ -770,6 +743,8 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				% Check if you're conserving mass
 				conserv_mass = zeros(length(F_soln_ODE(:,1)), 1);
+
+				% Initalize the NPV function inputs
 				npv = zeros(length(F_soln_ODE(:,1)), 1); 
 				fxns.separationCosts = zeros(length(F_soln_ODE(:,1)), 1); 
 				fxns.furnaceCosts = zeros(length(F_soln_ODE(:,1)), 1); 
@@ -781,11 +756,6 @@ if (CALCULATE_REACTOR_FLOWS)
 				profit = zeros(length(F_soln_ODE(:,1)), 1);
 				for i = 1:length(F_soln_ODE(:, 1))
 					
-					% DEBUGGING
-					if i > 500
-						disp("")
-					end 
-					% P_flowrates = [ P_hydrogen, P_methane, P_ethylene, P_propane, P_butane ];
 					P_flowrates = F_soln_ODE(i , HYDROGEN:BUTANE);
 					
 					P_hydrogen = P_flowrates(HYDROGEN);
@@ -829,7 +799,6 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) + value_h2_chem(P_hydrogen - combusted_hydrogen);
 					
 					% VALUE CREATED | Non-combusted fuels 
-					% The commented line can be removed or modified as per the context.
 					% profit(i, 1) = profit(i, 1) + value_methane(P_methane - combusted_methane);
 					profit(i, 1) = profit(i, 1) + value_propane(P_propane - combusted_propane);
 					profit(i, 1) = profit(i, 1) + value_butane(P_butane - combusted_butane);  
@@ -856,10 +825,11 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
 					npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
 					npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
-					npv_params.utilitiesCost = (cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) + cost_waste_stream(F_steam)) * MMDOLLA_PER_DOLLA;
+					npv_params.utilitiesCost = (cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) ...
+												+ cost_waste_stream(F_steam)...
+												) * MMDOLLA_PER_DOLLA;
 					npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
 					npv_params.conversion = conversion(i);
-					% npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + cost_separation_system(P_flowrates, F_steam, R_ethane)) * MMDOLLA_PER_DOLLA;
 					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + ...
 											cost_separation_system(P_flowrates, F_steam, R_ethane) + ...
 											calculate_installed_cost(heat_flux)) * MMDOLLA_PER_DOLLA;
@@ -875,6 +845,8 @@ if (CALCULATE_REACTOR_FLOWS)
 						ideal_lifetimeNpv = cf.lifetime_npv
 						fprintf("Annual C02 Tax $ MM %3.3f\n", npv_params.CO2sustainabilityCharge)
 						fprintf("Natural Gas Flowrate [kta] %3.3f\n", F_natural_gas)
+						fprintf("Steam Flowrate [kta] %3.3f\n", F_steam)
+
 					end
 
 				end
@@ -942,11 +914,9 @@ fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
 fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
 fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
 fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
-fxns.npv_T_P_MR = npv_T_P_MR;
+% fxns.npv_T_P_MR = npv_T_P_MR;
 
 plot_conversion_fxns(fxns);
-
-
 
 disp("The Script is done running ️")
 % HELPER FUNCTIONS | PLOTTING______________________________________________
@@ -1138,6 +1108,7 @@ function heat = heat_steam(F_steam, STEAM_CHOICE, P_reactor, T_reactor)
 		T_steam = T_adibatic;
 	elseif (P_steam < P_reactor) % Compression
 		W = compressor_work(T_reactor, P_steam, P_reactor);
+		% ?? This Will return 0 bc it's not implemented yet
 		if ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX
 			heat = heat + W;
 		end
@@ -1148,12 +1119,6 @@ function heat = heat_steam(F_steam, STEAM_CHOICE, P_reactor, T_reactor)
 	heat = F_steam * G_PER_KT * (1/MOLMASS_WATER) * HEAT_CAPACITY_WATER * (T_reactor - T_steam);
 	% GJ = KJ   * (KJ / GJ)
 	heat = heat * GJ_PER_KJ;
-
-
-	% Heat flux after temperture 
-
-
-
 end
 
 function T_f = adiabatic_temp(T_0, P_0, P_f)
@@ -1167,7 +1132,6 @@ function W = compressor_work(T, P_0, P_f)
 	W = - n * R * T * log(P_f / P_0);
 
 	% ?? THIS ALWAYS RETURNS 0 OR NULL, NOT IMPLEMENTED YET
-
 end
 
 % HELPER FUNCTIONS | TAXES______________________________________________
@@ -1208,7 +1172,6 @@ function F_natural_gas = natgas_combustion(heat_flux_remaining)
 
 	%		kt			GJ				* (kJ / GJ) * (mol / kJ) *			(g / mol) *				(kt / g)
 	F_natural_gas = heat_flux_remaining * KJ_PER_GJ * (1/ENTHALPY_NAT_GAS) * (MOLMASS_NATGAS) * KT_PER_G;
-
 end
 
 % FUNCTIONS | REACTOR ODE SYSTEM________________________________________________
@@ -1238,7 +1201,6 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 
 	F_tot = sum(F) + F_steam;
 
-
 	% Hydrogen = A
 	dFAdV = (k1_f(T) * ( (F(ETHANE) * P) / (F_tot * R_2 * T) )   ) - ...
 			(k1_r(T) * ( F(ETHYLENE) * F(HYDROGEN) * P^2) ) / (F_tot * R_2 * T)^2;
@@ -1266,14 +1228,13 @@ function dFdV = reactionODEs(V, F, T, P, F_steam)
 	T = T - C_TO_K;
 
 	dFdV = [dFAdV; dFBdV; dFCdV; dFEdV; dFFdV; dFDdV];
-	
 end
 
 function cost = cost_reactor(V_plant_input)
 	global FT_PER_METER STEAM_TO_FEED_RATIO
 	FT_PER_METER = 3.28084;
 	% ??? WHAT ARE THE UNITS OF TIME
-	%
+	
 	pi = 3.14159;
 	D = 0.05;								% [m]
 	V_plant_max = pi * (0.025)^2 * 20; 		%[m^3]
@@ -1295,7 +1256,6 @@ function cost = cost_reactor(V_plant_input)
 	cost_max_reactor = factor_1 * factor_2 * factor_3 * factor_4; 
 	cost = cost + num_of_additional_reactors * cost_max_reactor;
 	
-
 	% Find the cost of the non-max size reactor 
 	V_plant = V_plant_input - V_plant_max * num_of_additional_reactors;
 	if V_plant < 0
@@ -1306,7 +1266,6 @@ function cost = cost_reactor(V_plant_input)
 	factor_3 = (101.9 * D * FT_PER_METER)^1.066;
 	factor_4 = (1800 / 280);
 	cost = cost + factor_1 * factor_2 * factor_3 * factor_4;
-
 
 end
 
@@ -1408,7 +1367,6 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	%SOLN_TABLE. WE USED THESE AS EXPECTED COSTS)
 
 	% Flowrates of each exiting stream from the sep system	
-
 	F_water = F_steam; 									% mol/s
 	F_LPG = P_flowrates(BUTANE) + P_flowrates(PROPANE); % (mol / s)
 	F_ethylene = P_flowrates(ETHYLENE);					% (mol / s)
@@ -1428,7 +1386,6 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 						F_ME*log(x_methane/z_methane) +...
 						F_ME*log(P_ME/P_in)...
 						);
-
 
 	lamdba_min = 20;
 	lambda_max = 50;	
@@ -1451,7 +1408,6 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	cost = 2.5 * capex ;
 	
 end
-
 
 function cf = get_npv(npv)
 	global YEARS_IN_OPERATION
@@ -1627,11 +1583,8 @@ function cf = get_npv(npv)
 	end
 
 	% RETURN 
-	% cash_flow_matrix
-% 	[cf_matrix, lifetime_npv] = [cash_flow_matrix, cash_flow_matrix(LAST_ROW_CASHFLOW, NPV)];
 	cf.matrix = cash_flow_matrix;
 	cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
-	% lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
 end
 
 
@@ -1833,8 +1786,6 @@ function void = plot_conversion_fxns(fxns)
 	ylabel(ylab);
 	hold off
 	
-
-
 	% NPV (T, P, MR) | Varying T
 % 	hold on 
 % 	figure;
@@ -1863,7 +1814,6 @@ function void = plot_conversion_fxns(fxns)
 % 	ylabel(ylab);
 % 	hold off
 
-
 	% Sep cost vs conversion
 	hold on 
 	figure;
@@ -1886,7 +1836,6 @@ function void = plot_conversion_fxns(fxns)
 	xlabel(xlab);
 	ylabel(ylab);
 	hold off	
-
 
 	% Return
 	void = NaN;
