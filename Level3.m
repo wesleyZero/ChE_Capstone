@@ -1849,7 +1849,9 @@ figure
 		plot(x,y)
 	end
 	legend(lgd)
-	title("MPV at MR ")
+	title("NPV at different steam ratios")
+	xlabel('\chi')
+	ylabel('$ MM')
 	hold off
 
 	% Sep cost vs conversion
