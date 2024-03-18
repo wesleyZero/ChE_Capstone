@@ -71,7 +71,7 @@ USERINPUT_S1 = 0.888387288555317;		% [ __ ] % Level 2 & 3 Calculation	s
 USERINPUT_S2 = 6.95817447345796e-05; 		% [ __ ] % Level 2 & 3 Calculations 
 STEAM_CHOICE = 1;
 % 	STEAM_30PSIA = 1;
-% 	STEAM_50PSIA = 2;
+% 	STEAM_50PSIA = 2;9
 % 	STEAM_100PSIA = 3;
 % 	STEAM_200PSIA = 4;
 % 	STEAM_500PSIA = 5;
@@ -94,7 +94,7 @@ NUM_POINTS = 10^4;
 
 % Reactor Script Parameters | RXTR TABLE OUTPUT
 V_MIN = 0.1;					% [ L ]
-V_MAX = 1 * 10^3;					% [ L ]
+V_MAX = 1 * 10^4;					% [ L ]
 NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
@@ -107,10 +107,10 @@ NUM_T_POINTS = 2; 				% [ __ ]
 
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
-NUM_STEAM_POINTS = 2;			% [ __ ]
+NUM_STEAM_POINTS = 4;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
-T_P_OVERRIDE = true;		
+T_P_OVERRIDE = false;		
 	T_P_OVERRIDE_T = true;
 		T_OVERRIDE = 825;			% [C]
 	T_P_OVERRIDE_P = true;
@@ -622,9 +622,13 @@ F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in kta
 	% Feed flow rate index
 	ETHANE = 6;
 
-i = 1;
-j = 1;
-k = 1;
+% ?? experimental change
+npv_T_P_MR = zeros(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE), 1);
+npv_T_P_MR_labels = cell(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE));
+
+ii = 1;
+jj = 1;
+kk = 1;
 if (CALCULATE_REACTOR_FLOWS)
 	disp("Reactor Script ")
 	for T_i = T_RANGE
@@ -647,8 +651,6 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				fprintf("\n\nT = %f [C], P = %f [bar] MR = %f [__]\n", T_i, P_i, MR_S_i)
 
-				% Setup the PFR Design Equations 
-				
 				% BASIS CALCULATIONS_______________________________________________________________
 
 				% CONVERT TO MOLES_________________________________________________________________
@@ -848,19 +850,23 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("Steam Flowrate [kta] %3.3f\n", F_steam)
 
 					end
+					
+					% Storing data
+		% 			npv_T_P_MR(ii, jj, kk) = ideal_lifetimeNpv;
+					npv_T_P_MR(ii, jj, kk, i) = npv(i, 1);
+					% npv_T_P_MR_labels{ii,jj, kk} = 
 
+
+		
 				end
 
 				% Debugging 
 				if CASHFLOW_MATRIX_OUTPUT 
 					fprintf("\n\nnpv = ($ MM) %3.3f \n", ideal_lifetimeNpv)
 					format short
-					% disp(ideal_cf.matrix)
 					
 					disp(ideal_params)
 					fprintf("conversion = %1.4f\n", ideal_conversion)
-
-					A = [123456789, 987654321; 12345, 67890]; % Example 2D array
 
 					% Loop through each element and print
 					disp("CASH FLOW MATRIX")
@@ -872,7 +878,6 @@ if (CALCULATE_REACTOR_FLOWS)
 						end
 						fprintf('\n');
 					end
-
 				end
 
 				% PLOTTING_________________________________________________________________________
@@ -886,12 +891,15 @@ if (CALCULATE_REACTOR_FLOWS)
 							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,fxns.furnaceCosts,'VariableNames',col_names)
 	 			soln_table.Properties.VariableNames = col_names;
 
-				
-			k = k + 1;
+			% Storing data
+% 			npv_T_P_MR(ii, jj, kk) = ideal_lifetimeNpv;
+% 			npv_T_P_MR(ii, jj, kk, :) = npv;
+			
+			kk = kk + 1;
 			end 
-		j = j + 1;
+		jj = jj + 1;
 		end 
-	i = i + 1;
+	ii = ii + 1;
 	end
 end 
 
@@ -914,7 +922,7 @@ fxns.x_propane_sep = F_soln_ODE( : , PROPANE) ./ fxns.F_sep;
 fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
 fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
 fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
-% fxns.npv_T_P_MR = npv_T_P_MR;
+fxns.npv_T_P_MR = npv_T_P_MR;
 
 plot_conversion_fxns(fxns);
 
@@ -1813,6 +1821,27 @@ function void = plot_conversion_fxns(fxns)
 % 	xlabel(xlab);
 % 	ylabel(ylab);
 % 	hold off
+
+figure
+	hold on
+% 	figure
+	y = zeros(1,1);
+% 	for i = 1:length(fxns.npv_T_P_MR(1,1,:,1))
+	num_of_molarRatios = length(fxns.npv_T_P_MR(1,1,:,1));
+	for i = 1:num_of_molarRatios
+		% T P MR
+		fxns.npv_T_P_MR(1, 1, i, :)
+		for j = 1:length(fxns.conversion)
+			y(j,1) = fxns.npv_T_P_MR(1, 1, i, j);
+		end
+% 		fxns.npv_T_P_MR(1, 1, i, :)
+% 		y = fxns.npv_T_P_MR(1, 1, i, :);
+		x = fxns.conversion;
+		y(y < 0) = 0;
+		plot(x,y)
+	end
+	title("MPV at MR ")
+	hold off
 
 	% Sep cost vs conversion
 	hold on 
