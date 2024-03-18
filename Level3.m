@@ -555,7 +555,14 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 				% heat_flux = heat_flux + heat_ethane(F_ethane_into_reactor, TEMP_SEPARATION, TEMP_RXTR);
 				heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
-				heat_flux = heat_flux + heat_rxn(xi);
+				try
+					heat_flux = heat_flux + heat_rxn(xi);
+				catch E 
+					fprint("Rerun")
+					xi = get_xi(P_flowrates);
+					heat_flux = heat_flux + heat_rxn(xi);
+				end
+
 
 	% 			% Use the heat flux to calculate the fuel cost	
 				[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
@@ -867,6 +874,7 @@ if (CALCULATE_REACTOR_FLOWS)
 						ideal_conversion = conversion(i)
 						ideal_lifetimeNpv = cf.lifetime_npv
 						fprintf("Annual C02 Tax $ MM %3.3f\n", npv_params.CO2sustainabilityCharge)
+						fprintf("Natural Gas Flowrate [kta] %3.3f\n", F_natural_gas)
 					end
 
 				end
