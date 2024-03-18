@@ -71,7 +71,7 @@ USERINPUT_S1 = 0.888387288555317;		% [ __ ] % Level 2 & 3 Calculation	s
 USERINPUT_S2 = 6.95817447345796e-05; 		% [ __ ] % Level 2 & 3 Calculations 
 STEAM_CHOICE = 1;
 % 	STEAM_30PSIA = 1;
-% 	STEAM_50PSIA = 2;9
+% 	STEAM_50PSIA = 2;
 % 	STEAM_100PSIA = 3;
 % 	STEAM_200PSIA = 4;
 % 	STEAM_500PSIA = 5;
@@ -854,6 +854,9 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Storing data
 		% 			npv_T_P_MR(ii, jj, kk) = ideal_lifetimeNpv;
 					npv_T_P_MR(ii, jj, kk, i) = npv(i, 1);
+					npv_T_P_MR_lbls.steamRatios = STEAM_RANGE;
+					npv_T_P_MR_lbls.pressures = P_RANGE;
+					npv_T_P_MR_lbls.temperatures = T_RANGE;
 					% npv_T_P_MR_labels{ii,jj, kk} = 
 
 
@@ -923,6 +926,7 @@ fxns.x_butane_sep = F_soln_ODE( : , BUTANE) ./ fxns.F_sep;
 fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
 fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
 fxns.npv_T_P_MR = npv_T_P_MR;
+fxns.npv_T_P_MR_lbls = npv_T_P_MR_lbls;
 
 plot_conversion_fxns(fxns);
 
@@ -1828,18 +1832,23 @@ figure
 	y = zeros(1,1);
 % 	for i = 1:length(fxns.npv_T_P_MR(1,1,:,1))
 	num_of_molarRatios = length(fxns.npv_T_P_MR(1,1,:,1));
-	for i = 1:num_of_molarRatios
+% 	for i = 1:num_of_molarRatios
+	lbls = fxns.npv_T_P_MR_lbls.steamRatios;
+	lgd = {};
+	for i = 1:length(fxns.npv_T_P_MR_lbls.steamRatios)
 		% T P MR
 		fxns.npv_T_P_MR(1, 1, i, :)
 		for j = 1:length(fxns.conversion)
 			y(j,1) = fxns.npv_T_P_MR(1, 1, i, j);
 		end
-% 		fxns.npv_T_P_MR(1, 1, i, :)
-% 		y = fxns.npv_T_P_MR(1, 1, i, :);
 		x = fxns.conversion;
-		y(y < 0) = 0;
+		y(y <= 0) = NaN;
+
+% 		lbls(i) = num2str(fxns.npv_T_P_MR_lbls.steamRatios(i));
+		lgd{i} = "MR = " + num2str(lbls(i));
 		plot(x,y)
 	end
+	legend(lgd)
 	title("MPV at MR ")
 	hold off
 
