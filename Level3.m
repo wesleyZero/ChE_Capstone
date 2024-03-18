@@ -1330,8 +1330,9 @@ function cost = cost_waste_stream(F_steam)
 	%$/m^3 waste water
 	cost_waste_water = a*CEPCI + b*C_f;
 	
-	% m^3 / s = (m^3 / s) * (s / yr)
+	% m^3 / yr = (m^3 / s) * (s / yr)
 	q = q * SEC_PER_YR;
+	% $ / yr = ($ / m^3) * (m^3 / yr)
 	cost = cost_waste_water * q;
 
 end
