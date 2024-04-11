@@ -117,8 +117,8 @@ T_P_OVERRIDE = true;
 		P_OVERRIDE = 2;				% [Bar]
 	T_P_OVERRIDE_MR = false;
 		STEAM_MR_OVERRIDE = 1;		% [__]
-	CONV_MIN = 0.70;
-	CONV_MAX = 0.73;
+	CONV_MIN = 0.7199999;
+	CONV_MAX = 0.7299999;
 
 % Output fuel costs 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
@@ -419,6 +419,7 @@ k3 = @(T) (7.083 * 10^13) * exp( (-252600 / (R * (T ))));
 
 % DESIGN PARAMS____________________________________________________________
 STEAM_TO_FEED_RATIO_MASS = (MOLMASS_WATER / MOLMASS_ETHANE) * STEAM_TO_FEED_RATIO_MOLS;
+MR_MOL_2_MASS_CONV_FACTOR = (MOLMASS_WATER / MOLMASS_ETHANE);
 
 % SCRIPT___________________________________________________________________
 
@@ -785,7 +786,9 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Calculate the heat flux needed to keep reactor isothermal 
 					heat_flux = 0;
 					xi = get_xi(P_flowrates);
-					F_steam = STEAM_TO_FEED_RATIO_MASS * (F_fresh_ethane + R_ethane);
+					% F_steam = STEAM_TO_FEED_RATIO_MASS * (F_fresh_ethane + R_ethane);
+					F_steam = MR_MOL_2_MASS_CONV_FACTOR * MR_S_i * (F_fresh_ethane + R_ethane);
+
 					heat_flux = heat_flux + heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION + C_TO_K, TEMP_RXTR);
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
