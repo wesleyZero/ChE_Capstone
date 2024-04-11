@@ -99,26 +99,26 @@ NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
 P_MAX = 5;						% [ Bar ]
-NUM_P_POINTS = 2;				% [ __ ]
+NUM_P_POINTS = 1;				% [ __ ]
 
 T_MIN = 775;					% [ Celcius ]
 T_MAX = 825;					% [ Celcius ]
-NUM_T_POINTS = 2; 				% [ __ ]
+NUM_T_POINTS = 1; 				% [ __ ]
 
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
 NUM_STEAM_POINTS = 4;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
-T_P_OVERRIDE = false;		
+T_P_OVERRIDE = true;		
 	T_P_OVERRIDE_T = true;
 		T_OVERRIDE = 825;			% [C]
 	T_P_OVERRIDE_P = true;
 		P_OVERRIDE = 2;				% [Bar]
-	T_P_OVERRIDE_MR = true;
+	T_P_OVERRIDE_MR = false;
 		STEAM_MR_OVERRIDE = 1;		% [__]
 	CONV_MIN = 0.70;
-	CONV_MAX = 0.71;
+	CONV_MAX = 0.73;
 
 % Output fuel costs 
 CONSOLE_OUTPUT_EFFECTIVE_VALUE_FUELS = true;
@@ -639,7 +639,7 @@ if (CALCULATE_REACTOR_FLOWS)
 	for T_i = T_RANGE
 		for P_i = P_RANGE
 			for MR_S_i = STEAM_RANGE
-	
+				disp("________________________________________________________________")
 				% override the T_i and P_i with user input 
 				if T_P_OVERRIDE
 					disp("WARNING: OVERRIDE HAS BEEN ACTIVATED")
@@ -652,6 +652,8 @@ if (CALCULATE_REACTOR_FLOWS)
 					if T_P_OVERRIDE_MR
 						MR_S_i = STEAM_MR_OVERRIDE;
 					end
+				else
+					disp("WARNING: OVERRIDE HAS BEEN DEACTIVATED")
 				end
 
 				fprintf("\n\nT = %f [C], P = %f [bar] MR = %f [__]\n", T_i, P_i, MR_S_i)
