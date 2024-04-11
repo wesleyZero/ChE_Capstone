@@ -45,7 +45,7 @@ global CONV_MIN CONV_MAX
 % Pressure 		Bar
 % Temperature 	Celcius
 % Moles			Moles
-% Value			Dollars	global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
+% Value			Dollars	
 
 % [ __ ] THIS MEANS DIMENSIONLESS UNITS
 
@@ -284,7 +284,7 @@ HEAT_FORMATION_BUTANE = -125.6;			% [ kJ / mol ] reference Temp = std
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
 % Enthalpy of combustion (std conditions)
-ENTHALPY_HYDROGEN = 286;
+ENTHALPY_HYDROGEN = 286;				% [ kJ / mol ]	
 	% Source : https://chem.libretexts.org/Courses/University_of_Kentucky/UK%3A_General_Chemistry/05%3A_Thermochemistry/5.3%3A_Enthalpy
 ENTHALPY_METHANE = 890;					% [ kJ / mol ]	
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1
@@ -544,6 +544,11 @@ if (CALCULATE_ALL_SELECTIVITIES)
 				heat_flux = heat_flux + heat_ethane(F_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 				% heat_flux = heat_flux + heat_ethane(F_ethane_into_reactor, TEMP_SEPARATION, TEMP_RXTR);
 				heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
+% 				while (isempty(xi))
+% 					xi = get_xi(P_flowrates);
+% 				end
+% 				heat_flux = heat_flux + heat_rxn(xi);
+
 				try
 					heat_flux = heat_flux + heat_rxn(xi);
 				catch E 
@@ -891,7 +896,7 @@ if (CALCULATE_REACTOR_FLOWS)
 							F_soln_ODE(:, METHANE), F_soln_ODE(:, ETHYLENE), ...
 							F_soln_ODE(:, PROPANE), F_soln_ODE(:, BUTANE), ...
 							F_soln_ODE(:, ETHANE), conversion,select_1, ...
-							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,fxns.furnaceCosts,'VariableNames',col_names)
+							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,fxns.furnaceCosts,'VariableNames',col_names);
 	 			soln_table.Properties.VariableNames = col_names;
 
 			% Storing data
@@ -1826,7 +1831,8 @@ function void = plot_conversion_fxns(fxns)
 % 	ylabel(ylab);
 % 	hold off
 
-figure
+	% NPV (T, P, MR) | Varying MR 
+	figure
 	hold on
 % 	figure
 	y = zeros(1,1);
@@ -1837,7 +1843,7 @@ figure
 	lgd = {};
 	for i = 1:length(fxns.npv_T_P_MR_lbls.steamRatios)
 		% T P MR
-		fxns.npv_T_P_MR(1, 1, i, :)
+		fxns.npv_T_P_MR(1, 1, i, :);
 		for j = 1:length(fxns.conversion)
 			y(j,1) = fxns.npv_T_P_MR(1, 1, i, j);
 		end
@@ -1847,7 +1853,7 @@ figure
 % 		lbls(i) = num2str(fxns.npv_T_P_MR_lbls.steamRatios(i));
 % 		lgd{i} = "MR = " + num2str(lbls(i));
 		lgd{i} = "MR = " + sprintf("%3.3f", lbls(i));
-		plot(x,y)
+		plot(x,y);
 	end
 	legend(lgd)
 	title("NPV at different steam ratios")
