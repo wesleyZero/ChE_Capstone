@@ -35,7 +35,7 @@ global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
 global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ YR_PER_HR HR_PER_YR 
 global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
-global CONV_MIN CONV_MAX
+global CONV_MIN CONV_MAX KT_PER_MT
 
 % USER NOTES____________________________________________________________________
 
@@ -192,6 +192,7 @@ PROFIT_S1S2_OPT = { ...
 
 % Mass
 MT_PER_KT = 10^3;		% [ MT / kt ]
+KT_PER_MT = 10^-3;		% [ kt / MT]
 
 G_PER_KT = 10^9;		% [ g / kt ]
 KT_PER_G = 10^-9;		% [ kt / g ] 
@@ -794,6 +795,11 @@ if (CALCULATE_REACTOR_FLOWS)
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 					heat_flux = heat_flux + heat_rxn(xi);
 
+					info.heatflux.heatingFreshEthane = heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
+					info.heatflux.heatingRecycleEthane = heat_ethane(R_ethane, T_SEPARATION + C_TO_K, TEMP_RXTR);
+					info.heatflux.heatingSteam = heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR);
+					info.heatflux.heatRxn =heat_rxn(xi); 
+
 		 			% Use the heat flux to calculate the fuel cost	
 					[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
 
@@ -858,6 +864,11 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("Annual C02 Tax $ MM %3.3f\n", npv_params.CO2sustainabilityCharge)
 						fprintf("Natural Gas Flowrate [kta] %3.3f\n", F_natural_gas)
 						fprintf("Steam Flowrate [kta] %3.3f\n", F_steam)
+						F_co2 = flowrate_C02(combusted_fuel_flow_rates, F_natural_gas);
+						combusted_fuel_flow_rates
+						info.heatflux
+						fprintf("C02 Flowrate [kta] %3.3f, C02 / ethylene ratio %3.3f\n", F_co2, F_co2 / 200);
+						fprintf("Heat flux required for system %3.3f [GJ]\n",heat_flux)
 
 					end
 					
@@ -1080,37 +1091,37 @@ function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, 
 		return
 	end
 
-	% (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
-	Q_combust_all_propane = flowrates(PROPANE) * G_PER_KT * ENTHALPY_PROPANE * GJ_PER_KJ;
+	% % (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
+	% Q_combust_all_propane = flowrates(PROPANE) * G_PER_KT * ENTHALPY_PROPANE * GJ_PER_KJ;
 
-	% Propane
-	if (heatflux_left > Q_combust_all_propane)
-		combusted_fuel_flowrates(PROPANE) = flowrates(PROPANE);
-		heatflux_left = heatflux_left - Q_combust_all_propane;
-	else
-		% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
-		combusted_fuel_flowrates(PROPANE) = (heatflux_left) * KJ_PER_GJ * ...
-			... % (mol / KJ)        * (g / mol)       * (kt / g)
-			( 1 / ENTHALPY_PROPANE) * MOLMASS_PROPANE * KT_PER_G;
-		heatflux_left = 0;
-		return
-	end
+	% % Propane
+	% if (heatflux_left > Q_combust_all_propane)
+	% 	combusted_fuel_flowrates(PROPANE) = flowrates(PROPANE);
+	% 	heatflux_left = heatflux_left - Q_combust_all_propane;
+	% else
+	% 	% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
+	% 	combusted_fuel_flowrates(PROPANE) = (heatflux_left) * KJ_PER_GJ * ...
+	% 		... % (mol / KJ)        * (g / mol)       * (kt / g)
+	% 		( 1 / ENTHALPY_PROPANE) * MOLMASS_PROPANE * KT_PER_G;
+	% 	heatflux_left = 0;
+	% 	return
+	% end
 
-	% (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
-	Q_combust_all_butane = flowrates(BUTANE) * G_PER_KT * ENTHALPY_BUTANE * GJ_PER_KJ;
+	% % (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
+	% Q_combust_all_butane = flowrates(BUTANE) * G_PER_KT * ENTHALPY_BUTANE * GJ_PER_KJ;
 
-	% Butane
-	if (heatflux_left > Q_combust_all_butane)
-		combusted_fuel_flowrates(BUTANE) = flowrates(BUTANE);
-		heatflux_left = heatflux_left - Q_combust_all_butane;
-	else
-		% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
-		combusted_fuel_flowrates(BUTANE) = (heatflux_left) * KJ_PER_GJ * ...
-			... % (mol / KJ)        * (g / mol)       * (kt / g)
-			( 1 / ENTHALPY_BUTANE) * MOLMASS_BUTANE * KT_PER_G;
-		heatflux_left = 0;
-		return
-	end
+	% % Butane
+	% if (heatflux_left > Q_combust_all_butane)
+	% 	combusted_fuel_flowrates(BUTANE) = flowrates(BUTANE);
+	% 	heatflux_left = heatflux_left - Q_combust_all_butane;
+	% else
+	% 	% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
+	% 	combusted_fuel_flowrates(BUTANE) = (heatflux_left) * KJ_PER_GJ * ...
+	% 		... % (mol / KJ)        * (g / mol)       * (kt / g)
+	% 		( 1 / ENTHALPY_BUTANE) * MOLMASS_BUTANE * KT_PER_G;
+	% 	heatflux_left = 0;
+	% 	return
+	% end
 end
 
 %        GJ   =            (kta   ,  __         , bar      , C )
@@ -1161,7 +1172,7 @@ end
 function cost = tax_C02(combusted_flowrates, F_natural_gas)
 	global HYDROGEN METHANE ETHYLENE PROPANE BUTANE TAX_CO2_PER_MT;
 	global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
-	MT_CO2_PER_KT_NATURALGAS;
+	MT_CO2_PER_KT_NATURALGAS KT_PER_MT;
 
 	% Calculate the cost per kt (in tax) of each combusted fuel
 	methane = combusted_flowrates(METHANE);
@@ -1176,6 +1187,27 @@ function cost = tax_C02(combusted_flowrates, F_natural_gas)
 	mt_c02 = mt_c02 + F_natural_gas * MT_CO2_PER_KT_NATURALGAS;
 
 	cost = mt_c02 * TAX_CO2_PER_MT;
+end
+
+function F_co2 = flowrate_C02(combusted_flowrates, F_natural_gas)
+	global HYDROGEN METHANE ETHYLENE PROPANE BUTANE TAX_CO2_PER_MT;
+	global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
+	MT_CO2_PER_KT_NATURALGAS KT_PER_MT;
+
+	% Calculate the cost per kt (in tax) of each combusted fuel
+	methane = combusted_flowrates(METHANE);
+	propane = combusted_flowrates(PROPANE);
+	butane = combusted_flowrates(BUTANE);
+
+	mt_c02 = 0;
+	% kta  =  (MT)  + ( (kt fuel / yr) * (MT CO2 / KT FUEL) )
+	mt_c02 = mt_c02 + methane * MT_CO2_PER_KT_METHANE;
+	mt_c02 = mt_c02 + propane * MT_CO2_PER_KT_PROPANE;
+	mt_c02 = mt_c02 + butane * MT_CO2_PER_KT_BUTANE;
+	mt_c02 = mt_c02 + F_natural_gas * MT_CO2_PER_KT_NATURALGAS;
+
+	F_co2 = mt_c02 * KT_PER_MT;
+	% cost = mt_c02 * TAX_CO2_PER_MT;
 end
 
 % HELPER FUNCTIONS | FUEL COSTS______________________________________________
