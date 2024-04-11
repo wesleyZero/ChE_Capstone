@@ -1,0 +1,109 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      3315,        101]
+NotebookOptionsPosition[      2715,         81]
+NotebookOutlinePosition[      3110,         97]
+CellTagsIndexPosition[      3067,         94]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Fuel costs", "Section",
+ CellChangeTimes->{{3.9175656521082706`*^9, 
+  3.9175656536879377`*^9}},ExpressionUUID->"d4ae01c4-0f1d-4688-97b4-\
+6d6bab6a8d85"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"Unit", " ", "Conversions"}], " ", "*)"}], " ", 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"Btu2GJ", " ", "=", " ", 
+     RowBox[{"1.0551", "  ", "*", " ", 
+      SuperscriptBox["10", 
+       RowBox[{"-", "6"}]]}]}], ";"}], " ", 
+   RowBox[{"(*", " ", 
+    RowBox[{"Btu", " ", "/", " ", "GJ"}], " ", "*)"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"EnthalpyNum2Fuel", " ", "=", " ", 
+     RowBox[{"140", "*", 
+      SuperscriptBox["10", "3"]}]}], ";"}], " ", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+     RowBox[{"Btu", " ", "/", " ", "US"}], " ", "Gallon"}], " ", "*)"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"EnthalpyNum2Fuel", " ", "=", " ", 
+     RowBox[{"EnthalpyNum2Fuel", " ", "*", " ", "Btu2GJ"}]}], ";", " ", 
+    RowBox[{"(*", " ", 
+     RowBox[{"GJ", " ", "/", " ", "Gallon"}], " ", "*)"}], 
+    "\[IndentingNewLine]", "\[IndentingNewLine]", 
+    RowBox[{"costNum2Fuel", " ", "=", " ", "4.50"}], ";", "    ", 
+    RowBox[{"(*", " ", 
+     RowBox[{"$", " ", "/", " ", "Gallon"}], " ", "*)"}], 
+    "\[IndentingNewLine]", 
+    RowBox[{"costNum2Fuel", " ", "=", " ", 
+     FractionBox["costNum2Fuel", "EnthalpyNum2Fuel"]}]}], " ", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+     RowBox[{
+      FractionBox["$", "gallon"], "*", 
+      FractionBox["Gallon", "GJ"]}], " ", "=", " ", 
+     FractionBox["$", "GJ"]}], " ", "*)"}], 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.917565661921212*^9, 3.917565845728759*^9}, {
+  3.917565890616357*^9, 3.917566100639029*^9}},
+ CellLabel->"In[6]:=",ExpressionUUID->"aa3bc992-f40d-480b-9691-c288091e7a81"],
+
+Cell[BoxData["30.464275559527195`"], "Output",
+ CellChangeTimes->{
+  3.917565809576857*^9, {3.917566090370163*^9, 3.917566102522271*^9}},
+ CellLabel->"Out[8]=",ExpressionUUID->"cb3c8e57-5fe3-4fdf-be84-e8da0b438253"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{960, 1039},
+WindowMargins->{{0, Automatic}, {0, Automatic}},
+FrontEndVersion->"13.0 for Mac OS X x86 (64-bit) (February 4, 2022)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"35449a68-9a55-464d-8c86-2ed4d75cbb5b"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 159, 3, 84, "Section",ExpressionUUID->"d4ae01c4-0f1d-4688-97b4-6d6bab6a8d85"],
+Cell[CellGroupData[{
+Cell[764, 29, 1705, 43, 304, "Input",ExpressionUUID->"aa3bc992-f40d-480b-9691-c288091e7a81"],
+Cell[2472, 74, 215, 3, 42, "Output",ExpressionUUID->"cb3c8e57-5fe3-4fdf-be84-e8da0b438253"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+

@@ -1,0 +1,291 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      9573,        283]
+NotebookOptionsPosition[      8876,        262]
+NotebookOutlinePosition[      9271,        278]
+CellTagsIndexPosition[      9228,        275]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["mass balance", "Section",
+ CellChangeTimes->{{3.9189492046269073`*^9, 
+  3.9189492067444687`*^9}},ExpressionUUID->"4333a890-455a-406e-81b1-\
+844f6ae27528"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"conversion", " ", "=", " ", "0.008174"}], ";"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{"MASS", " ", "flow", " ", "rates"}], "*)"}], 
+  " "}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    SubscriptBox["F", "ethane"], " ", "=", " ", "14.374"}], ";", " ", 
+   RowBox[{"(*", " ", "kta", " ", "*)"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{"Molar", " ", "mass", " ", "constants", " ", "in", " ", 
+     RowBox[{"g", "/", "mol"}]}], "*)"}], 
+   RowBox[{"(*", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Source", ":", "https", ":"}], "//", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"webbook", ".", "nist", ".", "gov"}], "/", "cgi"}], "/", 
+       RowBox[{"cbook", ".", 
+        RowBox[{"cgi", "?", "ID"}]}]}]}], "=", 
+     RowBox[{"1333", "-", "74", "-", "0"}]}], "*)"}], 
+   RowBox[{"MOLMASSHydrogen", "=", "2.01588"}], ";"}], "\[IndentingNewLine]", 
+  "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Source", ":", "https", ":"}], "//", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"webbook", ".", "nist", ".", "gov"}], "/", "cgi"}], "/", 
+      RowBox[{"cbook", ".", 
+       RowBox[{"cgi", "?", "ID"}]}]}]}], "=", 
+    RowBox[{"74", "-", "82", "-", "8"}]}], "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"MOLMASSMethane", "=", "16.0425"}], ";"}], "\[IndentingNewLine]", 
+  "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"Source", ":", "https", ":"}], "//", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"pubchem", ".", "ncbi", ".", "nlm", ".", "nih", ".", "gov"}], 
+      "/", "compound"}], "/", "Water"}]}], "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"MOLMASSWater", "=", "18.015"}], ";"}], "\[IndentingNewLine]", 
+  "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"Source", ":", "https", ":"}], "//", 
+    RowBox[{
+     RowBox[{
+      RowBox[{
+       RowBox[{"pubchem", ".", "ncbi", ".", "nlm", ".", "nih", ".", "gov"}], 
+       "/", "compound"}], "/", "Carbon"}], "-", "dioxide", "-", "water"}]}], 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"MOLMASSCO2", "=", "44.01"}], ";"}], "\[IndentingNewLine]", "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Source", ":", "https", ":"}], "//", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"webbook", ".", "nist", ".", "gov"}], "/", "cgi"}], "/", 
+      RowBox[{"cbook", ".", 
+       RowBox[{"cgi", "?", "ID"}]}]}]}], "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"C74986", "&"}], "Mask"}], "=", "1"}]}], 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"MOLMASSPropane", "=", "44.0956"}], ";"}], "\[IndentingNewLine]", 
+  "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Source", ":", "https", ":"}], "//", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"webbook", ".", "nist", ".", "gov"}], "/", "cgi"}], "/", 
+      RowBox[{"cbook", ".", 
+       RowBox[{"cgi", "?", "ID"}]}]}]}], "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"C106978", "&"}], "Mask"}], "=", "1"}]}], 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"MOLMASSButane", "=", "58.1222"}], ";"}], "\[IndentingNewLine]", 
+  "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Source", ":", "https", ":"}], "//", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"webbook", ".", "nist", ".", "gov"}], "/", "cgi"}], "/", 
+      RowBox[{"cbook", ".", 
+       RowBox[{"cgi", "?", "ID"}]}]}]}], "=", "C74840"}], 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"MOLMASSEthane", "=", "30.0690"}], ";"}], "\[IndentingNewLine]", 
+  "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"Source", ":", "https", ":"}], "//", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"webbook", ".", "nist", ".", "gov"}], "/", "cgi"}], "/", 
+       RowBox[{"cbook", ".", 
+        RowBox[{"cgi", "?", "ID"}]}]}]}], "=", 
+     RowBox[{
+      RowBox[{
+       RowBox[{
+        RowBox[{"74", "-", "85", "-", "1"}], "&"}], "Type"}], "=", 
+      RowBox[{
+       RowBox[{
+        RowBox[{
+         RowBox[{"IR", "-", "SPEC"}], "&"}], "Index"}], "=", 
+       RowBox[{"QUANT", "-", "IR"}]}]}]}], ",", "20"}], 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"MOLMASSEthylene", "=", "28.0532"}], ";"}], "\[IndentingNewLine]", 
+  "\n", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+    "Average", " ", "molar", " ", "mass", " ", "of", " ", "natural", " ", 
+     "gas"}], ",", 
+    RowBox[{
+    "not", " ", "sourced", " ", "from", " ", "a", " ", "specific", " ", 
+     "URL"}]}], "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"MOLMASSNatGas", "=", "16.04"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"GperKT", "=", 
+    RowBox[{"10", "^", "9"}]}], ";"}], "\[IndentingNewLine]", 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+   "18.169", " ", "0.028744", " ", "200", " ", "0.079008", " ", "109.49", " ",
+     "146.19", " ", "0.69152"}], "*)"}], "\[IndentingNewLine]", 
+  "\[IndentingNewLine]", 
+  RowBox[{"(*", "kta", "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["F", "Hydrogen"], " ", "=", "18.169"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["F", "Methane"], " ", "=", "0.028744"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["F", "Ethylene"], " ", "=", "200"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["F", "Propane"], " ", "=", "0.079008"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["F", "Butane"], " ", "=", "109.49"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["F", "Ethane"], " ", "=", "146.19"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Chi]", "=", "0.69152"}], ";"}], "\[IndentingNewLine]", 
+  "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", "Balance", " ", "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{"in", " ", "=", " ", 
+  FractionBox[
+   RowBox[{
+    SubscriptBox["F", "Ethane"], "*", "\[Chi]", " "}], 
+   "MOLMASSEthane"]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"out", " ", "=", " ", 
+   RowBox[{
+    FractionBox[
+     SubscriptBox["F", "Hydrogen"], "MOLMASSHydrogen"], " ", "+", " ", 
+    FractionBox[
+     SubscriptBox["F", "Methane"], "MOLMASSMethane"], " ", "+", " ", 
+    FractionBox[
+     SubscriptBox["F", "Ethylene"], "MOLMASSEthylene"], "+", 
+    FractionBox[
+     SubscriptBox["F", "Propane"], "MOLMASSPropane"], "+", 
+    FractionBox[
+     SubscriptBox["F", "Butane"], "MOLMASSButane"]}]}], "\[IndentingNewLine]",
+   "\n", "\n", "\n", "\[IndentingNewLine]"}], "\n"}], "Input",
+ CellChangeTimes->{{3.9189492105858107`*^9, 3.918949346580204*^9}, {
+   3.918949404818802*^9, 3.918949411641799*^9}, {3.9189494613833647`*^9, 
+   3.918949769745606*^9}, 3.91894980294969*^9, {3.918949879983809*^9, 
+   3.918949925190629*^9}, {3.918949979238698*^9, 3.918950263105226*^9}, {
+   3.918950370185631*^9, 3.9189505532409077`*^9}, {3.918950587523507*^9, 
+   3.91895062203832*^9}, {3.918951164648842*^9, 3.9189512167950687`*^9}, {
+   3.918951249188507*^9, 3.918951257851882*^9}},
+ CellLabel->
+  "In[197]:=",ExpressionUUID->"6fffb47b-230d-414d-a2f8-bc618329b5e5"],
+
+Cell[BoxData["3.362044258206126`"], "Output",
+ CellChangeTimes->{
+  3.918949765609791*^9, {3.918949797213316*^9, 3.918949809865343*^9}, 
+   3.918949985530456*^9, 3.9189503804531*^9, {3.918950416056665*^9, 
+   3.918950432736411*^9}, 3.918950554261209*^9, 3.9189505909051237`*^9, 
+   3.918950624613411*^9, 3.918951218156722*^9, 3.91895126263352*^9},
+ CellLabel->
+  "Out[216]=",ExpressionUUID->"4a3c22d0-f5ff-44aa-a411-ac11251d3fab"],
+
+Cell[BoxData["18.029621883923546`"], "Output",
+ CellChangeTimes->{
+  3.918949765609791*^9, {3.918949797213316*^9, 3.918949809865343*^9}, 
+   3.918949985530456*^9, 3.9189503804531*^9, {3.918950416056665*^9, 
+   3.918950432736411*^9}, 3.918950554261209*^9, 3.9189505909051237`*^9, 
+   3.918950624613411*^9, 3.918951218156722*^9, 3.918951262635693*^9},
+ CellLabel->
+  "Out[217]=",ExpressionUUID->"90ebbbe7-6642-4563-a111-95bdae6d3ac1"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{960, 1039},
+WindowMargins->{{Automatic, 0}, {0, Automatic}},
+FrontEndVersion->"13.0 for Mac OS X x86 (64-bit) (February 4, 2022)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"9b31ad53-de8f-4e37-bc75-c2f311c0dc7a"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 161, 3, 84, "Section",ExpressionUUID->"4333a890-455a-406e-81b1-844f6ae27528"],
+Cell[CellGroupData[{
+Cell[766, 29, 7214, 211, 1579, "Input",ExpressionUUID->"6fffb47b-230d-414d-a2f8-bc618329b5e5"],
+Cell[7983, 242, 430, 7, 56, "Output",ExpressionUUID->"4a3c22d0-f5ff-44aa-a411-ac11251d3fab"],
+Cell[8416, 251, 432, 7, 56, "Output",ExpressionUUID->"90ebbbe7-6642-4563-a111-95bdae6d3ac1"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
