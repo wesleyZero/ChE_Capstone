@@ -1473,7 +1473,7 @@ end
 
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 
-	% Product flow rate indicies 
+	% Packing all of the inputs into a convienent structure 
 	HYDROGEN = 1;
 	METHANE = 2;
 	ETHYLENE = 3;
@@ -1487,6 +1487,31 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	F.butane = P_flowrates(BUTANE);
 	F.water = F_steam;
 	F.ethane = R_ethane;
+
+
+	% Initial Conditions into the separation system
+	sep.F = F;			% [ kt / yr ]
+	sep.heat = 0; 		% [ GJ / yr ]
+	sep.T = 0; 			% [ K ]
+	sep.P = 0; 			% [ Bar ] 
+	
+	% E-101 | Effluent Cooling Heat Exchanger | #0
+	sep = hex_e101(sep);
+	heat_exchangers.effluent_cooler_e101 = sep.heat;
+	
+	% V-100 | Flash Distillation of Water / Hydrocarbons | #1
+	sep = flash_v100(sep);
+	heat_exchangers.flash_water = sep.heat; 
+		% should I quantify the waste water flowrate ?? I don't think I need to 
+
+	% X-100 | PSA of Water 
+	sep = psa_water(sep);
+	heat_exchangers.psa_water = sep.heat;
+
+	% X-101 | Distillation of Hydrogen and Methane 
+
+	% X-102 | Distillation of 
+
 
 	sep1 = sep_flash();
 	Q_sep_sys.q1 = sep1.heat;
