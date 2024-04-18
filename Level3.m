@@ -36,6 +36,9 @@ global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_L
 global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ YR_PER_HR HR_PER_YR 
 global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
 global CONV_MIN CONV_MAX KT_PER_MT BAR_PER_KPA
+global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
+	HEAT_CAPACITY_ETHYLENE HEAT_CAPACITY_PROPANE HEAT_CAPACITY_BUTANE ...
+	HEAT_CAPACITY_WATER
 
 % USER NOTES____________________________________________________________________
 
@@ -273,12 +276,14 @@ HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
 HEAT_CAPACITY_METHANE = 52.23 * 10^-3;	% [ kJ / mol K ] Reference Temp  = 600K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1&Type=JANAFG&Table=on
-HEAT_CAPACITY_ETYLENE = 70.62 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
+HEAT_CAPACITY_ETHYLENE = 70.62 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74851&Mask=1&Type=JANAFG&Table=on
 HEAT_CAPACITY_PROPANE = 128.7 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
-HEAT_CAPACITY_BUTANE = 169.28 & 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
+HEAT_CAPACITY_BUTANE = 169.28 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+HEAT_CAPACITY_HYDROGEN = 29.32 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C1333740&Mask=1&Type=JANAFG&Table=on
 
 % Heats of Formation (at 25C)
 HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol ] reference Temp = std
@@ -1513,7 +1518,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	
 	% E-101 | Effluent Cooling Heat Exchanger | #0
 	sep = hex_e101(sep);
-	heat_exchangers.effluent_cooler_e101 = sep.heat;
+	heat_exchangers.effluent_cooler_e101 = sep.heat
 	
 	% % V-100 | Flash Distillation of Water / Hydrocarbons | #1
 	% [sep_top1, sep_btm1] = flash_v100(sep);
@@ -1560,7 +1565,7 @@ function F_tot = total_molar_flowrate(F)
 			F.ethylene * G_PER_KT * MOLMASS_ETHYLENE + ... 
 			F.propane * G_PER_KT * MOLMASS_PROPANE + ... 
 			F.butane * G_PER_KT * MOLMASS_BUTANE + ...
-			F.water * GJ_PER_KT * MOLMASS_WATER; 
+			F.water * G_PER_KT * MOLMASS_WATER; 
 end
 
 function F = molar_flowrate(F_i, species)
@@ -1581,30 +1586,43 @@ function F = molar_flowrate(F_i, species)
 		  case 'butane'
 			F = F_i * G_PER_KT * MOLMASS_BUTANE;
 		  case 'water'
-			F = F_i * GJ_PER_KT * MOLMASS_WATER; 
+			F = F_i * G_PER_KT * MOLMASS_WATER; 
 		otherwise 
 			disp("ERROR : molar_flowrate() : INCORRECT SPECIES SPECIFIER")
-			F = NaN
+			F = NaN;
 		end
 
 end
 
+
 function Cp_avg = avg_heat_capacity(F)
+	global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
+		HEAT_CAPACITY_ETHYLENE HEAT_CAPACITY_PROPANE HEAT_CAPACITY_BUTANE ...
+		HEAT_CAPACITY_WATER
+
 	% weighted average of Cp's 
 	F_tot = total_molar_flowrate(F);
 	
-	Cp_avg = molar_flowrate(F.methane, 'methane') * HEAT_CAPACITY_METHANE;
-	
+	Cp_avg = (molar_flowrate(F.hydrogen, 'hydrogen') / F_tot) * HEAT_CAPACITY_HYDROGEN + ...
+		(molar_flowrate(F.methane, 'methane') / F_tot) * HEAT_CAPACITY_METHANE + ...
+		(molar_flowrate(F.ethane, 'ethane') / F_tot) * HEAT_CAPACITY_ETHANE + ...
+		(molar_flowrate(F.ethylene, 'ethylene') / F_tot) * HEAT_CAPACITY_ETHYLENE + ...
+		(molar_flowrate(F.propane, 'propane') / F_tot) * HEAT_CAPACITY_PROPANE + ...
+		(molar_flowrate(F.butane, 'butane') / F_tot) * HEAT_CAPACITY_BUTANE + ...
+		(molar_flowrate(F.water, 'water') / F_tot) * HEAT_CAPACITY_WATER;
+
 end
 
+
 function sep = hex_e101(sep)
-	global HEAT_CAPACITY_ETHANE HEAT_CAPACITY_WATER
+	global GJ_PER_KJ
+
 	% user inputs
 	T_out = 25 + 273.15;	% [ K ]	
-	P_out = 200;			% [ kpa ]
 
-
-
+	% GJ 	=  (mol / yr) 				* (kJ / mol K )				  * ( K    -  K   ) * (GJ / kJ)
+	sep.heat = total_molar_flowrate(sep.F) * avg_heat_capacity(sep.F) * (T_out - sep.T) * GJ_PER_KJ;
+	sep.T = T_out;	
 end
 
 function cf = get_npv(npv)
