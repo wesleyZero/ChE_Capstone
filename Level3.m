@@ -35,7 +35,7 @@ global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
 global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ YR_PER_HR HR_PER_YR 
 global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
-global CONV_MIN CONV_MAX KT_PER_MT
+global CONV_MIN CONV_MAX KT_PER_MT BAR_PER_KPA
 
 % USER NOTES____________________________________________________________________
 
@@ -213,6 +213,7 @@ DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
 
 % Pressure
 BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
+BAR_PER_KPA = 0.01;			% [ Bar / kPa ]
 
 % Time
 YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
@@ -270,6 +271,14 @@ HEAT_CAPACITY_WATER = 33.79 * 10^-3;	% [ kJ / mol K ] Ref Temp = 298K
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C14940637&Mask=1&Type=JANAFG&Table=on
 HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
+HEAT_CAPACITY_METHANE = 52.23 * 10^-3;	% [ kJ / mol K ] Reference Temp  = 600K 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1&Type=JANAFG&Table=on
+HEAT_CAPACITY_ETYLENE = 70.62 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74851&Mask=1&Type=JANAFG&Table=on
+HEAT_CAPACITY_PROPANE = 128.7 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600K 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
+HEAT_CAPACITY_BUTANE = 169.28 & 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
 
 % Heats of Formation (at 25C)
 HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol ] reference Temp = std
@@ -1471,7 +1480,14 @@ end
 	
 % end
 
+function phi = rachford_rice(sep, K)
+
+	phi = 0;
+end
+
+
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
+	global BAR_PER_KPA
 
 	% Packing all of the inputs into a convienent structure 
 	HYDROGEN = 1;
@@ -1490,34 +1506,105 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 
 
 	% Initial Conditions into the separation system
-	sep.F = F;			% [ kt / yr ]
-	sep.heat = 0; 		% [ GJ / yr ]
-	sep.T = 0; 			% [ K ]
-	sep.P = 0; 			% [ Bar ] 
+	sep.F = F;					% [ kt / yr ]
+	sep.heat = 0; 				% [ GJ / yr ]
+	sep.T = 825 + 273.15; 		% [ K ]
+	sep.P = 200 * BAR_PER_KPA; 	% [ Bar ] 
 	
 	% E-101 | Effluent Cooling Heat Exchanger | #0
 	sep = hex_e101(sep);
 	heat_exchangers.effluent_cooler_e101 = sep.heat;
 	
-	% V-100 | Flash Distillation of Water / Hydrocarbons | #1
-	sep = flash_v100(sep);
-	heat_exchangers.flash_water = sep.heat; 
-		% should I quantify the waste water flowrate ?? I don't think I need to 
+	% % V-100 | Flash Distillation of Water / Hydrocarbons | #1
+	% [sep_top1, sep_btm1] = flash_v100(sep);
+	% heat_exchangers.flash_water = sep_top1.heat; 
+	% 	% should I quantify the waste water flowrate ?? I don't think I need to 
 
-	% X-100 | PSA of Water 
-	sep = psa_water(sep);
-	heat_exchangers.psa_water = sep.heat;
+	% % X-100 | PSA of Water | #2 
+	% [sep_top2, sep_top2] = psa_water(sep_top1);
+	% heat_exchangers.psa_water = sep_top2.heat;
 
-	% X-101 | Distillation of Hydrogen and Methane 
+	% % X-101 | Distillation of Hydrogen and Methane | #3 
+	% [sep_top3, sep_bot3] = dist_3(sep_top2);
+	% heat_exchangers.dist3 = sep_top3.heat; 
 
-	% X-102 | Distillation of 
+	% % X-102 | Distillation of Ethylene & Ethane | #4 
+	% [sep_top4, sep_bot4] = dist_4(sep_bot3);
+	% heat_exchangers.dist4 = sep_top4.heat;
 
+	% % X-104 | Distillation of Ethylene | #5
+	% [sep_top5, sep_bot5] = dist_5(sep_top4);
+	% heat_exchangers.dist5 = sep_top5.heat;
 
-	sep1 = sep_flash();
-	Q_sep_sys.q1 = sep1.heat;
+	% % X-103 | PSA of Hydrogen | #6
+	% [sep_top6, sep_bot6] = psa_h2(sep_top3);
+	% heat_exchangers.psa_h2 = sep_top6.heat;
 
 
 	cost = 0;
+end
+
+function total = total_mass_flowrate(F)
+%       kta                     kta
+	total = F.methane + F.ethane + F.water + F.propane + F.butane + ...
+		F.ethylene + F.hydrogen;
+end
+
+function F_tot = total_molar_flowrate(F)
+	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ... 
+		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
+
+	 F_tot = F.hydrogen * G_PER_KT * MOLMASS_HYDROGEN + ... 
+	 		F.methane * G_PER_KT * MOLMASS_METHANE + ... 
+	 		F.ethane * G_PER_KT * MOLMASS_ETHANE + ... 
+			F.ethylene * G_PER_KT * MOLMASS_ETHYLENE + ... 
+			F.propane * G_PER_KT * MOLMASS_PROPANE + ... 
+			F.butane * G_PER_KT * MOLMASS_BUTANE + ...
+			F.water * GJ_PER_KT * MOLMASS_WATER; 
+end
+
+function F = molar_flowrate(F_i, species)
+	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
+		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
+
+	switch species
+		case 'hydrogen'
+			F = F_i * G_PER_KT * MOLMASS_HYDROGEN;
+		case 'methane'
+			F = F_i * G_PER_KT * MOLMASS_METHANE; 
+		case 'ethane'
+			F = F_i * G_PER_KT * MOLMASS_ETHANE;
+		  case 'ethylene'
+			F = F_i * G_PER_KT * MOLMASS_ETHYLENE;
+		  case 'propane'
+			F = F_i * G_PER_KT * MOLMASS_PROPANE;
+		  case 'butane'
+			F = F_i * G_PER_KT * MOLMASS_BUTANE;
+		  case 'water'
+			F = F_i * GJ_PER_KT * MOLMASS_WATER; 
+		otherwise 
+			disp("ERROR : molar_flowrate() : INCORRECT SPECIES SPECIFIER")
+			F = NaN
+		end
+
+end
+
+function Cp_avg = avg_heat_capacity(F)
+	% weighted average of Cp's 
+	F_tot = total_molar_flowrate(F);
+	
+	Cp_avg = molar_flowrate(F.methane, 'methane') * HEAT_CAPACITY_METHANE;
+	
+end
+
+function sep = hex_e101(sep)
+	global HEAT_CAPACITY_ETHANE HEAT_CAPACITY_WATER
+	% user inputs
+	T_out = 25 + 273.15;	% [ K ]	
+	P_out = 200;			% [ kpa ]
+
+
+
 end
 
 function cf = get_npv(npv)
