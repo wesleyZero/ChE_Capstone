@@ -779,7 +779,7 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				% ECONOMIC CALCULATIONS____________________________________________________________
 				profit = zeros(length(F_soln_ODE(:,1)), 1);
-				for i = 1:length(F_soln_ODE(:, 1))
+				for i = 2:length(F_soln_ODE(:, 1))
 					
 					P_flowrates = F_soln_ODE(i , HYDROGEN:BUTANE);
 					
@@ -1485,11 +1485,86 @@ end
 	
 % end
 
-function phi = rachford_rice(sep, K)
+function [sep_top, sep_btm]= rachford_rice(sep, K)
+	global KT_PER_G MOLMASS_BUTANE MOLMASS_ETHANE MOLMASS_ETHYLENE MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_PROPANE MOLMASS_WATER
 
-	phi = 0;
+	sep.x = all_mol_fractions(sep.F);	
+	
+	f_phi = @(phi, sep, K) ((sep.x.methane * (K.methane - 1)) / (1 + phi*(K.methane - 1))) + ...
+		((sep.x.ethane * (K.ethane - 1)) / (1 + phi*(K.ethane - 1))) + ...
+		((sep.x.ethylene * (K.ethylene - 1)) / (1 + phi*(K.ethylene - 1))) + ...
+		((sep.x.hydrogen * (K.hydrogen - 1)) / (1 + phi*(K.hydrogen - 1))) + ...
+		((sep.x.propane * (K.propane - 1)) / (1 + phi*(K.propane - 1))) + ...
+		((sep.x.butane * (K.butane - 1)) / (1 + phi*(K.butane - 1))) + ...
+		((sep.x.water * (K.water - 1)) / (1 + phi*(K.water - 1)));
+
+	init_cond = 0.5;
+
+	phi = fzero(@(phi) f_phi(phi, sep, K), init_cond);
+
+	% Liquid compositions 
+	x.hydrogen = sep.x.hydrogen / (1 + phi*(K.hydrogen - 1));
+	x.methane = sep.x.methane / (1 + phi*(K.methane - 1));
+	x.ethane = sep.x.ethane / (1 + phi*(K.ethane - 1));
+	x.ethylene = sep.x.ethylene / (1 + phi*(K.ethylene - 1));
+	x.propane = sep.x.propane / (1 + phi*(K.propane - 1));
+	x.butane = sep.x.butane / (1 + phi*(K.butane - 1));
+	x.water = sep.x.water / (1 + phi*(K.water - 1));
+
+	% Vapor compositions 
+	y.hydrogen = K.hydrogen * x.hydrogen;
+	y.methane = K.methane * x.methane;
+	y.ethane = K.ethane * x.ethane;
+	y.ethylene = K.ethylene * x.ethylene;
+	y.propane = K.propane * x.propane;
+	y.butane = K.butane * x.butane;
+	y.water = K.water * x.water;
+
+	% Splitting
+	F_tot = total_molar_flowrate(sep.F);
+	V = phi * F_tot; 
+	L = (1 - phi) * F_tot; 
+
+	% Tops 
+	sep_top = sep;
+	sep_top.y = y;
+	sep_top.x = NaN;
+	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
+	sep_top.F = V * y.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_top.F = V * y.methane * (1/MOLMASS_METHANE) * KT_PER_G;
+	sep_top.F = V * y.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
+	sep_top.F = V * y.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_top.F = V * y.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
+	sep_top.F = V * y.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
+	sep_top.F = V * y.water * (1/MOLMASS_WATER) * KT_PER_G;
+	
+	% Bottoms 
+	sep_btm = sep; 
+	sep_btm.x = x;
+	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
+	sep_btm.F = L * x.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_btm.F = L * x.methane * (1/MOLMASS_METHANE) * KT_PER_G;
+	sep_btm.F = L * x.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
+	sep_btm.F = L * x.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_btm.F = L * x.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
+	sep_btm.F = L * x.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
+	sep_btm.F = L * x.water * (1/MOLMASS_WATER) * KT_PER_G;
+	
 end
 
+function [sep_top1, sep_btm1] = flash_v100(sep)
+
+	K.ethane = 3.760 * 10^9;
+	K.ethylene = 7.266 * 10^8;
+	K.hydrogen = 3.193 * 10^6;
+	K.methane = 8.488 * 10^7;
+	K.propane = 5.252 * 10^11;
+	K.butane = 3.978 * 10^14;
+	K.water = 1.561 * 10^-2;
+
+	[sep_top1, sep_btm1]= rachford_rice(sep, K);
+	
+end
 
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	global BAR_PER_KPA
@@ -1518,12 +1593,14 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	
 	% E-101 | Effluent Cooling Heat Exchanger | #0
 	sep = hex_e101(sep);
-	heat_exchangers.effluent_cooler_e101 = sep.heat
+	heat_exchangers.effluent_cooler_e101 = sep.heat;
 	
-	% % V-100 | Flash Distillation of Water / Hydrocarbons | #1
-	% [sep_top1, sep_btm1] = flash_v100(sep);
-	% heat_exchangers.flash_water = sep_top1.heat; 
-	% 	% should I quantify the waste water flowrate ?? I don't think I need to 
+	% V-100 | Flash Distillation of Water / Hydrocarbons | #1
+	[sep_top1, sep_bot1] = flash_v100(sep);
+	heat_exchangers.flash_water = sep_top1.heat; 
+	sep_top1.heat = 0;
+	sep_bot1.heat = 0;
+		% should I quantify the waste water flowrate ?? I don't think I need to 
 
 	% % X-100 | PSA of Water | #2 
 	% [sep_top2, sep_top2] = psa_water(sep_top1);
@@ -1568,29 +1645,70 @@ function F_tot = total_molar_flowrate(F)
 			F.water * G_PER_KT * MOLMASS_WATER; 
 end
 
-function F = molar_flowrate(F_i, species)
+function F = molar_flowrate(F, species)
 	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
 		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
 
 	switch species
 		case 'hydrogen'
-			F = F_i * G_PER_KT * MOLMASS_HYDROGEN;
+			F = F.hydrogen * G_PER_KT * MOLMASS_HYDROGEN;
 		case 'methane'
-			F = F_i * G_PER_KT * MOLMASS_METHANE; 
+			F = F.methane * G_PER_KT * MOLMASS_METHANE; 
 		case 'ethane'
-			F = F_i * G_PER_KT * MOLMASS_ETHANE;
-		  case 'ethylene'
-			F = F_i * G_PER_KT * MOLMASS_ETHYLENE;
-		  case 'propane'
-			F = F_i * G_PER_KT * MOLMASS_PROPANE;
-		  case 'butane'
-			F = F_i * G_PER_KT * MOLMASS_BUTANE;
-		  case 'water'
-			F = F_i * G_PER_KT * MOLMASS_WATER; 
+			F = F.ethane * G_PER_KT * MOLMASS_ETHANE;
+		case 'ethylene'
+			F = F.ethylene * G_PER_KT * MOLMASS_ETHYLENE;
+		case 'propane'
+			F = F.propane * G_PER_KT * MOLMASS_PROPANE;
+		case 'butane'
+			F = F.butane * G_PER_KT * MOLMASS_BUTANE;
+		case 'water'
+			F = F.water * G_PER_KT * MOLMASS_WATER; 
 		otherwise 
 			disp("ERROR : molar_flowrate() : INCORRECT SPECIES SPECIFIER")
 			F = NaN;
-		end
+	end
+end
+
+function x = mol_fraction(F, species)
+	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
+		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
+	F_tot = total_mass_flowrate(F);
+
+	switch species
+		case 'hydrogen'
+			x = (F.hydrogen / F_tot);
+		case 'methane'
+			x = (F.methane / F_tot);
+		case 'ethane'
+			x = (F.ethane / F_tot);
+		case 'ethylene'
+			x = (F.ethylene / F_tot);
+		case 'propane'
+			x = (F.propane / F_tot);
+		case 'butane'
+			x = (F.butane / F_tot);
+		case 'water'
+			x = (F.water / F_tot);
+		otherwise 
+			disp("ERROR : mol_fraction() : INCORRECT SPECIES SPECIFIER")
+			x = NaN;
+	end
+
+end
+
+function x = all_mol_fractions(F)
+	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
+		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
+	F_tot = total_mass_flowrate(F);
+
+	x.hydrogen = (F.hydrogen / F_tot);
+	x.methane = (F.methane / F_tot);
+	x.ethane = (F.ethane / F_tot);
+	x.ethylene = (F.ethylene / F_tot);
+	x.propane = (F.propane / F_tot);
+	x.butane = (F.butane / F_tot);
+	x.water = (F.water / F_tot);
 
 end
 
@@ -1603,13 +1721,13 @@ function Cp_avg = avg_heat_capacity(F)
 	% weighted average of Cp's 
 	F_tot = total_molar_flowrate(F);
 	
-	Cp_avg = (molar_flowrate(F.hydrogen, 'hydrogen') / F_tot) * HEAT_CAPACITY_HYDROGEN + ...
-		(molar_flowrate(F.methane, 'methane') / F_tot) * HEAT_CAPACITY_METHANE + ...
-		(molar_flowrate(F.ethane, 'ethane') / F_tot) * HEAT_CAPACITY_ETHANE + ...
-		(molar_flowrate(F.ethylene, 'ethylene') / F_tot) * HEAT_CAPACITY_ETHYLENE + ...
-		(molar_flowrate(F.propane, 'propane') / F_tot) * HEAT_CAPACITY_PROPANE + ...
-		(molar_flowrate(F.butane, 'butane') / F_tot) * HEAT_CAPACITY_BUTANE + ...
-		(molar_flowrate(F.water, 'water') / F_tot) * HEAT_CAPACITY_WATER;
+	Cp_avg = (molar_flowrate(F, 'hydrogen') / F_tot) * HEAT_CAPACITY_HYDROGEN + ...
+		(molar_flowrate(F, 'methane') / F_tot) * HEAT_CAPACITY_METHANE + ...
+		(molar_flowrate(F, 'ethane') / F_tot) * HEAT_CAPACITY_ETHANE + ...
+		(molar_flowrate(F, 'ethylene') / F_tot) * HEAT_CAPACITY_ETHYLENE + ...
+		(molar_flowrate(F, 'propane') / F_tot) * HEAT_CAPACITY_PROPANE + ...
+		(molar_flowrate(F, 'butane') / F_tot) * HEAT_CAPACITY_BUTANE + ...
+		(molar_flowrate(F, 'water') / F_tot) * HEAT_CAPACITY_WATER;
 
 end
 
