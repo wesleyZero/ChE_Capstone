@@ -1457,6 +1457,8 @@ end
 
 function [sep_top1, sep_btm1] = flash_v100(sep)
 
+	sep.heat = 0;
+
 	K.ethane = 3.760 * 10^9;
 	K.ethylene = 7.266 * 10^8;
 	K.hydrogen = 3.193 * 10^6;
@@ -1472,6 +1474,8 @@ end
 
 function [sep_top2, sep_bot2] = psa_water(sep_feed)
 	% Asusmption that the PSA perfectly separates the water
+
+	sep_feed.heat = 0;
 
 	sep_top2 = sep_feed; 
 	sep_bot2 = sep_feed;
@@ -1554,6 +1558,41 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 
 end
 
+function phi = underwood(sep_feed, r, s, alpha, y, opt)
+	% y are the distillate compositions 
+	% alpha has the relative volatilities 
+	% r is reflux ratio
+	% s is boilup ratio 
+
+	% Doherty & Malone eq 4.21  
+	eqn_421 = @(phi) -r - 1 + (alpha.a * y.a / (alpha.a - phi)) + (alpha.b * y.b / (alpha.b - phi));
+	
+	if opt == 'top'
+		init_phi = alpha.b + (alpha.a / 2);
+			% alpha_a > phi > alpha_b 
+	else opt == 'bottom'
+		init phi = alpha.b / 2;
+	end
+	phi = fzero( @(phi) eqn_421(phi), init_phi);
+
+
+end
+
+function [sep_top, sep_bot] = dist_3(sep)
+
+	sep.heat = 0;
+	sep_top = sep;
+	sep_bot = sep;
+
+	r = 0.477;
+	s = 0.770;
+	alpha.a = 7;
+	alpha.b = 1;
+	y.a = 0.95;
+	y.b = 0.05;
+	ret = underwood(sep, r, s, alpha, y, 'top');
+
+end
 
 
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
@@ -1607,12 +1646,12 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	% E-102 | HEX Cryogenic | 
 	sep_top3 = hex_e102(sep_top2);
-
+	heat_exchangers.hex_e102 = sep_top3.heat;
 
 
 	% % X-101 | Distillation of Hydrogen and Methane | #3 
-	% [sep_top3, sep_bot3] = dist_3(sep_top2);
-	% heat_exchangers.dist3 = sep_top3.heat; 
+	[sep_top3, sep_bot3] = dist_3(sep_top2);
+	heat_exchangers.dist3 = sep_top3.heat; 
 
 	% % X-102 | Distillation of Ethylene & Ethane | #4 
 	% [sep_top4, sep_bot4] = dist_4(sep_bot3);
@@ -1687,42 +1726,44 @@ end
 function x = mol_fraction(F, species)
 	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
 		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
-	F_tot = total_mass_flowrate(F);
+	F_tot = total_molar_flowrate(F);
 
 	switch species
 		case 'hydrogen'
-			x = (F.hydrogen / F_tot);
+			x = (molar_flowrate(F, 'hydrogen') / F_tot);
 		case 'methane'
-			x = (F.methane / F_tot);
+			x = (molar_flowrate(F, 'methane') / F_tot);
 		case 'ethane'
-			x = (F.ethane / F_tot);
+			x = (molar_flowrate(F, 'ethane') / F_tot);
 		case 'ethylene'
-			x = (F.ethylene / F_tot);
+			x = (molar_flowrate(F, 'ethylene') / F_tot);
 		case 'propane'
-			x = (F.propane / F_tot);
+			x = (molar_flowrate(F, 'propane') / F_tot);
 		case 'butane'
-			x = (F.butane / F_tot);
+			x = (molar_flowrate(F, 'butane') / F_tot);
 		case 'water'
-			x = (F.water / F_tot);
-		otherwise 
+			x = (molar_flowrate(F, 'water') / F_tot);
+		otherwise
 			disp("ERROR : mol_fraction() : INCORRECT SPECIES SPECIFIER")
 			x = NaN;
 	end
+
 
 end
 
 function x = all_mol_fractions(F)
 	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
 		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
-	F_tot = total_mass_flowrate(F);
+	F_tot = total_molar_flowrate(F);
 
-	x.hydrogen = (F.hydrogen / F_tot);
-	x.methane = (F.methane / F_tot);
-	x.ethane = (F.ethane / F_tot);
-	x.ethylene = (F.ethylene / F_tot);
-	x.propane = (F.propane / F_tot);
-	x.butane = (F.butane / F_tot);
-	x.water = (F.water / F_tot);
+	x.hydrogen = (molar_flowrate(F, 'hydrogen') / F_tot);
+	x.methane = (molar_flowrate(F, 'methane') / F_tot);
+	x.ethane = (molar_flowrate(F, 'ethane') / F_tot);
+	x.ethylene = (molar_flowrate(F, 'ethylene') / F_tot);
+	x.propane = (molar_flowrate(F, 'propane') / F_tot);
+	x.butane = (molar_flowrate(F, 'butane') / F_tot);
+	x.water = (molar_flowrate(F, 'water') / F_tot);
+	
 
 end
 
