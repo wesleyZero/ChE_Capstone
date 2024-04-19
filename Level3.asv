@@ -1583,30 +1583,8 @@ function [sep_top1, sep_btm1] = flash_v100(sep)
 end
 
 
-function [sep_top2, sep_bot2] = psa_water(sep_feed)
-	% Asusmption that the PSA perfectly separates the water
+function [sep_top2, sep_bot2] = psa_water(sep_)
 
-	sep_top2 = sep; 
-	sep_bot2 = sep; 
-
-	% Hard coding the tops stream flowrates 
-	sep_top2.F.water = 0 ;
-	sep_top2.y = all_mol_fractions(sep_top2.F)
-
-	% Hard coding the bottoms stream flowrates 
-	sep_bot2.F.hydrogen = 0 ;
-	sep_bot2.F.methane = 0 ; 
-	sep_bot2.F.ethane = 0; 
-	sep_bot2.F.ethylene = 0;
-	sep_bot2.F.propane = 0 ;
-	sep_bot2.F.butane = 0 ;
-	sep_bot2.x = all_mol_fractions(sep_bot2.F);
-
-
-	% Defining the variables so that the W-min function not being touchedd
-	F_water = sep_feed.F.water; 
-
- 
 	%(J/s) =    (mol/s) * (J/mol K) * (T) 
 	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
 					F_LPG*R*T*log(x_propane/z_propane + ...
@@ -1673,8 +1651,8 @@ function info = info_separation_system(P_flowrates, F_steam, R_ethane)
 		% should I quantify the waste water flowrate ?? I don't think I need to 
 
 	% % X-100 | PSA of Water | #2 
-	[sep_top2, sep_top2] = psa_water(sep);
-	heat_exchangers.psa_water = sep_top2.heat;
+	% [sep_top2, sep_top2] = psa_water(sep_top1);
+	% heat_exchangers.psa_water = sep_top2.heat;
 
 	% % X-101 | Distillation of Hydrogen and Methane | #3 
 	% [sep_top3, sep_bot3] = dist_3(sep_top2);
