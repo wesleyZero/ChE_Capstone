@@ -891,7 +891,7 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("Reator volume %3.3f [L]\n", i)
 						fprintf("C02 Flowrate [kta] %3.3f, C02 / ethylene ratio %3.3f\n", F_co2, F_co2 / 200);
 						fprintf("Heat flux required for system %3.3f [GJ]\n",heat_flux)
-						info = info_separation_system(P_flowrates, F_steam, R_ethane);
+						info = cost_separation_system(P_flowrates, F_steam, R_ethane, "info");
 						disp("Effluent composition");
 						info.separation_flowstreams.effluent.z
 						info.separation_flowstreams.effluent.T 
@@ -1669,79 +1669,6 @@ end
 
 
 
-
-
-function info = info_separation_system(P_flowrates, F_steam, R_ethane)
-	% THIS IS THE INFO FUNCTION : DON'T GET IT CONFUSED 
-	global BAR_PER_KPA
-
-	% Packing all of the inputs into a convienent structure 
-	HYDROGEN = 1;
-	METHANE = 2;
-	ETHYLENE = 3;
-	PROPANE = 4;
-	BUTANE = 5;
-	
-	F.hydrogen = P_flowrates(HYDROGEN);
-	F.methane = P_flowrates(METHANE);
-	F.ethylene = P_flowrates(ETHYLENE);
-	F.propane = P_flowrates(PROPANE);
-	F.butane = P_flowrates(BUTANE);
-	F.water = F_steam;
-	F.ethane = R_ethane;
-
-
-	% Initial Conditions into the separation system
-	sep.F = F;							% [ kt / yr ]
-	sep.heat = 0; 						% [ GJ / yr ]
-	sep.T = 825 + 273.15;	 			% [ K ]
-	sep.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
-	sep.x = all_mol_fractions(sep.F); 	% [ _ ]
-	
-	% E-101 | Effluent Cooling Heat Exchanger | #0
-	sep = hex_e101(sep);
-	heat_exchangers.effluent_cooler_e101 = sep.heat;
-	separation_flowstreams.effluent = sep;
-	separation_flowstreams.effluent.z = all_mol_fractions(sep.F);
-	
-	% clear info for next unit op 
-	sep.heat = 0 ;
-	
-	% V-100 | Flash Distillation of Water / Hydrocarbons | #1
-	[sep_top1, sep_bot1] = flash_v100(sep);
-	separation_flowstreams.top1 = sep_top1;
-	separation_flowstreams.bot1 = sep_bot1;
-	heat_exchangers.flash_water = sep_top1.heat; 
-	sep_top1.heat = 0;
-	sep_bot1.heat = 0;
-		% should I quantify the waste water flowrate ?? I don't think I need to 
-
-	% % X-100 | PSA of Water | #2 
-	[sep_top2, sep_top2] = psa_water(sep);
-	heat_exchangers.psa_water = sep_top2.heat;
-
-	% % X-101 | Distillation of Hydrogen and Methane | #3 
-	% [sep_top3, sep_bot3] = dist_3(sep_top2);
-	% heat_exchangers.dist3 = sep_top3.heat; 
-
-	% % X-102 | Distillation of Ethylene & Ethane | #4 
-	% [sep_top4, sep_bot4] = dist_4(sep_bot3);
-	% heat_exchangers.dist4 = sep_top4.heat;
-
-	% % X-104 | Distillation of Ethylene | #5
-	% [sep_top5, sep_bot5] = dist_5(sep_top4);
-	% heat_exchangers.dist5 = sep_top5.heat;
-
-	% % X-103 | PSA of Hydrogen | #6
-	% [sep_top6, sep_bot6] = psa_h2(sep_top3);
-	% heat_exchangers.psa_h2 = sep_top6.heat;
-
-	info.separation_flowstreams = separation_flowstreams;
-	info.heat_exchangers = heat_exchangers;
-
-end
-
-
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	global BAR_PER_KPA
 
@@ -1811,7 +1738,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	cost = 0;
 
-	if nargin < 4 && opt == 'info'
+	if opt == 'info'
 		cost = info;
 	end
 end
