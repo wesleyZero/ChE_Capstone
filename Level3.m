@@ -844,11 +844,11 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - value_ethane(F_fresh_ethane);
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
-					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane);
+					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane, NaN);
 					profit(i, 1) = profit(i, 1) - calculate_installed_cost(heat_flux);
 					
 					% Store Data For analysis
-					fxns.separationCosts(i, 1) = cost_separation_system(P_flowrates, F_steam, R_ethane); 
+					fxns.separationCosts(i, 1) = cost_separation_system(P_flowrates, F_steam, R_ethane, NaN); 
 					fxns.furnaceCosts(i, 1)  = calculate_installed_cost(heat_flux);
 					fxns.F_steam(i, 1) = F_steam;
 					fxns.F_fresh_ethane(i, 1) = F_fresh_ethane;
@@ -866,7 +866,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
 					npv_params.conversion = conversion(i);
 					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + ...
-											cost_separation_system(P_flowrates, F_steam, R_ethane) + ...
+											cost_separation_system(P_flowrates, F_steam, R_ethane, NaN) + ...
 											calculate_installed_cost(heat_flux)) * MMDOLLA_PER_DOLLA;
 
 					% NPV calculations 
@@ -1586,12 +1586,13 @@ end
 function [sep_top2, sep_bot2] = psa_water(sep_feed)
 	% Asusmption that the PSA perfectly separates the water
 
-	sep_top2 = sep; 
-	sep_bot2 = sep; 
+	sep_top2 = sep_feed; 
+	sep_bot2 = sep_feed;
+	sep_feed.z = all_mol_fractions(sep_feed.F);
 
 	% Hard coding the tops stream flowrates 
 	sep_top2.F.water = 0 ;
-	sep_top2.y = all_mol_fractions(sep_top2.F)
+	sep_top2.y = all_mol_fractions(sep_top2.F);
 
 	% Hard coding the bottoms stream flowrates 
 	sep_bot2.F.hydrogen = 0 ;
@@ -1605,6 +1606,48 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 
 	% Defining the variables so that the W-min function not being touchedd
 	F_water = sep_feed.F.water; 
+	x_water = sep_bot2.x.water;
+	z_water = sep_feed.z.water; 
+	
+	F_methane = sep_feed.F.methane;
+	x_methane = sep_bot2.x.methane;
+	z_methane = sep_feed.z.methane;
+
+	F_ethane = sep_feed.F.ethane;
+	x_ethane = sep_bot2.x.ethane;
+	z_ethane = sep_feed.z.ethane;
+
+	F_ethylene = sep_feed.F.ethylene;
+	x_ethylene = sep_bot2.x.ethylene;
+	z_ethylene = sep_feed.z.ethylene;
+
+	F_hydrogen = sep_feed.F.hydrogen;
+	x_hydrogen = sep_bot2.x.hydrogen;
+	z_hydrogen = sep_feed.z.hydrogen;
+
+	F_propane = sep_feed.F.propane;
+	x_propane = sep_bot2.x.propane;
+	z_propane = sep_feed.z.propane;
+
+	F_butane = sep_feed.F.butane;
+	x_butane = sep_bot2.x.butane;
+	z_butane = sep_feed.z.butane;
+
+	F_water = sep_feed.F.water;
+	x_water = sep_bot2.x.water;
+	z_water = sep_feed.z.water;
+	
+	% ?? Check what these variables acutally mean in the flow streams, super
+	% sus what I did 
+	T = sep_feed.T;
+	P_in = sep_feed.P;
+
+	F_LPG = sep_feed.F.butane + sep_feed.F.propane;
+	F_H2 = sep_feed.F.hydrogen;
+	F_ME = sep_feed.F.methane;
+	P_ME = sep_feed.F.methane * sep_top2.y.methane;
+	P_H2 = sep_feed.F.hydrogen * sep_top2.y.hydrogen;
+	R = 8.314; % ?? CHECK THE UNITS ON THISSSSSSSSSSSSSSSSSSSSSSSSSSSs
 
  
 	%(J/s) =    (mol/s) * (J/mol K) * (T) 
@@ -1649,10 +1692,11 @@ function info = info_separation_system(P_flowrates, F_steam, R_ethane)
 
 
 	% Initial Conditions into the separation system
-	sep.F = F;					% [ kt / yr ]
-	sep.heat = 0; 				% [ GJ / yr ]
-	sep.T = 825 + 273.15; 		% [ K ]
-	sep.P = 200 * BAR_PER_KPA; 	% [ Bar ] 
+	sep.F = F;							% [ kt / yr ]
+	sep.heat = 0; 						% [ GJ / yr ]
+	sep.T = 825 + 273.15;	 			% [ K ]
+	sep.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
+	sep.x = all_mol_fractions(sep.F); 	% [ _ ]
 	
 	% E-101 | Effluent Cooling Heat Exchanger | #0
 	sep = hex_e101(sep);
@@ -1698,7 +1742,7 @@ function info = info_separation_system(P_flowrates, F_steam, R_ethane)
 end
 
 
-function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
+function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	global BAR_PER_KPA
 
 	% Packing all of the inputs into a convienent structure 
@@ -1718,17 +1762,21 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 
 
 	% Initial Conditions into the separation system
-	sep.F = F;					% [ kt / yr ]
-	sep.heat = 0; 				% [ GJ / yr ]
-	sep.T = 825 + 273.15; 		% [ K ]
-	sep.P = 200 * BAR_PER_KPA; 	% [ Bar ] 
+	sep.F = F;							% [ kt / yr ]
+	sep.heat = 0; 						% [ GJ / yr ]
+	sep.T = 825 + 273.15;	 			% [ K ]
+	sep.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
+	sep.x = all_mol_fractions(sep.F); 	% [ _ ]
 	
 	% E-101 | Effluent Cooling Heat Exchanger | #0
 	sep = hex_e101(sep);
 	heat_exchangers.effluent_cooler_e101 = sep.heat;
+	separation_flowstreams.effluent = sep;
+	separation_flowstreams.effluent.z = all_mol_fractions(sep.F);
+	
 	% clear info for next unit op 
 	sep.heat = 0 ;
-
+	
 	% V-100 | Flash Distillation of Water / Hydrocarbons | #1
 	[sep_top1, sep_bot1] = flash_v100(sep);
 	separation_flowstreams.top1 = sep_top1;
@@ -1739,8 +1787,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 		% should I quantify the waste water flowrate ?? I don't think I need to 
 
 	% % X-100 | PSA of Water | #2 
-	% [sep_top2, sep_top2] = psa_water(sep_top1);
-	% heat_exchangers.psa_water = sep_top2.heat;
+	[sep_top2, sep_top2] = psa_water(sep);
+	heat_exchangers.psa_water = sep_top2.heat;
 
 	% % X-101 | Distillation of Hydrogen and Methane | #3 
 	% [sep_top3, sep_bot3] = dist_3(sep_top2);
@@ -1758,8 +1806,14 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 	% [sep_top6, sep_bot6] = psa_h2(sep_top3);
 	% heat_exchangers.psa_h2 = sep_top6.heat;
 
+	info.separation_flowstreams = separation_flowstreams;
+	info.heat_exchangers = heat_exchangers;
 
 	cost = 0;
+
+	if nargin < 4 && opt == 'info'
+		cost = info;
+	end
 end
 
 function total = total_mass_flowrate(F)
