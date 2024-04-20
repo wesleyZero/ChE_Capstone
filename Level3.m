@@ -1558,7 +1558,7 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 
 end
 
-function phi = underwood(sep_feed, r, s, alpha, y, opt)
+function phi = underwood(z, r, s, alpha, y, opt)
 	% y are the distillate compositions 
 	% alpha has the relative volatilities 
 	% r is reflux ratio
@@ -1567,14 +1567,22 @@ function phi = underwood(sep_feed, r, s, alpha, y, opt)
 	% Doherty & Malone eq 4.21  
 	eqn_421 = @(phi) -r - 1 + (alpha.a * y.a / (alpha.a - phi)) + (alpha.b * y.b / (alpha.b - phi));
 	
-	if strcmpi(opt,'top')
-		init_phi = alpha.b + (alpha.a / 2);
-			% alpha_a > phi > alpha_b 
-	else strcmpi(opt, 'bottom')
-		init_phi = alpha.b / 2;
-	end
-	phi = fzero( @(phi) eqn_421(phi), init_phi);
+	init_phi = alpha.b + (alpha.a / 2);
+		% alpha_a > phi > alpha_b 
+	phi_top =  fzero( @(phi) eqn_421(phi), init_phi);
 
+	init_phi = alpha.b / 2;
+		% alpha_b > phi > 0
+	phi_bottom = fzero( @(phi) eqn_421(phi), init_phi);
+
+	% Doherty and Malone eq 4.25
+	term1 = alpha.a * z.a / (alpha.a - phi_bottom);
+	term2 = alpha.b * z.b / (alpha.b - phi_bottom);
+	term3 = alpha.a * z.a / (alpha.a - phi_top);
+	term4 = alpha.b * z.b / (alpha.b - phi_top);
+	trays_above_feed = log((term1 + term2) / (term3 + term4)) / log(phi_top / phi_bottom);
+
+	phi = 0;
 
 end
 
@@ -1590,8 +1598,10 @@ function [sep_top, sep_bot] = dist_3(sep)
 	alpha.b = 1;
 	y.a = 0.95;
 	y.b = 0.05;
-	ret = underwood(sep, r, s, alpha, y, 'top');
-	ret = underwood(sep, r, s, alpha, y, 'bottom');
+	z.a = 0.345; % feed : solve for this using q line intersection / mccabe thiele stuff
+	z.b = 0.655;
+	ret = underwood(z, r, s, alpha, y);
+
 
 end
 
