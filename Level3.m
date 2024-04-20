@@ -1567,11 +1567,11 @@ function phi = underwood(sep_feed, r, s, alpha, y, opt)
 	% Doherty & Malone eq 4.21  
 	eqn_421 = @(phi) -r - 1 + (alpha.a * y.a / (alpha.a - phi)) + (alpha.b * y.b / (alpha.b - phi));
 	
-	if opt == 'top'
+	if strcmpi(opt,'top')
 		init_phi = alpha.b + (alpha.a / 2);
 			% alpha_a > phi > alpha_b 
-	else opt == 'bottom'
-		init phi = alpha.b / 2;
+	else strcmpi(opt, 'bottom')
+		init_phi = alpha.b / 2;
 	end
 	phi = fzero( @(phi) eqn_421(phi), init_phi);
 
@@ -1591,6 +1591,7 @@ function [sep_top, sep_bot] = dist_3(sep)
 	y.a = 0.95;
 	y.b = 0.05;
 	ret = underwood(sep, r, s, alpha, y, 'top');
+	ret = underwood(sep, r, s, alpha, y, 'bottom');
 
 end
 
