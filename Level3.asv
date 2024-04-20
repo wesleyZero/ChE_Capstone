@@ -1558,7 +1558,7 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 
 end
 
-function phi = underwood(z, r, s, alpha, y, x)
+function phi = underwood(z, r, s, alpha, y, x, q)
 	% y are the distillate compositions 
 	% alpha has the relative volatilities 
 	% r is reflux ratio
@@ -1585,16 +1585,23 @@ function phi = underwood(z, r, s, alpha, y, x)
 
 
 	init_phi = alpha.a * 2 ;
-	init_phi_1_bar = alpha.a
-		% inf > phi > alpha_a 
-	phi_1_bar =  fzero( @(phi) eqn_421_bot(phi, s), init_phi);
-
-	init_phi = alpha.b + ((alpha.a - alpha.b) / 2);
-	init_phi = 8;
+	init_phi = alpha.b * (0.5 * (alpha.a - alpha.b));
 		% alpha_a > phi > alpha_b
-	phi_2_bar = fzero( @(phi) eqn_421_bot(phi, s), init_phi);
+	phi_2_bar =  fzero( @(phi) eqn_421_bot(phi, s), init_phi);
 
+	init_phi = alpha.a * 1.5;
+		% inf > phi > alpha_a
+	phi_1_bar = fzero( @(phi) eqn_421_bot(phi, s), init_phi);
+
+	term1 = alpha.a * z.a / (alpha.a - phi_1_bar);
+	term2 = alpha.b * z.b / (alpha.b - phi_1_bar);
+	term3 = alpha.a * z.a / (alpha.a - phi_2_bar);
+	term4 = alpha.b * z.b / (alpha.b - phi_2_bar);
 	trays_below_feed = log((term1 + term2) / (term3 + term4)) / log(phi_1_bar / phi_2_bar);
+
+	% Doherty and Malone eq4.29
+	find_theta = @(theta) q - 1 + (alpha.a * z.a / (alpha.a - theta)) + ...
+								(alpha.b * z.b / (alpha.b - theta));
 
 
 	phi = 0;
@@ -1616,7 +1623,8 @@ function [sep_top, sep_bot] = dist_3(sep)
 	x.b = 0.97;
 	z.a = 0.345; % feed : solve for this using q line intersection / mccabe thiele stuff
 	z.b = 0.655;
-	ret = underwood(z, r, s, alpha, y, x);
+	q = 1;
+	ret = underwood(z, r, s, alpha, y, x, q);
 
 
 end
