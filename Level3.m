@@ -1558,32 +1558,49 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 
 end
 
-function phi = underwood(z, r, s, alpha, y, opt)
+function phi = underwood(z, r, s, alpha, y, x)
 	% y are the distillate compositions 
 	% alpha has the relative volatilities 
 	% r is reflux ratio
 	% s is boilup ratio 
 
 	% Doherty & Malone eq 4.21  
-	eqn_421 = @(phi) -r - 1 + (alpha.a * y.a / (alpha.a - phi)) + (alpha.b * y.b / (alpha.b - phi));
+	eqn_421_top = @(phi, r) -r - 1 + (alpha.a * y.a / (alpha.a - phi)) + (alpha.b * y.b / (alpha.b - phi));
+	eqn_421_bot = @(phi, s) s + (alpha.a * x.a / (alpha.a - phi)) + (alpha.b * x.b / (alpha.b - phi));
 	
 	init_phi = alpha.b + (alpha.a / 2);
 		% alpha_a > phi > alpha_b 
-	phi_top =  fzero( @(phi) eqn_421(phi), init_phi);
+	phi_1_top =  fzero( @(phi) eqn_421_top(phi, r), init_phi);
 
 	init_phi = alpha.b / 2;
 		% alpha_b > phi > 0
-	phi_bottom = fzero( @(phi) eqn_421(phi), init_phi);
+	phi_2_top = fzero( @(phi) eqn_421_top(phi,r), init_phi);
 
 	% Doherty and Malone eq 4.25
-	term1 = alpha.a * z.a / (alpha.a - phi_bottom);
-	term2 = alpha.b * z.b / (alpha.b - phi_bottom);
-	term3 = alpha.a * z.a / (alpha.a - phi_top);
-	term4 = alpha.b * z.b / (alpha.b - phi_top);
-	trays_above_feed = log((term1 + term2) / (term3 + term4)) / log(phi_top / phi_bottom);
+	term1 = alpha.a * z.a / (alpha.a - phi_2_top);
+	term2 = alpha.b * z.b / (alpha.b - phi_2_top);
+	term3 = alpha.a * z.a / (alpha.a - phi_1_top);
+	term4 = alpha.b * z.b / (alpha.b - phi_1_top);
+	trays_above_feed = log((term1 + term2) / (term3 + term4)) / log(phi_1_top / phi_2_top);
+
+
+	init_phi = alpha.a * 2 ;
+	init_phi = alpha.b * (0.5 * (alpha.a - alpha.b));
+		% alpha_a > phi > alpha_b
+	phi_2_bar =  fzero( @(phi) eqn_421_bot(phi, s), init_phi);
+
+	init_phi = alpha.a * 1.5;
+		% inf > phi > alpha_a
+	phi_1_bar = fzero( @(phi) eqn_421_bot(phi, s), init_phi);
+
+	term1 = alpha.a * z.a / (alpha.a - phi_1_bar);
+	term2 = alpha.b * z.b / (alpha.b - phi_1_bar);
+	term3 = alpha.a * z.a / (alpha.a - phi_2_bar);
+	term4 = alpha.b * z.b / (alpha.b - phi_2_bar);
+	trays_below_feed = log((term1 + term2) / (term3 + term4)) / log(phi_1_bar / phi_2_bar);
+
 
 	phi = 0;
-
 end
 
 function [sep_top, sep_bot] = dist_3(sep)
@@ -1598,9 +1615,11 @@ function [sep_top, sep_bot] = dist_3(sep)
 	alpha.b = 1;
 	y.a = 0.95;
 	y.b = 0.05;
+	x.a = 0.03;
+	x.b = 0.97;
 	z.a = 0.345; % feed : solve for this using q line intersection / mccabe thiele stuff
 	z.b = 0.655;
-	ret = underwood(z, r, s, alpha, y);
+	ret = underwood(z, r, s, alpha, y, x);
 
 
 end
