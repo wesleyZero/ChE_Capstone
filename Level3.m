@@ -908,46 +908,68 @@ if (CALCULATE_REACTOR_FLOWS)
 						% info.separation_flowstreams.bot1.P
 						% info.heat_exchangers
 
+						DIVIDER = "______________________________________________";
 						disp("Flowstreams (note T is in Celcius )")
 
-						disp ("a1")
+						disp ("a1" + DIVIDER)
 						info.flowstreams.a1.T = info.flowstreams.a1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
 						info.flowstreams.a1.F
 						info.flowstreams.a1
+						fprintf("Mol Fraction Compositions [kta]\n")
 						info.flowstreams.a1.x 
-
-						disp "b1"
+						
+						disp("b1" + DIVIDER)
 						info.flowstreams.b1.T = info.flowstreams.b1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
 						info.flowstreams.b1.F
 						info.flowstreams.b1
-
-						disp "c1"
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.b1.x 
+						
+						disp("c1" + DIVIDER)
 						info.flowstreams.c1.T = info.flowstreams.c1.T - 273.15;
-						info.flowstreams.c1
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.c1.F
+						fprintf("Mol Fraction Compositions [kta]\n")
 						info.flowstreams.c1.y 
-
-						disp "c2"
+						
+						disp("c2" + DIVIDER)
 						info.flowstreams.c2.T = info.flowstreams.c2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.c2.F
 						info.flowstreams.c2
-
-						disp "d1"
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.c2.x 
+						
+						disp("d1" + DIVIDER)
 						info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d1.F
 						info.flowstreams.d1
-
-						disp "d2"
+						
+						disp("d2" + DIVIDER)
 						info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d2.F
 						info.flowstreams.d2
-
-						disp "e1"
+						
+						disp("e1" + DIVIDER)
 						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.e1.F
 						info.flowstreams.e1
-
-						disp "f1"
+						
+						disp("f1" + DIVIDER)
 						info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.f1.F
 						info.flowstreams.f1
-
-						disp "f2"
+						
+						disp("f2" + DIVIDER)
 						info.flowstreams.f2.T = info.flowstreams.f2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.f2.F
 						info.flowstreams.f2
 
 					end
@@ -1475,25 +1497,26 @@ function [sep_top, sep_btm]= rachford_rice(sep, K)
 	sep_top.y = y;
 	sep_top.x = NaN;
 	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
-	sep_top.F = V * y.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
-	sep_top.F = V * y.methane * (1/MOLMASS_METHANE) * KT_PER_G;
-	sep_top.F = V * y.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
-	sep_top.F = V * y.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
-	sep_top.F = V * y.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
-	sep_top.F = V * y.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
-	sep_top.F = V * y.water * (1/MOLMASS_WATER) * KT_PER_G;
+	sep_top.F.hydrogen = V * y.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_top.F.methane = V * y.methane * (1/MOLMASS_METHANE) * KT_PER_G;
+	sep_top.F.ethane = V * y.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
+	sep_top.F.ethylene = V * y.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_top.F.propane = V * y.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
+	sep_top.F.butane = V * y.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
+	sep_top.F.water = V * y.water * (1/MOLMASS_WATER) * KT_PER_G;
 	
 	% Bottoms 
 	sep_btm = sep; 
 	sep_btm.x = x;
 	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
-	sep_btm.F = L * x.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
-	sep_btm.F = L * x.methane * (1/MOLMASS_METHANE) * KT_PER_G;
-	sep_btm.F = L * x.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
-	sep_btm.F = L * x.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
-	sep_btm.F = L * x.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
-	sep_btm.F = L * x.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
-	sep_btm.F = L * x.water * (1/MOLMASS_WATER) * KT_PER_G;
+	sep_btm.F.hydrogen = L * x.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_btm.F.methane = L * x.methane * (1/MOLMASS_METHANE) * KT_PER_G;
+	sep_btm.F.ethane = L * x.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
+	sep_btm.F.ethylene = L * x.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_btm.F.propane = L * x.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
+	sep_btm.F.butane = L * x.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
+	sep_btm.F.water = L * x.water * (1/MOLMASS_WATER) * KT_PER_G;
+	
 	
 end
 
