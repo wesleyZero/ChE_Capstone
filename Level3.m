@@ -892,21 +892,63 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("C02 Flowrate [kta] %3.3f, C02 / ethylene ratio %3.3f\n", F_co2, F_co2 / 200);
 						fprintf("Heat flux required for system %3.3f [GJ]\n",heat_flux)
 						info = cost_separation_system(P_flowrates, F_steam, R_ethane, "info");
-						disp("Effluent composition");
-						info.separation_flowstreams.effluent.z
-						info.separation_flowstreams.effluent.T 
-						info.separation_flowstreams.effluent.P
+						% disp("Effluent composition");
+						% info.separation_flowstreams.effluent.z
+						% info.separation_flowstreams.effluent.T 
+						% info.separation_flowstreams.effluent.P
 				
-						disp("Tops compositions of Flash Dist 1 ")
-						info.separation_flowstreams.top1.y
-						info.separation_flowstreams.top1.T 
-						info.separation_flowstreams.top1.P 
+						% disp("Tops compositions of Flash Dist 1 ")
+						% info.separation_flowstreams.top1.y
+						% info.separation_flowstreams.top1.T 
+						% info.separation_flowstreams.top1.P 
 					
-						disp("Bottoms Composition of Flash Dist 1")
-						info.separation_flowstreams.bot1.x
-						info.separation_flowstreams.bot1.T 
-						info.separation_flowstreams.bot1.P
-						info.heat_exchangers
+						% disp("Bottoms Composition of Flash Dist 1")
+						% info.separation_flowstreams.bot1.x
+						% info.separation_flowstreams.bot1.T 
+						% info.separation_flowstreams.bot1.P
+						% info.heat_exchangers
+
+						disp("Flowstreams (note T is in Celcius )")
+
+						disp ("a1")
+						info.flowstreams.a1.T = info.flowstreams.a1.T - 273.15;
+						info.flowstreams.a1.F
+						info.flowstreams.a1
+						info.flowstreams.a1.x 
+
+						disp "b1"
+						info.flowstreams.b1.T = info.flowstreams.b1.T - 273.15;
+						info.flowstreams.b1.F
+						info.flowstreams.b1
+
+						disp "c1"
+						info.flowstreams.c1.T = info.flowstreams.c1.T - 273.15;
+						info.flowstreams.c1
+						info.flowstreams.c1.y 
+
+						disp "c2"
+						info.flowstreams.c2.T = info.flowstreams.c2.T - 273.15;
+						info.flowstreams.c2
+
+						disp "d1"
+						info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
+						info.flowstreams.d1
+
+						disp "d2"
+						info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
+						info.flowstreams.d2
+
+						disp "e1"
+						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
+						info.flowstreams.e1
+
+						disp "f1"
+						info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
+						info.flowstreams.f1
+
+						disp "f2"
+						info.flowstreams.f2.T = info.flowstreams.f2.T - 273.15;
+						info.flowstreams.f2
 
 					end
 					
@@ -1554,8 +1596,6 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 						F_ME*log(P_ME/P_in)...
 						);
 
-	
-
 end
 
 function phi = underwood(z, r, s, alpha, y, x, q)
@@ -1563,6 +1603,7 @@ function phi = underwood(z, r, s, alpha, y, x, q)
 	% alpha has the relative volatilities 
 	% r is reflux ratio
 	% s is boilup ratio 
+	r_min_factor = 1.2;
 
 	% Doherty & Malone eq 4.21  
 	eqn_421_top = @(phi, r) -r - 1 + (alpha.a * y.a / (alpha.a - phi)) + (alpha.b * y.b / (alpha.b - phi));
@@ -1606,7 +1647,7 @@ function phi = underwood(z, r, s, alpha, y, x, q)
 	theta = fzero( @(theta) find_theta(theta), init_theta);
 	
 	r_min = -1 + (alpha.a * y.a / (alpha.a - theta)) + (alpha.b * y.b / (alpha.b - theta));
-	r = 1.2 * r_min; % WHAT MULTIPLE OF R_MIN SHOULD WE USE? 
+	r = r_min_factor * r_min; % WHAT MULTIPLE OF R_MIN SHOULD WE USE? 
 	phi = 0;
 end
 
@@ -1653,14 +1694,14 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 
 	% Initial Conditions into the separation system
-	sep.F = F;							% [ kt / yr ]
-	sep.heat = 0; 						% [ GJ / yr ]
-	sep.T = 825 + 273.15;	 			% [ K ]
-	sep.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
-	sep.x = all_mol_fractions(sep.F); 	% [ _ ]
+	sep_effluent.F = F;							% [ kt / yr ]
+	sep_effluent.heat = 0; 						% [ GJ / yr ]
+	sep_effluent.T = 825 + 273.15;	 			% [ K ]
+	sep_effluent.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
+	sep_effluent.x = all_mol_fractions(sep_effluent.F); 	% [ _ ]
 	
 	% E-101 | Effluent Cooling Heat Exchanger | #0
-	sep = hex_e101(sep);
+	sep = hex_e101(sep_effluent);
 	heat_exchangers.effluent_cooler_e101 = sep.heat;
 	separation_flowstreams.effluent = sep;
 	separation_flowstreams.effluent.z = all_mol_fractions(sep.F);
@@ -1678,7 +1719,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 		% should I quantify the waste water flowrate ?? I don't think I need to 
 
 	% % X-100 | PSA of Water | #2 
-	[sep_top2, sep_top2] = psa_water(sep);
+	[sep_top2, sep_bot2] = psa_water(sep);
 	heat_exchangers.psa_water = sep_top2.heat;
 
 
@@ -1688,8 +1729,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 
 	% % X-101 | Distillation of Hydrogen and Methane | #3 
-	[sep_top3, sep_bot3] = dist_3(sep_top2);
-	heat_exchangers.dist3 = sep_top3.heat; 
+	[sep_top4, sep_bot4] = dist_3(sep_top3);
+	heat_exchangers.dist3 = sep_top4.heat; 
 
 	% % X-102 | Distillation of Ethylene & Ethane | #4 
 	% [sep_top4, sep_bot4] = dist_4(sep_bot3);
@@ -1706,7 +1747,16 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	% Gather info for console output 
 	info.separation_flowstreams = separation_flowstreams;
 	info.heat_exchangers = heat_exchangers;
-
+	info.flowstreams.a1 = sep_effluent;
+	info.flowstreams.b1 = sep;
+	info.flowstreams.c1 = sep_top1;
+	info.flowstreams.c2 = sep_bot1;
+	info.flowstreams.d1 = sep_top2;
+	info.flowstreams.d2 = sep_bot2;
+	info.flowstreams.e1 = sep_top3;
+	info.flowstreams.f1 = sep_top4;
+	info.flowstreams.f2 = sep_bot4;
+	
 	cost = 0;
 
 	if opt == 'info'
