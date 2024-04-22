@@ -929,6 +929,7 @@ if (CALCULATE_REACTOR_FLOWS)
 						
 						disp("c1" + DIVIDER)
 						info.flowstreams.c1.T = info.flowstreams.c1.T - 273.15;
+						info.flowstreams.c1
 						fprintf("Mass flow rates [kta]\n")
 						info.flowstreams.c1.F
 						fprintf("Mol Fraction Compositions [kta]\n")
@@ -937,16 +938,16 @@ if (CALCULATE_REACTOR_FLOWS)
 						disp("c2" + DIVIDER)
 						info.flowstreams.c2.T = info.flowstreams.c2.T - 273.15;
 						fprintf("Mass flow rates [kta]\n")
-						info.flowstreams.c2.F
 						info.flowstreams.c2
+						info.flowstreams.c2.F
 						fprintf("Mol Fraction Compositions [kta]\n")
 						info.flowstreams.c2.x 
 						
 						disp("d1" + DIVIDER)
 						info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
+						info.flowstreams.d1
 						fprintf("Mass flow rates [kta]\n")
 						info.flowstreams.d1.F
-						info.flowstreams.d1
 						
 						disp("d2" + DIVIDER)
 						info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
