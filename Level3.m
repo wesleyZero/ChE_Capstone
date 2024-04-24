@@ -1817,7 +1817,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	sep_g1 = flash(sep_f1, 'v101');	
 
 	% HEX E-104 | Heating up the Hydrogen PSA Feed 
-
+	sep_h1 = hex(sep_g1, 273.15 + 25);
+	heat_exchangers.hex_104 = sep_h1;
 	
 	% Gather info for console output 
 	info.separation_flowstreams = separation_flowstreams;
