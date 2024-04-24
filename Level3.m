@@ -1811,13 +1811,14 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	%  HEX E-102 | Cryogenic Distillation Cooler
 	sep_f1 = hex(sep_e1, 273.15 - 150 );
-	heat_exchangers.hex_e102 = sep_f1
+	heat_exchangers.hex_e102 = sep_f1.heat;
 
 	% Flash V-101 | Flash Distillation of Hydrogen / Other hydrocarbons
+	sep_g1 = flash(sep_f1, 'v101');	
 
+	% HEX E-104 | Heating up the Hydrogen PSA Feed 
 
-
-
+	
 	% Gather info for console output 
 	info.separation_flowstreams = separation_flowstreams;
 	info.heat_exchangers = heat_exchangers;
@@ -1837,6 +1838,29 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 		cost = info;
 	end
 end
+
+
+function [sep_top, sep_btm] = flash(sep, flash_title)
+
+	sep.heat = 0;
+
+	[sep_top, sep_btm]= rachford_rice(sep, get_flash_K_values(flash_title));
+	
+end
+
+function K = get_flash_K_values(flash_title)
+	
+	if flash_title == 'v101'
+		K.ethane = 2.624 * 10^-3;
+		K.ethylene = 1.169 * 10^-2;
+		K.hydrogen = 2731;
+		K.methane = 1.389;
+		K.propane = 2.281 * 10^-5;
+		K.butane = 2.726 * 10^-6;
+		K.water = 0;
+	end
+
+end	
 
 function sep = hex(sep, T_out)
 	% Temperatures must be in kelvin
