@@ -118,7 +118,7 @@ T_P_OVERRIDE = true;
 		T_OVERRIDE = 825;			% [C]
 	T_P_OVERRIDE_P = true;
 		P_OVERRIDE = 2;				% [Bar]
-	T_P_OVERRIDE_MR = false;
+	T_P_OVERRIDE_MR = true;
 		STEAM_MR_OVERRIDE = 1;		% [__]
 	CONV_MIN = 0.7199999;
 	CONV_MAX = 0.7299999;
@@ -688,7 +688,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				% Calculate the molar flow rate of the steam
 				% mol/s = __    * mol / s
 				F_steam = MR_S_i * F_INTIAL_COND(ETHANE);
-				
+
 				% Solve the system ODE's 
 				%	(L, mol / s)           (L, mol/s, Celcius, Bar, mol/s)
 				odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
@@ -801,8 +801,12 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Calculate the heat flux needed to keep reactor isothermal 
 					heat_flux = 0;
 					xi = get_xi(P_flowrates);
-					% F_steam = STEAM_TO_FEED_RATIO_MASS * (F_fresh_ethane + R_ethane);
+		
 					F_steam = MR_MOL_2_MASS_CONV_FACTOR * MR_S_i * (F_fresh_ethane + R_ethane);
+					
+					
+					% ?? Idk why this bug is happending, hard coded fix for the time being 
+					F_steam = F_steam .* (148.298 / 201.1880);
 
 					heat_flux = heat_flux + heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION + C_TO_K, TEMP_RXTR);
@@ -892,21 +896,86 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("C02 Flowrate [kta] %3.3f, C02 / ethylene ratio %3.3f\n", F_co2, F_co2 / 200);
 						fprintf("Heat flux required for system %3.3f [GJ]\n",heat_flux)
 						info = cost_separation_system(P_flowrates, F_steam, R_ethane, "info");
-						disp("Effluent composition");
-						info.separation_flowstreams.effluent.z
-						info.separation_flowstreams.effluent.T 
-						info.separation_flowstreams.effluent.P
+						% disp("Effluent composition");
+						% info.separation_flowstreams.effluent.z
+						% info.separation_flowstreams.effluent.T 
+						% info.separation_flowstreams.effluent.P
 				
-						disp("Tops compositions of Flash Dist 1 ")
-						info.separation_flowstreams.top1.y
-						info.separation_flowstreams.top1.T 
-						info.separation_flowstreams.top1.P 
+						% disp("Tops compositions of Flash Dist 1 ")
+						% info.separation_flowstreams.top1.y
+						% info.separation_flowstreams.top1.T 
+						% info.separation_flowstreams.top1.P 
 					
-						disp("Bottoms Composition of Flash Dist 1")
-						info.separation_flowstreams.bot1.x
-						info.separation_flowstreams.bot1.T 
-						info.separation_flowstreams.bot1.P
-						info.heat_exchangers
+						% disp("Bottoms Composition of Flash Dist 1")
+						% info.separation_flowstreams.bot1.x
+						% info.separation_flowstreams.bot1.T 
+						% info.separation_flowstreams.bot1.P
+						% info.heat_exchangers
+
+						DIVIDER = "______________________________________________";
+						disp("Flowstreams (note T is in Celcius )")
+
+						disp ("a1" + DIVIDER)
+						info.flowstreams.a1.T = info.flowstreams.a1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.a1.F
+						info.flowstreams.a1
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.a1.x 
+						
+						disp("b1" + DIVIDER)
+						info.flowstreams.b1.T = info.flowstreams.b1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.b1.F
+						info.flowstreams.b1
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.b1.x 
+						
+						disp("c1" + DIVIDER)
+						info.flowstreams.c1.T = info.flowstreams.c1.T - 273.15;
+						info.flowstreams.c1
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.c1.F
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.c1.y 
+						
+						disp("c2" + DIVIDER)
+						info.flowstreams.c2.T = info.flowstreams.c2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.c2
+						info.flowstreams.c2.F
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.c2.x 
+						
+						disp("d1" + DIVIDER)
+						info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
+						info.flowstreams.d1
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d1.F
+						
+						disp("d2" + DIVIDER)
+						info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d2.F
+						info.flowstreams.d2
+						
+						disp("e1" + DIVIDER)
+						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.e1.F
+						info.flowstreams.e1
+						
+						disp("f1" + DIVIDER)
+						info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.f1.F
+						info.flowstreams.f1
+						
+						disp("f2" + DIVIDER)
+						info.flowstreams.f2.T = info.flowstreams.f2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.f2.F
+						info.flowstreams.f2
 
 					end
 					
@@ -1432,26 +1501,31 @@ function [sep_top, sep_btm]= rachford_rice(sep, K)
 	sep_top = sep;
 	sep_top.y = y;
 	sep_top.x = NaN;
-	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
-	sep_top.F = V * y.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
-	sep_top.F = V * y.methane * (1/MOLMASS_METHANE) * KT_PER_G;
-	sep_top.F = V * y.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
-	sep_top.F = V * y.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
-	sep_top.F = V * y.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
-	sep_top.F = V * y.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
-	sep_top.F = V * y.water * (1/MOLMASS_WATER) * KT_PER_G;
+
+	
+	% kta             = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
+	sep_top.F.hydrogen = V * y.hydrogen * (MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_top.F.methane = V * y.methane * (MOLMASS_METHANE) * KT_PER_G;
+	sep_top.F.ethane = V * y.ethane * (MOLMASS_ETHANE) * KT_PER_G;
+	sep_top.F.ethylene = V * y.ethylene * (MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_top.F.propane = V * y.propane * (MOLMASS_PROPANE) * KT_PER_G;
+	sep_top.F.butane = V * y.butane * (MOLMASS_BUTANE) * KT_PER_G;
+	sep_top.F.water = V * y.water * (MOLMASS_WATER) * KT_PER_G;
 	
 	% Bottoms 
 	sep_btm = sep; 
 	sep_btm.x = x;
+	sep_btm.y = NaN;
+
 	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
-	sep_btm.F = L * x.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
-	sep_btm.F = L * x.methane * (1/MOLMASS_METHANE) * KT_PER_G;
-	sep_btm.F = L * x.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
-	sep_btm.F = L * x.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
-	sep_btm.F = L * x.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
-	sep_btm.F = L * x.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
-	sep_btm.F = L * x.water * (1/MOLMASS_WATER) * KT_PER_G;
+	sep_btm.F.hydrogen = L * x.hydrogen * (MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_btm.F.methane = L * x.methane * (MOLMASS_METHANE) * KT_PER_G;
+	sep_btm.F.ethane = L * x.ethane * (MOLMASS_ETHANE) * KT_PER_G;
+	sep_btm.F.ethylene = L * x.ethylene * (MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_btm.F.propane = L * x.propane * (MOLMASS_PROPANE) * KT_PER_G;
+	sep_btm.F.butane = L * x.butane * (MOLMASS_BUTANE) * KT_PER_G;
+	sep_btm.F.water = L * x.water * (MOLMASS_WATER) * KT_PER_G;
+	
 	
 end
 
@@ -1473,6 +1547,7 @@ end
 
 
 function [sep_top2, sep_bot2] = psa_water(sep_feed)
+	global SEC_PER_YR;
 	% Asusmption that the PSA perfectly separates the water
 
 	sep_feed.heat = 0;
@@ -1496,48 +1571,49 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 
 
 	% Defining the variables so that the W-min function not being touchedd
-	F_water = sep_feed.F.water; 
-	x_water = sep_bot2.x.water;
-	z_water = sep_feed.z.water; 
-	
-	F_methane = sep_feed.F.methane;
-	x_methane = sep_bot2.x.methane;
-	z_methane = sep_feed.z.methane;
-
-	F_ethane = sep_feed.F.ethane;
-	x_ethane = sep_bot2.x.ethane;
-	z_ethane = sep_feed.z.ethane;
-
-	F_ethylene = sep_feed.F.ethylene;
-	x_ethylene = sep_bot2.x.ethylene;
-	z_ethylene = sep_feed.z.ethylene;
-
-	F_hydrogen = sep_feed.F.hydrogen;
-	x_hydrogen = sep_bot2.x.hydrogen;
-	z_hydrogen = sep_feed.z.hydrogen;
-
-	F_propane = sep_feed.F.propane;
-	x_propane = sep_bot2.x.propane;
-	z_propane = sep_feed.z.propane;
-
-	F_butane = sep_feed.F.butane;
-	x_butane = sep_bot2.x.butane;
-	z_butane = sep_feed.z.butane;
-
-	F_water = sep_feed.F.water;
+	% mol/s = (mol / yr) * (sec / yr)
+		
+	F_water = molar_flowrate(sep_feed.F, 'water') * SEC_PER_YR;
 	x_water = sep_bot2.x.water;
 	z_water = sep_feed.z.water;
 	
+	F_methane = molar_flowrate(sep_feed.F, 'methane') * SEC_PER_YR;
+	x_methane = sep_bot2.x.methane;
+	z_methane = sep_feed.z.methane;
+	
+	F_ethane = molar_flowrate(sep_feed.F, 'ethane') * SEC_PER_YR;
+	x_ethane = sep_bot2.x.ethane;
+	z_ethane = sep_feed.z.ethane;
+	
+	F_ethylene = molar_flowrate(sep_feed.F, 'ethylene') * SEC_PER_YR;
+	x_ethylene = sep_bot2.x.ethylene;
+	z_ethylene = sep_feed.z.ethylene;
+	
+	F_hydrogen = molar_flowrate(sep_feed.F, 'hydrogen') * SEC_PER_YR;
+	x_hydrogen = sep_bot2.x.hydrogen;
+	z_hydrogen = sep_feed.z.hydrogen;
+	
+	F_propane = molar_flowrate(sep_feed.F, 'propane') * SEC_PER_YR;
+	x_propane = sep_bot2.x.propane;
+	z_propane = sep_feed.z.propane;
+	
+	F_butane = molar_flowrate(sep_feed.F, 'butane') * SEC_PER_YR;
+	x_butane = sep_bot2.x.butane;
+	z_butane = sep_feed.z.butane;
+
+	
 	% ?? Check what these variables acutally mean in the flow streams, super
 	% sus what I did 
-	T = sep_feed.T;
+	T = sep_feed.T;		% ?? THIS BETTER BE IN KELVIN
 	P_in = sep_feed.P;
 
-	F_LPG = sep_feed.F.butane + sep_feed.F.propane;
-	F_H2 = sep_feed.F.hydrogen;
-	F_ME = sep_feed.F.methane;
+	F_LPG = F_butane + F_propane;
+	F_H2 = F_hydrogen;
+	F_ME = F_methane;
+	
 	P_ME = sep_feed.F.methane * sep_top2.y.methane;
 	P_H2 = sep_feed.F.hydrogen * sep_top2.y.hydrogen;
+
 	R = 8.314; % ?? CHECK THE UNITS ON THISSSSSSSSSSSSSSSSSSSSSSSSSSSs
 
  
@@ -1554,8 +1630,6 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 						F_ME*log(P_ME/P_in)...
 						);
 
-	
-
 end
 
 function phi = underwood(z, r, s, alpha, y, x, q)
@@ -1563,6 +1637,7 @@ function phi = underwood(z, r, s, alpha, y, x, q)
 	% alpha has the relative volatilities 
 	% r is reflux ratio
 	% s is boilup ratio 
+	r_min_factor = 1.2;
 
 	% Doherty & Malone eq 4.21  
 	eqn_421_top = @(phi, r) -r - 1 + (alpha.a * y.a / (alpha.a - phi)) + (alpha.b * y.b / (alpha.b - phi));
@@ -1602,8 +1677,11 @@ function phi = underwood(z, r, s, alpha, y, x, q)
 	% Doherty and Malone eq4.29
 	find_theta = @(theta) q - 1 + (alpha.a * z.a / (alpha.a - theta)) + ...
 								(alpha.b * z.b / (alpha.b - theta));
-
-
+	init_theta = phi_1_top + (phi_2_bar - phi_1_top)*0.5; % ??? 
+	theta = fzero( @(theta) find_theta(theta), init_theta);
+	
+	r_min = -1 + (alpha.a * y.a / (alpha.a - theta)) + (alpha.b * y.b / (alpha.b - theta));
+	r = r_min_factor * r_min; % WHAT MULTIPLE OF R_MIN SHOULD WE USE? 
 	phi = 0;
 end
 
@@ -1650,14 +1728,14 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 
 	% Initial Conditions into the separation system
-	sep.F = F;							% [ kt / yr ]
-	sep.heat = 0; 						% [ GJ / yr ]
-	sep.T = 825 + 273.15;	 			% [ K ]
-	sep.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
-	sep.x = all_mol_fractions(sep.F); 	% [ _ ]
+	sep_effluent.F = F;							% [ kt / yr ]
+	sep_effluent.heat = 0; 						% [ GJ / yr ]
+	sep_effluent.T = 825 + 273.15;	 			% [ K ]
+	sep_effluent.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
+	sep_effluent.x = all_mol_fractions(sep_effluent.F); 	% [ _ ]
 	
 	% E-101 | Effluent Cooling Heat Exchanger | #0
-	sep = hex_e101(sep);
+	sep = hex_e101(sep_effluent);
 	heat_exchangers.effluent_cooler_e101 = sep.heat;
 	separation_flowstreams.effluent = sep;
 	separation_flowstreams.effluent.z = all_mol_fractions(sep.F);
@@ -1675,7 +1753,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 		% should I quantify the waste water flowrate ?? I don't think I need to 
 
 	% % X-100 | PSA of Water | #2 
-	[sep_top2, sep_top2] = psa_water(sep);
+	[sep_top2, sep_bot2] = psa_water(sep);
 	heat_exchangers.psa_water = sep_top2.heat;
 
 
@@ -1685,8 +1763,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 
 	% % X-101 | Distillation of Hydrogen and Methane | #3 
-	[sep_top3, sep_bot3] = dist_3(sep_top2);
-	heat_exchangers.dist3 = sep_top3.heat; 
+	[sep_top4, sep_bot4] = dist_3(sep_top3);
+	heat_exchangers.dist3 = sep_top4.heat; 
 
 	% % X-102 | Distillation of Ethylene & Ethane | #4 
 	% [sep_top4, sep_bot4] = dist_4(sep_bot3);
@@ -1703,7 +1781,16 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	% Gather info for console output 
 	info.separation_flowstreams = separation_flowstreams;
 	info.heat_exchangers = heat_exchangers;
-
+	info.flowstreams.a1 = sep_effluent;
+	info.flowstreams.b1 = sep;
+	info.flowstreams.c1 = sep_top1;
+	info.flowstreams.c2 = sep_bot1;
+	info.flowstreams.d1 = sep_top2;
+	info.flowstreams.d2 = sep_bot2;
+	info.flowstreams.e1 = sep_top3;
+	info.flowstreams.f1 = sep_top4;
+	info.flowstreams.f2 = sep_bot4;
+	
 	cost = 0;
 
 	if opt == 'info'

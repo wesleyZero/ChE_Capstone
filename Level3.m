@@ -38,7 +38,7 @@ global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
 global CONV_MIN CONV_MAX KT_PER_MT BAR_PER_KPA
 global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
 	HEAT_CAPACITY_ETHYLENE HEAT_CAPACITY_PROPANE HEAT_CAPACITY_BUTANE ...
-	HEAT_CAPACITY_WATER
+	HEAT_CAPACITY_WATER GJ_PER_J
 
 % USER NOTES____________________________________________________________________
 
@@ -118,7 +118,7 @@ T_P_OVERRIDE = true;
 		T_OVERRIDE = 825;			% [C]
 	T_P_OVERRIDE_P = true;
 		P_OVERRIDE = 2;				% [Bar]
-	T_P_OVERRIDE_MR = false;
+	T_P_OVERRIDE_MR = true;
 		STEAM_MR_OVERRIDE = 1;		% [__]
 	CONV_MIN = 0.7199999;
 	CONV_MAX = 0.7299999;
@@ -207,6 +207,7 @@ MT_PER_G = 10^-6;		% [ MT / g ]
 % Energy
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
+GJ_PER_J = 10^-9;		% [ GJ / J ]
 
 % Temperature		
 C_TO_K = 273.15;		% [ C -> K ]
@@ -688,7 +689,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				% Calculate the molar flow rate of the steam
 				% mol/s = __    * mol / s
 				F_steam = MR_S_i * F_INTIAL_COND(ETHANE);
-				
+
 				% Solve the system ODE's 
 				%	(L, mol / s)           (L, mol/s, Celcius, Bar, mol/s)
 				odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
@@ -801,8 +802,12 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Calculate the heat flux needed to keep reactor isothermal 
 					heat_flux = 0;
 					xi = get_xi(P_flowrates);
-					% F_steam = STEAM_TO_FEED_RATIO_MASS * (F_fresh_ethane + R_ethane);
+		
 					F_steam = MR_MOL_2_MASS_CONV_FACTOR * MR_S_i * (F_fresh_ethane + R_ethane);
+					
+					
+					% ?? Idk why this bug is happending, hard coded fix for the time being 
+					F_steam = F_steam .* (148.298 / 201.1880);
 
 					heat_flux = heat_flux + heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION + C_TO_K, TEMP_RXTR);
@@ -1497,26 +1502,30 @@ function [sep_top, sep_btm]= rachford_rice(sep, K)
 	sep_top = sep;
 	sep_top.y = y;
 	sep_top.x = NaN;
-	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
-	sep_top.F.hydrogen = V * y.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
-	sep_top.F.methane = V * y.methane * (1/MOLMASS_METHANE) * KT_PER_G;
-	sep_top.F.ethane = V * y.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
-	sep_top.F.ethylene = V * y.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
-	sep_top.F.propane = V * y.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
-	sep_top.F.butane = V * y.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
-	sep_top.F.water = V * y.water * (1/MOLMASS_WATER) * KT_PER_G;
+
+	
+	% kta             = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
+	sep_top.F.hydrogen = V * y.hydrogen * (MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_top.F.methane = V * y.methane * (MOLMASS_METHANE) * KT_PER_G;
+	sep_top.F.ethane = V * y.ethane * (MOLMASS_ETHANE) * KT_PER_G;
+	sep_top.F.ethylene = V * y.ethylene * (MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_top.F.propane = V * y.propane * (MOLMASS_PROPANE) * KT_PER_G;
+	sep_top.F.butane = V * y.butane * (MOLMASS_BUTANE) * KT_PER_G;
+	sep_top.F.water = V * y.water * (MOLMASS_WATER) * KT_PER_G;
 	
 	% Bottoms 
 	sep_btm = sep; 
 	sep_btm.x = x;
+	sep_btm.y = NaN;
+
 	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
-	sep_btm.F.hydrogen = L * x.hydrogen * (1/MOLMASS_HYDROGEN) * KT_PER_G;
-	sep_btm.F.methane = L * x.methane * (1/MOLMASS_METHANE) * KT_PER_G;
-	sep_btm.F.ethane = L * x.ethane * (1/MOLMASS_ETHANE) * KT_PER_G;
-	sep_btm.F.ethylene = L * x.ethylene * (1/MOLMASS_ETHYLENE) * KT_PER_G;
-	sep_btm.F.propane = L * x.propane * (1/MOLMASS_PROPANE) * KT_PER_G;
-	sep_btm.F.butane = L * x.butane * (1/MOLMASS_BUTANE) * KT_PER_G;
-	sep_btm.F.water = L * x.water * (1/MOLMASS_WATER) * KT_PER_G;
+	sep_btm.F.hydrogen = L * x.hydrogen * (MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_btm.F.methane = L * x.methane * (MOLMASS_METHANE) * KT_PER_G;
+	sep_btm.F.ethane = L * x.ethane * (MOLMASS_ETHANE) * KT_PER_G;
+	sep_btm.F.ethylene = L * x.ethylene * (MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_btm.F.propane = L * x.propane * (MOLMASS_PROPANE) * KT_PER_G;
+	sep_btm.F.butane = L * x.butane * (MOLMASS_BUTANE) * KT_PER_G;
+	sep_btm.F.water = L * x.water * (MOLMASS_WATER) * KT_PER_G;
 	
 	
 end
@@ -1539,6 +1548,7 @@ end
 
 
 function [sep_top2, sep_bot2] = psa_water(sep_feed)
+	global SEC_PER_YR YR_PER_SEC GJ_PER_J
 	% Asusmption that the PSA perfectly separates the water
 
 	sep_feed.heat = 0;
@@ -1562,51 +1572,53 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 
 
 	% Defining the variables so that the W-min function not being touchedd
-	F_water = sep_feed.F.water; 
-	x_water = sep_bot2.x.water;
-	z_water = sep_feed.z.water; 
-	
-	F_methane = sep_feed.F.methane;
-	x_methane = sep_bot2.x.methane;
-	z_methane = sep_feed.z.methane;
-
-	F_ethane = sep_feed.F.ethane;
-	x_ethane = sep_bot2.x.ethane;
-	z_ethane = sep_feed.z.ethane;
-
-	F_ethylene = sep_feed.F.ethylene;
-	x_ethylene = sep_bot2.x.ethylene;
-	z_ethylene = sep_feed.z.ethylene;
-
-	F_hydrogen = sep_feed.F.hydrogen;
-	x_hydrogen = sep_bot2.x.hydrogen;
-	z_hydrogen = sep_feed.z.hydrogen;
-
-	F_propane = sep_feed.F.propane;
-	x_propane = sep_bot2.x.propane;
-	z_propane = sep_feed.z.propane;
-
-	F_butane = sep_feed.F.butane;
-	x_butane = sep_bot2.x.butane;
-	z_butane = sep_feed.z.butane;
-
-	F_water = sep_feed.F.water;
+	% mol/s = (mol / yr) * (sec / yr)
+		
+	F_water = molar_flowrate(sep_feed.F, 'water') * YR_PER_SEC;
 	x_water = sep_bot2.x.water;
 	z_water = sep_feed.z.water;
 	
+	F_methane = molar_flowrate(sep_feed.F, 'methane') * YR_PER_SEC;
+	x_methane = sep_bot2.x.methane;
+	z_methane = sep_feed.z.methane;
+	
+	F_ethane = molar_flowrate(sep_feed.F, 'ethane') * YR_PER_SEC;
+	x_ethane = sep_bot2.x.ethane;
+	z_ethane = sep_feed.z.ethane;
+	
+	F_ethylene = molar_flowrate(sep_feed.F, 'ethylene') * YR_PER_SEC;
+	x_ethylene = sep_bot2.x.ethylene;
+	z_ethylene = sep_feed.z.ethylene;
+	
+	F_hydrogen = molar_flowrate(sep_feed.F, 'hydrogen') * YR_PER_SEC;
+	x_hydrogen = sep_bot2.x.hydrogen;
+	z_hydrogen = sep_feed.z.hydrogen;
+	
+	F_propane = molar_flowrate(sep_feed.F, 'propane') * YR_PER_SEC;
+	x_propane = sep_bot2.x.propane;
+	z_propane = sep_feed.z.propane;
+	
+	F_butane = molar_flowrate(sep_feed.F, 'butane') * YR_PER_SEC;
+	x_butane = sep_bot2.x.butane;
+	z_butane = sep_feed.z.butane;
+
+	
 	% ?? Check what these variables acutally mean in the flow streams, super
 	% sus what I did 
-	T = sep_feed.T;
+	T = sep_feed.T;		% ?? THIS BETTER BE IN KELVIN
 	P_in = sep_feed.P;
 
-	F_LPG = sep_feed.F.butane + sep_feed.F.propane;
-	F_H2 = sep_feed.F.hydrogen;
-	F_ME = sep_feed.F.methane;
-	P_ME = sep_feed.F.methane * sep_top2.y.methane;
-	P_H2 = sep_feed.F.hydrogen * sep_top2.y.hydrogen;
-	R = 8.314; % ?? CHECK THE UNITS ON THISSSSSSSSSSSSSSSSSSSSSSSSSSSs
+	F_LPG = F_butane + F_propane;
+	F_H2 = F_hydrogen;
+	F_ME = F_methane;
 
- 
+	% ??? Notes: ISA/TJ haven't designed the PSA yet. So we are assuming
+	% constant pressure. hence, why these values are hard coded
+	P_PSA_system = P_in;
+	P_ME = P_PSA_system * sep_top2.y.methane;
+	P_H2 = P_PSA_system * sep_top2.y.hydrogen;
+	R = 8.314; 
+
 	%(J/s) =    (mol/s) * (J/mol K) * (T) 
 	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
 					F_LPG*R*T*log(x_propane/z_propane + ...
@@ -1619,6 +1631,12 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 						F_ME*log(x_methane/z_methane) +...
 						F_ME*log(P_ME/P_in)...
 						);
+	% GJ/yr	         = (J / s)          * (GJ / J) * (s / yr)
+	W_min_Sep_System = W_min_Sep_System * GJ_PER_J * SEC_PER_YR;
+	
+	sep_bot2.heat = W_min_Sep_System;
+	sep_top2.heat = W_min_Sep_System;
+	
 
 end
 
