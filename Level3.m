@@ -1806,8 +1806,16 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	heat_exchangers.psa_water = sep_top2.heat;
 
 	% MIXER 101 | STREAM D1 & J1 are inputs
-	sep_j1 = sep_top2; % ?? REPLACE ME WITH THE REAL STREAM 
-	sep_e1 = mixer_101(sep_top2, sep_j1);
+	sep_i1 = sep_top2; % ?? REPLACE ME WITH THE REAL STREAM 
+	sep_e1 = mixer_101(sep_top2, sep_i1);
+
+	%  HEX E-102 | Cryogenic Distillation Cooler
+	sep_f1 = hex(sep_e1, 273.15 - 150 );
+	heat_exchangers.hex_e102 = sep_f1
+
+	% Flash V-101 | Flash Distillation of Hydrogen / Other hydrocarbons
+
+
 
 
 	% Gather info for console output 
@@ -1830,10 +1838,20 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	end
 end
 
+function sep = hex(sep, T_out)
+	% Temperatures must be in kelvin
+	global GJ_PER_KJ
+
+	% GJ/yr 	=  (mol / yr) 				* (kJ / mol K )				  * ( K    -  K   ) * (GJ / kJ)
+	sep.heat = total_molar_flowrate(sep.F) * avg_heat_capacity(sep.F) * (T_out - sep.T) * GJ_PER_KJ;
+	sep.T = T_out;	
+end
+
 function sep = mixer_101(sep1, sep2)	
 	sep = add_streams_mass(sep1,sep2);
 	sep.T = sep1.T; % ASSUME ISOTHERMAL MIXING 
 	sep.heat = 0; % Assume no enthalpy of mixing 	
+	sep.P = sep1.P; % Assume isobaric mixing 
 
 end
 
@@ -1848,7 +1866,6 @@ function sep = add_streams_mass(sep1, sep2)
 	sep.F.x = NaN;
 	sep.F.y = NaN;
 	sep.F.z = all_mol_fractions(sep.F);
-
 end 	
 	
 
