@@ -948,35 +948,35 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("Mol Fraction Compositions [kta]\n")
 						info.flowstreams.c2.x 
 						
-						disp("d1" + DIVIDER)
-						info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
-						info.flowstreams.d1
-						fprintf("Mass flow rates [kta]\n")
-						info.flowstreams.d1.F
+						% disp("d1" + DIVIDER)
+						% info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
+						% info.flowstreams.d1
+						% fprintf("Mass flow rates [kta]\n")
+						% info.flowstreams.d1.F
 						
-						disp("d2" + DIVIDER)
-						info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
-						fprintf("Mass flow rates [kta]\n")
-						info.flowstreams.d2.F
-						info.flowstreams.d2
+						% disp("d2" + DIVIDER)
+						% info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
+						% fprintf("Mass flow rates [kta]\n")
+						% info.flowstreams.d2.F
+						% info.flowstreams.d2
 						
-						disp("e1" + DIVIDER)
-						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
-						fprintf("Mass flow rates [kta]\n")
-						info.flowstreams.e1.F
-						info.flowstreams.e1
+						% disp("e1" + DIVIDER)
+						% info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
+						% fprintf("Mass flow rates [kta]\n")
+						% info.flowstreams.e1.F
+						% info.flowstreams.e1
 						
-						disp("f1" + DIVIDER)
-						info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
-						fprintf("Mass flow rates [kta]\n")
-						info.flowstreams.f1.F
-						info.flowstreams.f1
+						% disp("f1" + DIVIDER)
+						% info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
+						% fprintf("Mass flow rates [kta]\n")
+						% info.flowstreams.f1.F
+						% info.flowstreams.f1
 						
-						disp("f2" + DIVIDER)
-						info.flowstreams.f2.T = info.flowstreams.f2.T - 273.15;
-						fprintf("Mass flow rates [kta]\n")
-						info.flowstreams.f2.F
-						info.flowstreams.f2
+						% disp("f2" + DIVIDER)
+						% info.flowstreams.f2.T = info.flowstreams.f2.T - 273.15;
+						% fprintf("Mass flow rates [kta]\n")
+						% info.flowstreams.f2.F
+						% info.flowstreams.f2
 
 					end
 					
@@ -1785,49 +1785,30 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	sep_effluent.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
 	sep_effluent.x = all_mol_fractions(sep_effluent.F); 	% [ _ ]
 	
-	% E-101 | Effluent Cooling Heat Exchanger | #0
+	% E-101 | Effluent Cooling Heat Exchanger | A1 STREAM 
 	sep = hex_e101(sep_effluent);
 	heat_exchangers.effluent_cooler_e101 = sep.heat;
 	separation_flowstreams.effluent = sep;
 	separation_flowstreams.effluent.z = all_mol_fractions(sep.F);
 	
-	% clear info for next unit op 
-	% sep.heat = 0 ;
-	
-	% V-100 | Flash Distillation of Water / Hydrocarbons | #1
+	% V-100 | Flash Distillation of Water / Hydrocarbons | STREAM B1  
 	[sep_top1, sep_bot1] = flash_v100(sep);
 	separation_flowstreams.top1 = sep_top1;
 	separation_flowstreams.bot1 = sep_bot1;
 	heat_exchangers.flash_water = sep_top1.heat; 
-	% sep_top1.heat = 0;
-	% sep_bot1.heat = 0;
-		% should I quantify the waste water flowrate ?? I don't think I need to 
+	waste_streams.flash_waste = sep_bot1;
 
-	% % X-100 | PSA of Water | #2 
+	% % X-100 | PSA of Water | STREAM C1 & C2 
 	[sep_top2, sep_bot2] = psa_water(sep_top1);
 	heat_exchangers.psa_water = sep_top2.heat;
+	waste_streams.psa_waste = sep_bot2;
+	sep_costs.psa_water = sep_top2.cost;
+	heat_exchangers.psa_water = sep_top2.heat;
 
+	% MIXER 101 | STREAM D1 & J1 are inputs
+	sep_j1 = sep_top2; % ?? REPLACE ME WITH THE REAL STREAM 
+	sep_e1 = mixer_101(sep_top2, sep_j1);
 
-	% E-102 | HEX Cryogenic | 
-	sep_top3 = hex_e102(sep_top2);
-	heat_exchangers.hex_e102 = sep_top3.heat;
-
-
-	% % X-101 | Distillation of Hydrogen and Methane | #3 
-	[sep_top4, sep_bot4] = dist_3(sep_top3);
-	heat_exchangers.dist3 = sep_top4.heat; 
-
-	% % X-102 | Distillation of Ethylene & Ethane | #4 
-	% [sep_top4, sep_bot4] = dist_4(sep_bot3);
-	% heat_exchangers.dist4 = sep_top4.heat;
-
-	% % X-104 | Distillation of Ethylene | #5
-	% [sep_top5, sep_bot5] = dist_5(sep_top4);
-	% heat_exchangers.dist5 = sep_top5.heat;
-
-	% % X-103 | PSA of Hydrogen | #6
-	% [sep_top6, sep_bot6] = psa_h2(sep_top3);
-	% heat_exchangers.psa_h2 = sep_top6.heat;
 
 	% Gather info for console output 
 	info.separation_flowstreams = separation_flowstreams;
@@ -1836,11 +1817,11 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	info.flowstreams.b1 = sep;
 	info.flowstreams.c1 = sep_top2;
 	info.flowstreams.c2 = sep_bot2;
-	info.flowstreams.d1 = sep_top2;
-	info.flowstreams.d2 = sep_bot2;
-	info.flowstreams.e1 = sep_top3;
-	info.flowstreams.f1 = sep_top4;
-	info.flowstreams.f2 = sep_bot4;
+	% info.flowstreams.d1 = sep_top2;
+	% info.flowstreams.d2 = sep_bot2;
+	% info.flowstreams.e1 = sep_top3;
+	% info.flowstreams.f1 = sep_top4;
+	% info.flowstreams.f2 = sep_bot4;
 	
 	cost = 0;
 
@@ -1848,6 +1829,28 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 		cost = info;
 	end
 end
+
+function sep = mixer_101(sep1, sep2)	
+	sep = add_streams_mass(sep1,sep2);
+	sep.T = sep1.T; % ASSUME ISOTHERMAL MIXING 
+	sep.heat = 0; % Assume no enthalpy of mixing 	
+
+end
+
+function sep = add_streams_mass(sep1, sep2)
+	sep.F.hydrogen = sep1.F.hydrogen + sep2.F.hydrogen;
+	sep.F.water = sep1.F.water + sep2.F.water;
+	sep.F.methane = sep1.F.methane + sep2.F.methane;
+	sep.F.ethane = sep1.F.ethane + sep2.F.ethane;
+	sep.F.ethylene = sep1.F.ethylene + sep2.F.ethylene;
+	sep.F.propane = sep1.F.propane + sep2.F.propane;
+	sep.F.butane = sep1.F.butane + sep2.F.butane;
+	sep.F.x = NaN;
+	sep.F.y = NaN;
+	sep.F.z = all_mol_fractions(sep.F);
+
+end 	
+	
 
 function total = total_mass_flowrate(F)
 %       kta                     kta
