@@ -38,7 +38,7 @@ global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
 global CONV_MIN CONV_MAX KT_PER_MT BAR_PER_KPA
 global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
 	HEAT_CAPACITY_ETHYLENE HEAT_CAPACITY_PROPANE HEAT_CAPACITY_BUTANE ...
-	HEAT_CAPACITY_WATER GJ_PER_J
+	HEAT_CAPACITY_WATER GJ_PER_J TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
 
 % USER NOTES____________________________________________________________________
 
@@ -141,8 +141,11 @@ CALCULATE_ALL_SELECTIVITIES = true;
 % Output the Reactor Design tables
 CALCULATE_REACTOR_FLOWS = true;
 
-% PSA Toggle switch
+% PSA Toggle switch | OLD TOGGLE 
 PSA_TOGGLE = true;
+
+% H2 PSA Toggle switch | NEW TOGGLE
+TOGGLE_PSA_HYDROGEN_SEP_SYSTEM = true; % true -> PSA is on 
 
 % Do you want to add the work of the compressor to the heat flux of heating 
 % the steam from the temp it's avilable at, to the temp of the reactor?
@@ -1570,68 +1573,11 @@ function [sep_top, sep_bot] = psa_water(sep_feed)
 	sep_bot.F.butane = 0 ;
 	sep_bot.x = all_mol_fractions(sep_bot.F);
 
-
-	% Defining the variables so that the W-min function not being touchedd
-	% mol/s = (mol / yr) * (sec / yr)
-	F_water = molar_flowrate(sep_feed.F, 'water') * YR_PER_SEC;
-	x_water = sep_bot.x.water;
-	z_water = sep_feed.z.water;
-	
-	F_methane = molar_flowrate(sep_feed.F, 'methane') * YR_PER_SEC;
-	x_methane = sep_bot.x.methane;
-	z_methane = sep_feed.z.methane;
-	
-	F_ethane = molar_flowrate(sep_feed.F, 'ethane') * YR_PER_SEC;
-	x_ethane = sep_bot.x.ethane;
-	z_ethane = sep_feed.z.ethane;
-	
-	F_ethylene = molar_flowrate(sep_feed.F, 'ethylene') * YR_PER_SEC;
-	x_ethylene = sep_bot.x.ethylene;
-	z_ethylene = sep_feed.z.ethylene;
-	
-	F_hydrogen = molar_flowrate(sep_feed.F, 'hydrogen') * YR_PER_SEC;
-	x_hydrogen = sep_bot.x.hydrogen;
-	z_hydrogen = sep_feed.z.hydrogen;
-	
-	F_propane = molar_flowrate(sep_feed.F, 'propane') * YR_PER_SEC;
-	x_propane = sep_bot.x.propane;
-	z_propane = sep_feed.z.propane;
-	
-	F_butane = molar_flowrate(sep_feed.F, 'butane') * YR_PER_SEC;
-	x_butane = sep_bot.x.butane;
-	z_butane = sep_feed.z.butane;
-
 	
 	% ?? Check what these variables acutally mean in the flow streams, super
 	% sus what I did 
 	T = sep_feed.T;		% ?? THIS BETTER BE IN KELVIN
-	P_in = sep_feed.P;
-
-	F_LPG = F_butane + F_propane;
-	F_H2 = F_hydrogen;
-	F_ME = F_methane;
-
-	% ??? Notes: ISA/TJ haven't designed the PSA yet. So we are assuming
-	% constant pressure. hence, why these values are hard coded
-	P_PSA_system = P_in;
-	P_ME = P_PSA_system * sep_top.y.methane;
-	P_H2 = P_PSA_system * sep_top.y.hydrogen;
-	P_ME = P_in;
-	P_H2 = P_in;
 	R = 8.314; 
-
-	%(J/s) =    (mol/s) * (J/mol K) * (T) 
-% 	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
-% 					F_LPG*R*T*log(x_propane/z_propane + ...
-% 								  x_butane/z_butane) + ...
-% 					F_ethylene*R*T*log(x_ethylene/z_ethylene) + ...
-% 					F_ethane*R*T*log(x_ethane/z_ethane) + ...
-% 					R*T*( ... 
-% 						F_H2*log(P_H2/P_in)+ ...
-% 						F_H2*log(x_hydrogen/z_hydrogen) +...
-% 						F_ME*log(x_methane/z_methane) +...
-% 						F_ME*log(P_ME/P_in)...
-% 						);
 	
 	% (mol/s) = (mol / yr)              * (yr / s)
 	L = total_molar_flowrate(sep_bot.F) * YR_PER_SEC;
@@ -1760,7 +1706,7 @@ end
 
 
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
-	global BAR_PER_KPA
+	global BAR_PER_KPA TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
 
 	% Packing all of the inputs into a convienent structure 
 	HYDROGEN = 1;
@@ -1819,6 +1765,13 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	% HEX E-104 | Heating up the Hydrogen PSA Feed 
 	sep_h1 = hex(sep_g1, 273.15 + 25);
 	heat_exchangers.hex_104 = sep_h1;
+
+	% PSA X-101 | PSA of hydrogen 
+	if TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
+
+	else
+
+	end
 	
 	% Gather info for console output 
 	info.separation_flowstreams = separation_flowstreams;
