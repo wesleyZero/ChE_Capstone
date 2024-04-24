@@ -151,9 +151,9 @@ ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX = true;
 % Separation System Thermodynamics 
 T_SEPARATION = 173.15; 			% [ K ] 
 P_SEPARATION = PRESS_RXTR; 		% [ bar ]
-MAX_OPEX = false;		% [ __ ]
+MAX_OPEX = true;		% [ __ ]
 MAX_TFCI = false;
-MAX_CAPEX = false;
+MAX_CAPEX = true;
 
 
 % Zeolite and waste stream
@@ -1547,59 +1547,58 @@ function [sep_top1, sep_btm1] = flash_v100(sep)
 end
 
 
-function [sep_top2, sep_bot2] = psa_water(sep_feed)
-	global SEC_PER_YR YR_PER_SEC GJ_PER_J
+function [sep_top, sep_bot] = psa_water(sep_feed)
+	global SEC_PER_YR YR_PER_SEC GJ_PER_J MAX_OPEX MAX_CAPEX
 	% Asusmption that the PSA perfectly separates the water
-
+	
+	% initalize vars 
 	sep_feed.heat = 0;
-
-	sep_top2 = sep_feed; 
-	sep_bot2 = sep_feed;
+	sep_top = sep_feed; 
+	sep_bot = sep_feed;
 	sep_feed.z = all_mol_fractions(sep_feed.F);
 
 	% Hard coding the tops stream flowrates 
-	sep_top2.F.water = 0 ;
-	sep_top2.y = all_mol_fractions(sep_top2.F);
+	sep_top.F.water = 0 ;
+	sep_top.y = all_mol_fractions(sep_top.F);
 
 	% Hard coding the bottoms stream flowrates 
-	sep_bot2.F.hydrogen = 0 ;
-	sep_bot2.F.methane = 0 ; 
-	sep_bot2.F.ethane = 0; 
-	sep_bot2.F.ethylene = 0;
-	sep_bot2.F.propane = 0 ;
-	sep_bot2.F.butane = 0 ;
-	sep_bot2.x = all_mol_fractions(sep_bot2.F);
+	sep_bot.F.hydrogen = 0 ;
+	sep_bot.F.methane = 0 ; 
+	sep_bot.F.ethane = 0; 
+	sep_bot.F.ethylene = 0;
+	sep_bot.F.propane = 0 ;
+	sep_bot.F.butane = 0 ;
+	sep_bot.x = all_mol_fractions(sep_bot.F);
 
 
 	% Defining the variables so that the W-min function not being touchedd
 	% mol/s = (mol / yr) * (sec / yr)
-		
 	F_water = molar_flowrate(sep_feed.F, 'water') * YR_PER_SEC;
-	x_water = sep_bot2.x.water;
+	x_water = sep_bot.x.water;
 	z_water = sep_feed.z.water;
 	
 	F_methane = molar_flowrate(sep_feed.F, 'methane') * YR_PER_SEC;
-	x_methane = sep_bot2.x.methane;
+	x_methane = sep_bot.x.methane;
 	z_methane = sep_feed.z.methane;
 	
 	F_ethane = molar_flowrate(sep_feed.F, 'ethane') * YR_PER_SEC;
-	x_ethane = sep_bot2.x.ethane;
+	x_ethane = sep_bot.x.ethane;
 	z_ethane = sep_feed.z.ethane;
 	
 	F_ethylene = molar_flowrate(sep_feed.F, 'ethylene') * YR_PER_SEC;
-	x_ethylene = sep_bot2.x.ethylene;
+	x_ethylene = sep_bot.x.ethylene;
 	z_ethylene = sep_feed.z.ethylene;
 	
 	F_hydrogen = molar_flowrate(sep_feed.F, 'hydrogen') * YR_PER_SEC;
-	x_hydrogen = sep_bot2.x.hydrogen;
+	x_hydrogen = sep_bot.x.hydrogen;
 	z_hydrogen = sep_feed.z.hydrogen;
 	
 	F_propane = molar_flowrate(sep_feed.F, 'propane') * YR_PER_SEC;
-	x_propane = sep_bot2.x.propane;
+	x_propane = sep_bot.x.propane;
 	z_propane = sep_feed.z.propane;
 	
 	F_butane = molar_flowrate(sep_feed.F, 'butane') * YR_PER_SEC;
-	x_butane = sep_bot2.x.butane;
+	x_butane = sep_bot.x.butane;
 	z_butane = sep_feed.z.butane;
 
 	
@@ -1615,28 +1614,72 @@ function [sep_top2, sep_bot2] = psa_water(sep_feed)
 	% ??? Notes: ISA/TJ haven't designed the PSA yet. So we are assuming
 	% constant pressure. hence, why these values are hard coded
 	P_PSA_system = P_in;
-	P_ME = P_PSA_system * sep_top2.y.methane;
-	P_H2 = P_PSA_system * sep_top2.y.hydrogen;
+	P_ME = P_PSA_system * sep_top.y.methane;
+	P_H2 = P_PSA_system * sep_top.y.hydrogen;
+	P_ME = P_in;
+	P_H2 = P_in;
 	R = 8.314; 
 
 	%(J/s) =    (mol/s) * (J/mol K) * (T) 
-	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
-					F_LPG*R*T*log(x_propane/z_propane + ...
-								  x_butane/z_butane) + ...
-					F_ethylene*R*T*log(x_ethylene/z_ethylene) + ...
-					F_ethane*R*T*log(x_ethane/z_ethane) + ...
-					R*T*( ... 
-						F_H2*log(P_H2/P_in)+ ...
-						F_H2*log(x_hydrogen/z_hydrogen) +...
-						F_ME*log(x_methane/z_methane) +...
-						F_ME*log(P_ME/P_in)...
-						);
+% 	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
+% 					F_LPG*R*T*log(x_propane/z_propane + ...
+% 								  x_butane/z_butane) + ...
+% 					F_ethylene*R*T*log(x_ethylene/z_ethylene) + ...
+% 					F_ethane*R*T*log(x_ethane/z_ethane) + ...
+% 					R*T*( ... 
+% 						F_H2*log(P_H2/P_in)+ ...
+% 						F_H2*log(x_hydrogen/z_hydrogen) +...
+% 						F_ME*log(x_methane/z_methane) +...
+% 						F_ME*log(P_ME/P_in)...
+% 						);
+	
+	% (mol/s) = (mol / yr)              * (yr / s)
+	L = total_molar_flowrate(sep_bot.F) * YR_PER_SEC;
+	V = total_molar_flowrate(sep_top.F) * YR_PER_SEC;
+
+	W_min_Sep_System = ...
+		... % Vapor flows
+			V * R * T * ( ... 
+				sep_top.y.hydrogen * log(sep_top.y.hydrogen / sep_feed.z.hydrogen) + ...
+				sep_top.y.methane * log(sep_top.y.methane / sep_feed.z.methane) + ...
+				sep_top.y.ethane * log(sep_top.y.ethane / sep_feed.z.ethane) + ...
+				sep_top.y.ethylene * log(sep_top.y.ethylene / sep_feed.z.ethylene) + ...
+				sep_top.y.propane * log(sep_top.y.propane / sep_feed.z.propane) + ...
+				sep_top.y.butane * log(sep_top.y.butane / sep_feed.z.butane)...
+				) + ...
+		... % Liquid Flows
+			L * R * T * ( ...
+				sep_bot.x.water * log(sep_bot.x.water / sep_feed.z.water)...
+				);
+
+	lamdba_min = 20;
+	lambda_max = 50;	
+	cost_energy = 3;		% ( $ / GJ )
+		% convert to the cost of electricity ASK TJ 
+
+	if MAX_OPEX
+	%($/yr)             =   (J/s)     * (GJ/J) * (Work Efficiency) *($/GJ)* (s/yr)
+		opex =  W_min_Sep_System*1e-9 * lambda_max * cost_energy * 30.24e6;
+	else
+		opex = W_min_Sep_System*1e-9 * lamdba_min * cost_energy * 30.24e6;
+	end
+
+	if MAX_CAPEX
+	%($) 				 = ($/W)    (Efficiency) * (J/s) 
+		capex = 1 * lambda_max * W_min_Sep_System;
+	else
+		capex = 0.5 * lamdba_min * W_min_Sep_System;
+	end
+
+	cost = 2.5 * capex ;
+	
+
 	% GJ/yr	         = (J / s)          * (GJ / J) * (s / yr)
 	W_min_Sep_System = W_min_Sep_System * GJ_PER_J * SEC_PER_YR;
-	
-	sep_bot2.heat = W_min_Sep_System;
-	sep_top2.heat = W_min_Sep_System;
-	
+	sep_bot.heat = W_min_Sep_System;
+	sep_top.heat = W_min_Sep_System;
+	sep_top.cost = cost; 
+	sep_bot.cost = cost;
 
 end
 
@@ -1761,7 +1804,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 		% should I quantify the waste water flowrate ?? I don't think I need to 
 
 	% % X-100 | PSA of Water | #2 
-	[sep_top2, sep_bot2] = psa_water(sep);
+	[sep_top2, sep_bot2] = psa_water(sep_top1);
 	heat_exchangers.psa_water = sep_top2.heat;
 
 
@@ -1791,8 +1834,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	info.heat_exchangers = heat_exchangers;
 	info.flowstreams.a1 = sep_effluent;
 	info.flowstreams.b1 = sep;
-	info.flowstreams.c1 = sep_top1;
-	info.flowstreams.c2 = sep_bot1;
+	info.flowstreams.c1 = sep_top2;
+	info.flowstreams.c2 = sep_bot2;
 	info.flowstreams.d1 = sep_top2;
 	info.flowstreams.d2 = sep_bot2;
 	info.flowstreams.e1 = sep_top3;
