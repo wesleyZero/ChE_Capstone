@@ -1,4 +1,3 @@
-	
 % Clear the console
 clc; 
 % Close all the windows
@@ -38,7 +37,8 @@ global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
 global CONV_MIN CONV_MAX KT_PER_MT BAR_PER_KPA
 global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
 	HEAT_CAPACITY_ETHYLENE HEAT_CAPACITY_PROPANE HEAT_CAPACITY_BUTANE ...
-	HEAT_CAPACITY_WATER GJ_PER_J TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
+	HEAT_CAPACITY_WATER GJ_PER_J TOGGLE_PSA_HYDROGEN_SEP_SYSTEM ...
+	MEGAPASCALS_PER_BAR KG_PER_G
 
 % USER NOTES____________________________________________________________________
 
@@ -110,7 +110,7 @@ NUM_T_POINTS = 1; 				% [ __ ]
 
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
-NUM_STEAM_POINTS = 4;			% [ __ ]
+NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
@@ -204,6 +204,7 @@ G_PER_KT = 10^9;		% [ g / kt ]
 KT_PER_G = 10^-9;		% [ kt / g ] 
 
 KG_PER_KT = 10^6;		% [ kg / MT ]
+KG_PER_G = 10^-3;
 
 MT_PER_G = 10^-6;		% [ MT / g ]
 
@@ -221,6 +222,7 @@ DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
 % Pressure
 BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
 BAR_PER_KPA = 0.01;			% [ Bar / kPa ]
+MEGAPASCALS_PER_BAR = 0.1;	% [ Mpa / bar ]
 
 % Time
 YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
@@ -951,23 +953,27 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("Mol Fraction Compositions [kta]\n")
 						info.flowstreams.c2.x 
 						
-						% disp("d1" + DIVIDER)
-						% info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
-						% info.flowstreams.d1
-						% fprintf("Mass flow rates [kta]\n")
-						% info.flowstreams.d1.F
+						disp("d1" + DIVIDER)
+						info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
+						info.flowstreams.d1
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d1.F
+						info.flowstreams.d2.y
 						
-						% disp("d2" + DIVIDER)
-						% info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
-						% fprintf("Mass flow rates [kta]\n")
-						% info.flowstreams.d2.F
-						% info.flowstreams.d2
+						disp("d2" + DIVIDER)
+						info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d2.F
+						info.flowstreams.d2
+						info.flowstreams.d2.x
+						info.flowstreams.d2.y
+
 						
-						% disp("e1" + DIVIDER)
-						% info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
-						% fprintf("Mass flow rates [kta]\n")
-						% info.flowstreams.e1.F
-						% info.flowstreams.e1
+% 						disp("e1" + DIVIDER)
+% 						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
+% 						fprintf("Mass flow rates [kta]\n")
+% 						info.flowstreams.e1.F
+% 						info.flowstreams.e1
 						
 						% disp("f1" + DIVIDER)
 						% info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
@@ -1708,6 +1714,8 @@ end
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	global BAR_PER_KPA TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
 
+	cost = 0;
+
 	% Packing all of the inputs into a convienent structure 
 	HYDROGEN = 1;
 	METHANE = 2;
@@ -1744,7 +1752,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	heat_exchangers.flash_water = sep_top1.heat; 
 	waste_streams.flash_waste = sep_bot1;
 
-	% % X-100 | PSA of Water | STREAM C1 & C2 
+	% % X-100 | PSA of Water | STREAM C1 & C2 are outputs
 	[sep_top2, sep_bot2] = psa_water(sep_top1);
 	heat_exchangers.psa_water = sep_top2.heat;
 	waste_streams.psa_waste = sep_bot2;
@@ -1767,10 +1775,13 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	heat_exchangers.hex_104 = sep_h1;
 
 	% PSA X-101 | PSA of hydrogen 
-	if TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
-
+	if TOGGLE_PSA_HYDROGEN_SEP_SYSTEM 
+		[sep_i1, sep_i2] = psa_hydrogen(sep_h1) ;
+		heat_exchangers = sep_i1.heat;
+		cost = cost + sep_i1.cost;
+		% ?? get the h2 flow rate to get the value
 	else
-
+		
 	end
 	
 	% Gather info for console output 
@@ -1778,19 +1789,106 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	info.heat_exchangers = heat_exchangers;
 	info.flowstreams.a1 = sep_effluent;
 	info.flowstreams.b1 = sep;
-	info.flowstreams.c1 = sep_top2;
-	info.flowstreams.c2 = sep_bot2;
-	% info.flowstreams.d1 = sep_top2;
-	% info.flowstreams.d2 = sep_bot2;
+	info.flowstreams.c1 = sep_top1;
+	info.flowstreams.c2 = sep_bot1;
+	info.flowstreams.d1 = sep_top2;
+	info.flowstreams.d2 = sep_bot2;
+	% info.flowstreams
+	% info.flowstreams.e1 = sep_e1;
 	% info.flowstreams.e1 = sep_top3;
 	% info.flowstreams.f1 = sep_top4;
 	% info.flowstreams.f2 = sep_bot4;
 	
-	cost = 0;
 
 	if opt == 'info'
 		cost = info;
 	end
+end
+
+function [sep_top, sep_bot] = psa_hydrogen(sep)
+	sep_top = sep;
+	sep_bot = sep;
+
+	sep_top.heat = 0;
+	sep_bot.heat = 0;
+
+	P_max = 35; 		% [ bar ] 
+	P_range = 2:P_max;		% [ bar ]
+	P_high = 20;
+	cost_of_bed = cost_bed(sep, P_high);
+	cost_of_bed = cost_of_bed * 4; % 4 vessels 
+	sep_top.cost = cost_of_bed;
+	sep_bot.cost = cost_of_bed;
+
+end
+
+function cost = cost_bed(sep, P_high)
+
+	cost_zeolite = 9.99;	% [ $ / kg ]
+	mass_bed = m_bed(sep, P_high);
+	cost = cost_zeolite * mass_bed;
+end
+
+function m = m_bed(sep_feed, P_high)
+	global YR_PER_SEC KG_PER_G
+	mol_per_mmol = 10^-3;
+	% mass is in kg
+	% assume the absorboption time is 300s 
+	% assume the species is completely absorbed 
+	% assume hydrogen is the only species in the retentate
+	% assume the fraction laoded is 75%
+
+	q_L = langmuir_absoption(sep_feed, sep_feed.P); % [ mol / kg]
+	q_H = langmuir_absoption(sep_feed, P_high);		% [ mol / kg]
+	f_load = 0.75;
+	
+	y_out = 0;
+
+	t_abs = 300; 							% [ sec ]
+	% mol/s  = mol / yr 			      * yr / sec
+	F = total_molar_flowrate(sep_feed.F) * YR_PER_SEC;
+	sep_feed.z = all_mol_fractions(sep_feed.F);
+	
+	sep_feed.F.methane = 0;
+	sep_feed.F.ethane = 0;
+	sep_feed.F.ethylene = 0;
+	sep_feed.F.propane = 0; 
+	sep_feed.F.butane = 0 ;
+	sep_feed.F.water = 0;
+	F_out = total_molar_flowrate(sep_feed.F);
+
+
+	numerator = (F * sep_feed.z.ethane - F_out * y_out) * t_abs;
+	denominator = (q_H - q_L) * f_load ;
+	% g = 
+	m = numerator / denominator;
+	m = m * KG_PER_G;
+
+end
+
+function q = langmuir_absoption(sep, P)
+	global MEGAPASCALS_PER_BAR
+	% Assumption: T = 303.15 K
+	% absoption params are for ethane 
+	% pressure input is in bar 
+
+	q_max = 2.38894; 	% [ mmol / g ]
+	B = 10.04194;		% [ 1 / Mpa ]
+
+	sep.z = all_mol_fractions(sep.F);
+
+	P = P * sep.z.ethane; % partial pressure of ethane
+	P = P * MEGAPASCALS_PER_BAR;
+	numerator = q_max * B * P;
+	denominator = 1 + B * P;
+
+	% mmol /g 
+	q = numerator / denominator;
+	mol_per_mmol = 10^-3;
+	g_per_kg = 10^3;
+	
+	% mol/kg = (mmol / g) * (mol / mmol) * (g / kg)
+	q = q * mol_per_mmol * g_per_kg;
 end
 
 
