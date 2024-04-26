@@ -40,6 +40,14 @@ global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
 	HEAT_CAPACITY_WATER GJ_PER_J TOGGLE_PSA_HYDROGEN_SEP_SYSTEM ...
 	MEGAPASCALS_PER_BAR KG_PER_G
 
+global switch_psa_graph
+
+
+
+switch_psa_graph = 0; 
+
+
+
 % USER NOTES____________________________________________________________________
 
 % Note: The primary (high level) units of this script are ... 
@@ -883,6 +891,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					cf = get_npv(npv_params);
 					npv(i, 1) = cf.lifetime_npv;
 					if conversion(i) > CONV_MIN && conversion(i) < CONV_MAX
+						switch_psa_graph = 1;
 						cf = get_npv(npv_params);
 						ideal_cf = cf;
 						ideal_params = npv_params
@@ -975,11 +984,11 @@ if (CALCULATE_REACTOR_FLOWS)
 						info.flowstreams.e1.F
 						info.flowstreams.e1
 						
-						% disp("f1" + DIVIDER)
-						% info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
-						% fprintf("Mass flow rates [kta]\n")
-						% info.flowstreams.f1.F
-						% info.flowstreams.f1
+						disp("f1" + DIVIDER)
+						info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.f1.F
+						info.flowstreams.f1
 						
 						% disp("f2" + DIVIDER)
 						% info.flowstreams.f2.T = info.flowstreams.f2.T - 273.15;
@@ -1279,8 +1288,21 @@ end
 function W = compressor_work(T, P_0, P_f)
 	R = 8.314;		% [ J / mol K]
 
-	W = - n * R * T * log(P_f / P_0);
+	W = - n * R * T * log(P_f / P_0);	
 
+	
+	% ?? THIS ALWAYS RETURNS 0 OR NULL, NOT IMPLEMENTED YET
+end
+
+function W = compressor_work_TJ(sep, P_f)
+	R = 8.314;		% [ J / mol K]
+	n = total_molar_flowrate(sep.F);
+	T = sep.T;
+	P_0 = sep.P;
+
+	W = - n * R * T * log10(P_f / P_0);	% ?? I think that it's base 10
+
+	
 	% ?? THIS ALWAYS RETURNS 0 OR NULL, NOT IMPLEMENTED YET
 end
 
@@ -1776,6 +1798,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	% Flash V-101 | Flash Distillation of Hydrogen / Other hydrocarbons
 	sep_g1 = flash(sep_f1, 'v101');	
+	sep_f1.name = 'Flash Distillation 2 (V101) feed, stream f1';
+	sep_g1.name = 'Stream g1, feed to cryogen HeX and output of v101 flash';
 
 	% HEX E-104 | Heating up the Hydrogen PSA Feed 
 	sep_h1 = hex(sep_g1, 273.15 + 25);
@@ -1783,7 +1807,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	% PSA X-101 | PSA of hydrogen 
 	if TOGGLE_PSA_HYDROGEN_SEP_SYSTEM 
-		[sep_i1, sep_i1] = psa_hydrogen(sep_h1) ;
+		[sep_i1, sep_i2] = psa_hydrogen(sep_h1) ;
 		heat_exchangers = sep_i1.heat;
 		cost = cost + sep_i1.cost;
 		% ?? get the h2 flow rate to get the value
@@ -1800,10 +1824,9 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	info.flowstreams.c2 = sep_bot1;
 	info.flowstreams.d1 = sep_top2;
 	info.flowstreams.d2 = sep_bot2;
-	
 	info.flowstreams.e1 = sep_e1;
-	% info.flowstreams.e1 = sep_top3;
-	% info.flowstreams.f1 = sep_top4;
+	
+	info.flowstreams.f1 = sep_f1; 
 	% info.flowstreams.f2 = sep_bot4;
 	
 
@@ -1812,7 +1835,34 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	end
 end
 
+function bhp = calculateBHP(inputPowerWatts, efficiency)
+    % Convert input power from watts to horsepower
+    inputPowerHP = inputPowerWatts / 745.7; % 1 horsepower = 745.7 watts
+    
+    % Adjust input power for efficiency
+    adjustedPowerHP = inputPowerHP * efficiency;
+    
+    % The adjusted power is equivalent to brake horsepower for most compressors
+    bhp = adjustedPowerHP;
+end
+
+function scfm = convert_to_scfm(temperature_K, pressure_bar, molar_flowrate_mol_per_year)
+    % Convert pressure from bar to absolute pressure in atm
+    pressure_atm = pressure_bar / 1.01325;
+    
+    % Convert molar flow rate from mol/year to mol/min
+    molar_flowrate_mol_per_min = molar_flowrate_mol_per_year / (60 * 24 * 365); % Convert mol/year to mol/min
+    
+    % Calculate the conversion factor based on ideal gas law
+    conversion_factor = (1 / 22.414) * (273.15 / temperature_K) * pressure_atm;
+    
+    % Convert molar flow rate to SCFM
+    scfm = molar_flowrate_mol_per_min * conversion_factor;
+end
+
 function [sep_top, sep_bot] = psa_hydrogen(sep)
+	global switch_psa_graph SEC_PER_YR
+
 	sep_top = sep;
 	sep_bot = sep;
 
@@ -1822,6 +1872,38 @@ function [sep_top, sep_bot] = psa_hydrogen(sep)
 	P_max = 35; 		% [ bar ] 
 	P_range = 2:P_max;		% [ bar ]
 	P_high = 20;
+	x = 2:35;
+	y = zeros(length(2:35));
+
+	purchased_cost_compressor = @(bhp) (1800/280) * 517.5 * (2.11 + 1) * bhp^0.82;
+	vol_press_ves = @(kg_zeolite) kg_zeolite / 795 * 1.2;
+	calculateL = @(V) (4 * V / pi)^(1/3);
+	calculateD = @(V) calculateL(V) / 4;
+	purchased_cost_pressure_vessel = @(kg_zeolite) 101.9 * (calculateD(vol_press_ves(kg_zeolite)))^1.066 * (calculateL(vol_press_ves(kg_zeolite)))^0.82;
+	i = 2;
+	if switch_psa_graph
+		for P_high = 2:35
+			cost_of_bed = cost_bed(sep, P_high);
+			cost_of_bed = cost_of_bed * 4;
+			
+			W_compressor = compressor_work_TJ(sep,P_high);
+			bhp_compressor = calculateBHP(W_compressor / SEC_PER_YR, 1);
+			
+% 			cost_compressor = purchased_cost_compressor(bhp_compressor);
+			cost_compressor = purchased_cost_compressor(-bhp_compressor);
+			cost_vessel = purchased_cost_pressure_vessel(m_bed(sep, P_high));
+			
+			y(i) = cost_of_bed + cost_compressor + cost_vessel;
+			i = i + 1;
+		end	
+		switch_psa_graph = 0;
+		figure
+		hold on  
+		title("psa h2 cost")
+		plot(x,y);
+		hold off
+
+	end
 	cost_of_bed = cost_bed(sep, P_high);
 	cost_of_bed = cost_of_bed * 4; % 4 vessels 
 	sep_top.cost = cost_of_bed;

@@ -1,4 +1,3 @@
-	
 % Clear the console
 clc; 
 % Close all the windows
@@ -38,7 +37,16 @@ global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
 global CONV_MIN CONV_MAX KT_PER_MT BAR_PER_KPA
 global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
 	HEAT_CAPACITY_ETHYLENE HEAT_CAPACITY_PROPANE HEAT_CAPACITY_BUTANE ...
-	HEAT_CAPACITY_WATER GJ_PER_J TOGGLE_PSA_HYDROGEN_SEP_SYSTEM MEGAPASCALS_PER_BAR
+	HEAT_CAPACITY_WATER GJ_PER_J TOGGLE_PSA_HYDROGEN_SEP_SYSTEM ...
+	MEGAPASCALS_PER_BAR KG_PER_G
+
+global switch_psa_graph
+
+
+
+switch_psa_graph = 0; 
+
+
 
 % USER NOTES____________________________________________________________________
 
@@ -110,7 +118,7 @@ NUM_T_POINTS = 1; 				% [ __ ]
 
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
-NUM_STEAM_POINTS = 4;			% [ __ ]
+NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
@@ -204,6 +212,7 @@ G_PER_KT = 10^9;		% [ g / kt ]
 KT_PER_G = 10^-9;		% [ kt / g ] 
 
 KG_PER_KT = 10^6;		% [ kg / MT ]
+KG_PER_G = 10^-3;
 
 MT_PER_G = 10^-6;		% [ MT / g ]
 
@@ -882,6 +891,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					cf = get_npv(npv_params);
 					npv(i, 1) = cf.lifetime_npv;
 					if conversion(i) > CONV_MIN && conversion(i) < CONV_MAX
+						switch_psa_graph = 1;
 						cf = get_npv(npv_params);
 						ideal_cf = cf;
 						ideal_params = npv_params
@@ -952,29 +962,33 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("Mol Fraction Compositions [kta]\n")
 						info.flowstreams.c2.x 
 						
-						% disp("d1" + DIVIDER)
-						% info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
-						% info.flowstreams.d1
-						% fprintf("Mass flow rates [kta]\n")
-						% info.flowstreams.d1.F
+						disp("d1" + DIVIDER)
+						info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
+						info.flowstreams.d1
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d1.F
+						info.flowstreams.d2.y
 						
-						% disp("d2" + DIVIDER)
-						% info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
-						% fprintf("Mass flow rates [kta]\n")
-						% info.flowstreams.d2.F
-						% info.flowstreams.d2
+						disp("d2" + DIVIDER)
+						info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d2.F
+						info.flowstreams.d2
+						info.flowstreams.d2.x
+						info.flowstreams.d2.y
+
 						
-						% disp("e1" + DIVIDER)
-						% info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
-						% fprintf("Mass flow rates [kta]\n")
-						% info.flowstreams.e1.F
-						% info.flowstreams.e1
+						disp("e1 : after the mixer " + DIVIDER)
+						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.e1.F
+						info.flowstreams.e1
 						
-						% disp("f1" + DIVIDER)
-						% info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
-						% fprintf("Mass flow rates [kta]\n")
-						% info.flowstreams.f1.F
-						% info.flowstreams.f1
+						disp("f1" + DIVIDER)
+						info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.f1.F
+						info.flowstreams.f1
 						
 						% disp("f2" + DIVIDER)
 						% info.flowstreams.f2.T = info.flowstreams.f2.T - 273.15;
@@ -1274,8 +1288,21 @@ end
 function W = compressor_work(T, P_0, P_f)
 	R = 8.314;		% [ J / mol K]
 
-	W = - n * R * T * log(P_f / P_0);
+	W = - n * R * T * log(P_f / P_0);	
 
+	
+	% ?? THIS ALWAYS RETURNS 0 OR NULL, NOT IMPLEMENTED YET
+end
+
+function W = compressor_work_TJ(sep, P_f)
+	R = 8.314;		% [ J / mol K]
+	n = total_molar_flowrate(sep.F);
+	T = sep.T;
+	P_0 = sep.P;
+
+	W = - n * R * T * log10(P_f / P_0);	% ?? I think that it's base 10
+
+	
 	% ?? THIS ALWAYS RETURNS 0 OR NULL, NOT IMPLEMENTED YET
 end
 
@@ -1709,6 +1736,8 @@ end
 function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	global BAR_PER_KPA TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
 
+	cost = 0;
+
 	% Packing all of the inputs into a convienent structure 
 	HYDROGEN = 1;
 	METHANE = 2;
@@ -1745,7 +1774,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	heat_exchangers.flash_water = sep_top1.heat; 
 	waste_streams.flash_waste = sep_bot1;
 
-	% % X-100 | PSA of Water | STREAM C1 & C2 
+	% % X-100 | PSA of Water | STREAM C1 & C2 are outputs
 	[sep_top2, sep_bot2] = psa_water(sep_top1);
 	heat_exchangers.psa_water = sep_top2.heat;
 	waste_streams.psa_waste = sep_bot2;
@@ -1754,6 +1783,13 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	% MIXER 101 | STREAM D1 & J1 are inputs
 	sep_i1 = sep_top2; % ?? REPLACE ME WITH THE REAL STREAM 
+	sep_i1.F.hydrogen = 1.7958;
+	sep_i1.F.methane = 0.0059;
+	sep_i1.F.ethylene = 1.9272;
+	sep_i1.F.propane = 0.0;
+	sep_i1.F.butane = 0.0008;
+	sep_i1.F.water = 0;
+	sep_i1.F.ethane = .20;
 	sep_e1 = mixer_101(sep_top2, sep_i1);
 
 	%  HEX E-102 | Cryogenic Distillation Cooler
@@ -1762,15 +1798,18 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	% Flash V-101 | Flash Distillation of Hydrogen / Other hydrocarbons
 	sep_g1 = flash(sep_f1, 'v101');	
+	sep_f1.name = 'Flash Distillation 2 (V101) feed, stream f1';
+	sep_g1.name = 'Stream g1, feed to cryogen HeX and output of v101 flash';
 
 	% HEX E-104 | Heating up the Hydrogen PSA Feed 
 	sep_h1 = hex(sep_g1, 273.15 + 25);
 	heat_exchangers.hex_104 = sep_h1;
 
 	% PSA X-101 | PSA of hydrogen 
-	if TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
+	if TOGGLE_PSA_HYDROGEN_SEP_SYSTEM 
 		[sep_i1, sep_i2] = psa_hydrogen(sep_h1) ;
 		heat_exchangers = sep_i1.heat;
+		cost = cost + sep_i1.cost;
 		% ?? get the h2 flow rate to get the value
 	else
 		
@@ -1781,44 +1820,95 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	info.heat_exchangers = heat_exchangers;
 	info.flowstreams.a1 = sep_effluent;
 	info.flowstreams.b1 = sep;
-	info.flowstreams.c1 = sep_top2;
-	info.flowstreams.c2 = sep_bot2;
-	% info.flowstreams.d1 = sep_top2;
-	% info.flowstreams.d2 = sep_bot2;
-	% info.flowstreams.e1 = sep_top3;
-	% info.flowstreams.f1 = sep_top4;
+	info.flowstreams.c1 = sep_top1;
+	info.flowstreams.c2 = sep_bot1;
+	info.flowstreams.d1 = sep_top2;
+	info.flowstreams.d2 = sep_bot2;
+	info.flowstreams.e1 = sep_e1;
+	
+	info.flowstreams.f1 = sep_f1; 
 	% info.flowstreams.f2 = sep_bot4;
 	
-	cost = 0;
 
 	if opt == 'info'
 		cost = info;
 	end
 end
 
+function bhp = calculateBHP(inputPowerWatts, efficiency)
+    % Convert input power from watts to horsepower
+    inputPowerHP = inputPowerWatts / 745.7; % 1 horsepower = 745.7 watts
+    
+    % Adjust input power for efficiency
+    adjustedPowerHP = inputPowerHP * efficiency;
+    
+    % The adjusted power is equivalent to brake horsepower for most compressors
+    bhp = adjustedPowerHP;
+end
+
+function scfm = convert_to_scfm(temperature_K, pressure_bar, molar_flowrate_mol_per_year)
+    % Convert pressure from bar to absolute pressure in atm
+    pressure_atm = pressure_bar / 1.01325;
+    
+    % Convert molar flow rate from mol/year to mol/min
+    molar_flowrate_mol_per_min = molar_flowrate_mol_per_year / (60 * 24 * 365); % Convert mol/year to mol/min
+    
+    % Calculate the conversion factor based on ideal gas law
+    conversion_factor = (1 / 22.414) * (273.15 / temperature_K) * pressure_atm;
+    
+    % Convert molar flow rate to SCFM
+    scfm = molar_flowrate_mol_per_min * conversion_factor;
+end
+
 function [sep_top, sep_bot] = psa_hydrogen(sep)
+	global switch_psa_graph SEC_PER_YR
+
 	sep_top = sep;
 	sep_bot = sep;
 
 	sep_top.heat = 0;
 	sep_bot.heat = 0;
-	
 
 	P_max = 35; 		% [ bar ] 
-	P_range = 2:35;		% [ bar ]
-	cost = zeros(length(P_range));
-	i = 1;
-	for P_high = P_range
-		cost_of_bed = cost_bed(sep, P_high);
-		cost_of_bed = cost_of_bed * 4; % 4 vessels 
-		cost(i) = cost_of_bed;
-		i = i + 1;
+	P_range = 2:P_max;		% [ bar ]
+	P_high = 20;
+	x = 2:35;
+	y = zeros(length(2:35));
+
+	purchased_cost_compressor = @(bhp) (1800/280) * 517.5 * (2.11 + 1) * bhp^0.82;
+	vol_press_ves = @(kg_zeolite) kg_zeolite / 795 * 1.2;
+	calculateL = @(V) (4 * V / pi)^(1/3);
+	calculateD = @(V) calculateL(V) / 4;
+	purchased_cost_pressure_vessel = @(kg_zeolite) 101.9 * ()^1.066 * ()^0.82
+	i = 2;
+	if switch_psa_graph
+		for P_high = 2:35
+			cost_of_bed = cost_bed(sep, P_high);
+			cost_of_bed = cost_of_bed * 4;
+			
+			W_compressor = compressor_work_TJ(sep,P_high);
+			bhp_compressor = calculateBHP(W_compressor / SEC_PER_YR, 1);
+			
+% 			cost_compressor = purchased_cost_compressor(bhp_compressor);
+			cost_compressor = purchased_cost_compressor(-bhp_compressor);
+			cost_vessel = 
+			
+			y(i) = cost_of_bed + cost_compressor;
+			i = i + 1;
+		end	
+		switch_psa_graph = 0;
+		figure
+		hold on  
+		title("psa h2 cost")
+		plot(x,y);
+		hold off
+
 	end
-	figure
-	hold on 
-	title("cost of psa h2")
-	plot(P_range, cost);
-	hold off 
+	cost_of_bed = cost_bed(sep, P_high);
+	cost_of_bed = cost_of_bed * 4; % 4 vessels 
+	sep_top.cost = cost_of_bed;
+	sep_bot.cost = cost_of_bed;
+
 end
 
 function cost = cost_bed(sep, P_high)
@@ -1826,13 +1916,10 @@ function cost = cost_bed(sep, P_high)
 	cost_zeolite = 9.99;	% [ $ / kg ]
 	mass_bed = m_bed(sep, P_high);
 	cost = cost_zeolite * mass_bed;
-
-
-
 end
 
 function m = m_bed(sep_feed, P_high)
-	global YR_PER_SEC KT_PER_G
+	global YR_PER_SEC KG_PER_G
 	mol_per_mmol = 10^-3;
 	% mass is in kg
 	% assume the absorboption time is 300s 
@@ -1864,7 +1951,7 @@ function m = m_bed(sep_feed, P_high)
 	denominator = (q_H - q_L) * f_load ;
 	% g = 
 	m = numerator / denominator;
-	m = m * KT_PER_G;
+	m = m * KG_PER_G;
 
 end
 
@@ -1879,7 +1966,7 @@ function q = langmuir_absoption(sep, P)
 
 	sep.z = all_mol_fractions(sep.F);
 
-	P = P * sep.z.ethane; % partial pressure of
+	P = P * sep.z.ethane; % partial pressure of ethane
 	P = P * MEGAPASCALS_PER_BAR;
 	numerator = q_max * B * P;
 	denominator = 1 + B * P;
@@ -1887,8 +1974,10 @@ function q = langmuir_absoption(sep, P)
 	% mmol /g 
 	q = numerator / denominator;
 	mol_per_mmol = 10^-3;
-	g_per_kg = 10
-	q = q * 
+	g_per_kg = 10^3;
+	
+	% mol/kg = (mmol / g) * (mol / mmol) * (g / kg)
+	q = q * mol_per_mmol * g_per_kg;
 end
 
 

@@ -1,0 +1,22 @@
+clc; clear; close all; 
+
+
+
+% area is in ft^2 
+A = [ ];
+cost = 0;
+toggle_h2 = true;
+
+
+for	a = A
+	if a > 25000
+		for 
+	if toggle_h2 
+		hex_i_cost = (1800 / 280) * 101.3 * a^0.65 * 3.75;
+	else
+		hex_i_cost = (1800 / 280) * 101.3 * a^0.65;
+	end
+	cost = cost + hex_i_cost;
+end
+
+cost
