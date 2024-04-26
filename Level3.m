@@ -1607,7 +1607,7 @@ function cf = get_npv(npv)
 	% RETURN 
 	cf.matrix = cash_flow_matrix;
 	cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
-	cf.lifetime_npv = cf.lifetime_npv * (124.4/169)
+	cf.lifetime_npv = cf.lifetime_npv * (124.4/160)
 end
 
 
