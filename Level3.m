@@ -99,11 +99,11 @@ NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
 P_MAX = 5;						% [ Bar ]
-NUM_P_POINTS = 1;				% [ __ ]
+NUM_P_POINTS = 4;				% [ __ ]
 
 T_MIN = 775;					% [ Celcius ]
 T_MAX = 825;					% [ Celcius ]
-NUM_T_POINTS = 1; 				% [ __ ]
+NUM_T_POINTS = 4; 				% [ __ ]
 
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
@@ -111,9 +111,9 @@ NUM_STEAM_POINTS = 4;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
-	T_P_OVERRIDE_T = true;
+	T_P_OVERRIDE_T = false;
 		T_OVERRIDE = 825;			% [C]
-	T_P_OVERRIDE_P = true;
+	T_P_OVERRIDE_P = false;
 		P_OVERRIDE = 2;				% [Bar]
 	T_P_OVERRIDE_MR = false;
 		STEAM_MR_OVERRIDE = 0.6;		% [__]
@@ -1607,7 +1607,7 @@ function cf = get_npv(npv)
 	% RETURN 
 	cf.matrix = cash_flow_matrix;
 	cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
-	cf.lifetime_npv = cf.lifetime_npv * (124.4/160)
+	cf.lifetime_npv = cf.lifetime_npv * (124.4/160);
 end
 
 
@@ -1809,7 +1809,7 @@ function void = plot_conversion_fxns(fxns)
 	ylabel(ylab);
 	hold off
 	
-	% NPV (T, P, MR) | Varying T
+% 	% NPV (T, P, MR) | Varying T
 % 	hold on 
 % 	figure;
 % 	tit = "NPV [ $ MM ]";
@@ -1818,7 +1818,7 @@ function void = plot_conversion_fxns(fxns)
 % 	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 % 
 % 	y = [];
-% 	for i = 1:length(fxns.npv_T_P_MR(: , 1, 1 ))
+% 	for i = 1:length(fxns.npv_T_P_MR(: , 1, 1, 1))
 % 		temp =fxns.npv_T_P_MR( i , 1, 1) ;
 % 		y = [ y , fxns.npv_T_P_MR( i , 1, 1) ];
 % 	end
@@ -1836,6 +1836,36 @@ function void = plot_conversion_fxns(fxns)
 % 	xlabel(xlab);
 % 	ylabel(ylab);
 % 	hold off
+
+	% NPV (T, P, MR) | Varying T
+	figure
+	hold on
+% 	figure
+	y = zeros(1,1);
+% 	for i = 1:length(fxns.npv_T_P_MR(1,1,:,1))
+	num_of_molarRatios = length(fxns.npv_T_P_MR(1,1,:,1));
+% 	for i = 1:num_of_molarRatios
+	lbls = fxns.npv_T_P_MR_lbls.temperatures;
+	lgd = {};
+	for i = 1:length(fxns.npv_T_P_MR_lbls.steamRatios)
+		% T P MR
+		fxns.npv_T_P_MR(1, 1, i, :);
+		for j = 1:length(fxns.conversion)
+			y(j,1) = fxns.npv_T_P_MR(1, 1, i, j);
+		end
+		x = fxns.conversion;
+		y(y <= 0) = NaN;
+
+% 		lbls(i) = num2str(fxns.npv_T_P_MR_lbls.steamRatios(i));
+% 		lgd{i} = "MR = " + num2str(lbls(i));
+		lgd{i} = "T = " + sprintf("%3.3f", lbls(i));
+		plot(x,y);
+	end
+	legend(lgd)
+	title("NPV at different Temperatures")
+	xlabel('\chi')
+	ylabel('$ MM')
+	hold off
 
 	% NPV (T, P, MR) | Varying MR 
 	figure
