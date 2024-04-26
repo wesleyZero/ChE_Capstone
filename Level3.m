@@ -107,7 +107,7 @@ NUM_T_POINTS = 4; 				% [ __ ]
 
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
-NUM_STEAM_POINTS = 4;			% [ __ ]
+NUM_STEAM_POINTS =4;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
@@ -631,14 +631,18 @@ F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in kta
 % ?? experimental change
 npv_T_P_MR = zeros(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE), 1);
 npv_T_P_MR_labels = cell(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE));
+npv_temp_data = zeros(length(T_RANGE), 1);
 
 ii = 1;
 jj = 1;
 kk = 1;
 if (CALCULATE_REACTOR_FLOWS)
 	disp("Reactor Script ")
+	ii = 1;
 	for T_i = T_RANGE
+		jj = 1;
 		for P_i = P_RANGE
+			kk = 1;
 			for MR_S_i = STEAM_RANGE
 				disp("________________________________________________________________")
 				% override the T_i and P_i with user input 
@@ -868,6 +872,7 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_T_P_MR_lbls.pressures = P_RANGE;
 					npv_T_P_MR_lbls.temperatures = T_RANGE;
 					% npv_T_P_MR_labels{ii,jj, kk} = 
+					npv_temp_data(i) = npv(i,1 );
 
 
 		
@@ -937,6 +942,7 @@ fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
 fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
 fxns.npv_T_P_MR = npv_T_P_MR;
 fxns.npv_T_P_MR_lbls = npv_T_P_MR_lbls;
+fxns.npv_temp_data = npv_temp_data;
 
 plot_conversion_fxns(fxns);
 
@@ -1843,22 +1849,24 @@ function void = plot_conversion_fxns(fxns)
 % 	figure
 	y = zeros(1,1);
 % 	for i = 1:length(fxns.npv_T_P_MR(1,1,:,1))
-	num_of_molarRatios = length(fxns.npv_T_P_MR(1,1,:,1));
+	num_of_molarRatios = length(fxns.npv_T_P_MR(:,1,1,1));
 % 	for i = 1:num_of_molarRatios
 	lbls = fxns.npv_T_P_MR_lbls.temperatures;
 	lgd = {};
-	for i = 1:length(fxns.npv_T_P_MR_lbls.steamRatios)
+	for i = 1:length(fxns.npv_T_P_MR_lbls.temperatures)
 		% T P MR
-		fxns.npv_T_P_MR(1, 1, i, :);
+		fxns.npv_T_P_MR(i, 1, 1, :);
 		for j = 1:length(fxns.conversion)
-			y(j,1) = fxns.npv_T_P_MR(1, 1, i, j);
+			y(j,1) = fxns.npv_T_P_MR(1, i, 1, j);
+
 		end
+		% y = fxns.npv_temp_data;
 		x = fxns.conversion;
 		y(y <= 0) = NaN;
 
 % 		lbls(i) = num2str(fxns.npv_T_P_MR_lbls.steamRatios(i));
 % 		lgd{i} = "MR = " + num2str(lbls(i));
-		lgd{i} = "T = " + sprintf("%3.3f", lbls(i));
+		lgd{i} = "T = " + sprintf("%3.3f", lbls(length(fxns.npv_T_P_MR_lbls.temperatures) - i + 1 ));
 		plot(x,y);
 	end
 	legend(lgd)
