@@ -1843,7 +1843,7 @@ function void = plot_conversion_fxns(fxns)
 % 	ylabel(ylab);
 % 	hold off
 
-	% NPV (T, P, MR) | Varying T
+	% NPV (T, P, MR) | Varying P
 	figure
 	hold on
 % 	figure
@@ -1851,13 +1851,39 @@ function void = plot_conversion_fxns(fxns)
 % 	for i = 1:length(fxns.npv_T_P_MR(1,1,:,1))
 	num_of_molarRatios = length(fxns.npv_T_P_MR(:,1,1,1));
 % 	for i = 1:num_of_molarRatios
+	lbls = fxns.npv_T_P_MR_lbls.pressures;
+	lgd = {};
+	for i = 1:length(fxns.npv_T_P_MR_lbls.pressures)
+		% T P MR
+		for j = 1:length(fxns.conversion)
+			y(j,1) = fxns.npv_T_P_MR(4, i, 1, j);
+
+		end
+		x = fxns.conversion;
+		y(y <= 0) = NaN;
+
+% 		lbls(i) = num2str(fxns.npv_T_P_MR_lbls.steamRatios(i));
+% 		lgd{i} = "MR = " + num2str(lbls(i));
+		lgd{i} = "P = " + sprintf("%3.3f", lbls(i ));
+		plot(x,y);
+	end
+	legend(lgd)
+	title("NPV at different Pressures")
+	xlabel('\chi')
+	ylabel('$ MM')
+	hold off
+
+
+	% NPV (T, P, MR) | Varying T
+	figure
+	hold on
+	y = zeros(1,1);
 	lbls = fxns.npv_T_P_MR_lbls.temperatures;
 	lgd = {};
 	for i = 1:length(fxns.npv_T_P_MR_lbls.temperatures)
 		% T P MR
-		fxns.npv_T_P_MR(i, 1, 1, :);
 		for j = 1:length(fxns.conversion)
-			y(j,1) = fxns.npv_T_P_MR(1, i, 1, j);
+			y(j,1) = fxns.npv_T_P_MR(i, 1, 1, j);
 
 		end
 		% y = fxns.npv_temp_data;
