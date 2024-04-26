@@ -40,6 +40,11 @@ global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
 	HEAT_CAPACITY_WATER GJ_PER_J TOGGLE_PSA_HYDROGEN_SEP_SYSTEM ...
 	MEGAPASCALS_PER_BAR KG_PER_G
 
+global switch_psa_graph
+
+
+
+switch_psa_graph = 0; 
 
 
 
@@ -323,12 +328,10 @@ ENTHALPY_NAT_GAS = ENTHALPY_METHANE;
 % Enthalpy of Reactions [ kJ / extent rxn]
 ENTHALPY_RXN_1 = HEAT_FORMATION_HYDROGEN + HEAT_FORMATION_ETHYLENE ...
 										- HEAT_FORMATION_ETHANE;
-% ENTHALPY_RXN_2 = HEAT_FORMATION_METHANE + HEAT_FORMATION_PROPANE ...
-% 										- 2 * HEAT_FORMATION_ETHANE; 
-ENTHALPY_RXN_2 = -11.97; % from project statement 
-ENTHALPY_RXN_3 = -52.47; % from project statement 
-% ENTHALPY_RXN_3 = HEAT_FORMATION_BUTANE - HEAT_FORMATION_ETHANE ...
-% 										- HEAT_FORMATION_ETHYLENE;
+ENTHALPY_RXN_2 = HEAT_FORMATION_METHANE + HEAT_FORMATION_PROPANE ...
+										- 2 * HEAT_FORMATION_ETHANE; 
+ENTHALPY_RXN_3 = HEAT_FORMATION_ETHANE - HEAT_FORMATION_ETHANE ...
+										- HEAT_FORMATION_ETHYLENE;
 % CONSTANTS | ECONOMICS____________________________________________________
 
 %  Chemicals
@@ -824,7 +827,6 @@ if (CALCULATE_REACTOR_FLOWS)
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 					heat_flux = heat_flux + heat_rxn(xi);
 
-
 					info.heatflux.heatingFreshEthane = heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 					info.heatflux.heatingRecycleEthane = heat_ethane(R_ethane, T_SEPARATION + C_TO_K, TEMP_RXTR);
 					info.heatflux.heatingSteam = heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR);
@@ -873,30 +875,6 @@ if (CALCULATE_REACTOR_FLOWS)
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
 
 					% NPV params
-					% npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
-					% npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
-					% npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
-					% npv_params.utilitiesCost = (cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) ...
-					% 							+ cost_waste_stream(F_steam)...
-					% 							) * MMDOLLA_PER_DOLLA;
-					% npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
-					% npv_params.conversion = conversion(i);
-					% npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + ...
-					% 						cost_separation_system(P_flowrates, F_steam, R_ethane, NaN) + ...
-					% 						calculate_installed_cost(heat_flux)) * MMDOLLA_PER_DOLLA;
-
-					% cost_sep_system_new.heater = 320538.16;
-					% cost_sep_system_new.coolers = 56303802;
-					% cost_sep_system_new.compressors = 8647186;
-					% cost_sep_system_new.hex = 22745108;
-
-					cost_sep_system_new.heater = 9.11 * 10^5;
-					cost_sep_system_new.coolers = 56303802;
-					cost_sep_system_new.compressors = 8647186;
-					cost_sep_system_new.hex = 22745108;
-
-					% cost_sep_utilities 
-
 					npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
 					npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
 					npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
@@ -906,16 +884,13 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
 					npv_params.conversion = conversion(i);
 					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + ...
-											cost_sep_system_new.heater + ...
-											cost_sep_system_new.coolers + ... 
-											cost_sep_system_new.compressors + ...
-											cost_sep_system_new.hex + ...
+											cost_separation_system(P_flowrates, F_steam, R_ethane, NaN) + ...
 											calculate_installed_cost(heat_flux)) * MMDOLLA_PER_DOLLA;
+
 					% NPV calculations 
 					cf = get_npv(npv_params);
 					npv(i, 1) = cf.lifetime_npv;
 					if conversion(i) > CONV_MIN && conversion(i) < CONV_MAX
-
 						switch_psa_graph = 1;
 						cf = get_npv(npv_params);
 						ideal_cf = cf;
@@ -951,13 +926,6 @@ if (CALCULATE_REACTOR_FLOWS)
 						% info.separation_flowstreams.bot1.T 
 						% info.separation_flowstreams.bot1.P
 						% info.heat_exchangers
-
-						TJinfo.Fsteam_kta = F_steam;
-						TJinfo.fuelCost_dollas = cost_natural_gas_fuel(F_natural_gas);
-						TJinfo.steamCost_dollas = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
-						TJinfo.c02_tax_dollas = tax_C02(combusted_fuel_flow_rates, F_natural_gas);
-					
-						TJinfo
 
 						DIVIDER = "______________________________________________";
 						disp("Flowstreams (note T is in Celcius )")
@@ -1538,13 +1506,6 @@ function [sep_top, sep_btm]= rachford_rice(sep, K)
 
 	phi = fzero(@(phi) f_phi(phi, sep, K), init_cond);
 
-	if phi > 1
-		phi = 1;
-	elseif phi < 0
-		phi = 0;
-	end
-	
-
 	% Liquid compositions 
 	x.hydrogen = sep.x.hydrogen / (1 + phi*(K.hydrogen - 1));
 	x.methane = sep.x.methane / (1 + phi*(K.methane - 1));
@@ -1874,15 +1835,15 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	end
 end
 
-function bhp = calculateBHP(inputPowerWatts, efficiency)
-    % Convert input power from watts to horsepower
-    inputPowerHP = inputPowerWatts / 745.7; % 1 horsepower = 745.7 watts
+function bhp = calculate_bhp(input_power_kw, efficiency, flow_rate_cfm, pressure_ratio)
+    % Convert flow rate from CFM to cubic meters per minute (m^3/min)
+    flow_rate_m3_per_min = flow_rate_cfm / 35.3147;
     
-    % Adjust input power for efficiency
-    adjustedPowerHP = inputPowerHP * efficiency;
+    % Calculate BHP using the formula
+    bhp = (flow_rate_m3_per_min * pressure_ratio) / (229 * efficiency);
     
-    % The adjusted power is equivalent to brake horsepower for most compressors
-    bhp = adjustedPowerHP;
+    % Convert BHP to kilowatts
+    bhp = bhp * 0.7457; % 1 horsepower (HP) = 0.7457 kilowatts (kW)
 end
 
 function scfm = convert_to_scfm(temperature_K, pressure_bar, molar_flowrate_mol_per_year)
@@ -1900,7 +1861,7 @@ function scfm = convert_to_scfm(temperature_K, pressure_bar, molar_flowrate_mol_
 end
 
 function [sep_top, sep_bot] = psa_hydrogen(sep)
-	global switch_psa_graph SEC_PER_YR
+	global switch_psa_graph
 
 	sep_top = sep;
 	sep_bot = sep;
@@ -1909,63 +1870,38 @@ function [sep_top, sep_bot] = psa_hydrogen(sep)
 	sep_bot.heat = 0;
 
 	P_max = 35; 		% [ bar ] 
-% 	P_range = 2:P_max;		% [ bar ]
-	P_high = 13;
-	
-	
-% 	
-% 	x = 2:35;
-% 	y = zeros(length(2:35));
-% 
-% 	purchased_cost_compressor = @(bhp) (1800/280) * 517.5 * (2.11 + 1) * bhp^0.82;
-% 	vol_press_ves = @(kg_zeolite) kg_zeolite / 795 * 1.2;
-% 	calculateL = @(V) (4 * V / pi)^(1/3);
-% 	calculateD = @(V) calculateL(V) / 4;
-% 	purchased_cost_pressure_vessel = @(kg_zeolite) 101.9 * (calculateD(vol_press_ves(kg_zeolite)))^1.066 * (calculateL(vol_press_ves(kg_zeolite)))^0.82;
-% 	i = 2;
-% 	if switch_psa_graph
-% 		for P_high = 2:35
-% 			cost_of_bed = cost_bed(sep, P_high);
-% 			cost_of_bed = cost_of_bed * 4;
-% 			
-% 			W_compressor = compressor_work_TJ(sep,P_high);
-% 			bhp_compressor = calculateBHP(W_compressor / SEC_PER_YR, 1);
-% 			
-% % 			cost_compressor = purchased_cost_compressor(bhp_compressor);
-% 			cost_compressor = purchased_cost_compressor(-bhp_compressor);
-% 			cost_vessel = purchased_cost_pressure_vessel(m_bed(sep, P_high));
-% 			
-% 			y(i) = cost_of_bed + cost_compressor + cost_vessel;
-% 			i = i + 1;
-% 		end	
-% 		switch_psa_graph = 0;
-% 		figure
-% 		hold on  
-% 		title("psa h2 cost")
-% 		plot(x,y);
-% 		hold off
-% 
-% 	end
+	P_range = 2:P_max;		% [ bar ]
+	P_high = 20;
+	x = 2:35;
+	y = zeros(length(2:35));
 
-	ft_per_meter = 3.28;
-	vol_press_ves = @(kg_zeolite) (kg_zeolite / 795) * 1.2;
-	calculateL = @(V) (V * 64 / 3.14159)^(1/3);
-	calculateD = @(V) (V / 3.14159)^(1/3);
-	purchased_cost_pressure_vessel = @(kg_zeo, D, H, Fc) (1800/280) * 101.9 * (D^1.066) * (H^0.82) * (3.18 + Fc);
-	
+	purchased_cost_compressor = @(bhp) 517.5 * (2.11 + 1) * bhp^0.82;
+
+	i = 2;
+	if switch_psa_graph
+		for P_high = 2:35
+			cost_of_bed = cost_bed(sep, P_high);
+			cost_of_bed = cost_of_bed * 4;
+			
+			W_compressor = compressor_work_TJ(sep,P_high);
+			bhp_compressor = calculate_bhp(W_compressor * 10^-3, 1, convert_to_scfm(sep.T, sep.P, total_mass_flowrate(sep.F)), P_high / sep.P);
+			cost_compressor = purchased_cost_compressor(bhp_compressor);
+
+			y(i) = cost_of_bed + cost_compressor;
+			i = i + 1;
+		end	
+		switch_psa_graph = 0;
+		figure
+		hold on  
+		title("psa h2 cost")
+		plot(x,y);
+		hold off
+
+	end
 	cost_of_bed = cost_bed(sep, P_high);
 	cost_of_bed = cost_of_bed * 4; % 4 vessels 
-	
-	mass_bed = m_bed(sep, P_high);
-	V = vol_press_ves(mass_bed);
-	L = calculateL(V);
-	D = calculateD(V);
-	cost_vessels = purchased_cost_pressure_vessel(mass_bed, D *ft_per_meter , L * ft_per_meter, 2.25);
-	cost_vessels = cost_vessels * 4;
-
-
-	sep_top.cost = cost_of_bed + cost_vessels;
-	sep_bot.cost = cost_of_bed + cost_vessels;
+	sep_top.cost = cost_of_bed;
+	sep_bot.cost = cost_of_bed;
 
 end
 
@@ -1996,21 +1932,20 @@ function m = m_bed(sep_feed, P_high)
 	F = total_molar_flowrate(sep_feed.F) * YR_PER_SEC;
 	sep_feed.z = all_mol_fractions(sep_feed.F);
 	
-	sep_out = sep_feed;
-	sep_out.F.methane = 0;
-	sep_out.F.ethane = 0;
-	sep_out.F.ethylene = 0;
-	sep_out.F.propane = 0; 
-	sep_out.F.butane = 0 ;
-	sep_out.F.water = 0;
-	F_out = total_molar_flowrate(sep_out.F) * YR_PER_SEC;
+	sep_feed.F.methane = 0;
+	sep_feed.F.ethane = 0;
+	sep_feed.F.ethylene = 0;
+	sep_feed.F.propane = 0; 
+	sep_feed.F.butane = 0 ;
+	sep_feed.F.water = 0;
+	F_out = total_molar_flowrate(sep_feed.F);
 
 
 	numerator = (F * sep_feed.z.ethane - F_out * y_out) * t_abs;
 	denominator = (q_H - q_L) * f_load ;
 	% g = 
 	m = numerator / denominator;
-	m = m;
+	m = m * KG_PER_G;
 
 end
 
@@ -2057,7 +1992,7 @@ function K = get_flash_K_values(flash_title)
 		K.methane = 1.389;
 		K.propane = 2.281 * 10^-5;
 		K.butane = 2.726 * 10^-6;
-		K.water = 0.00000001;
+		K.water = 0;
 	end
 
 end	
