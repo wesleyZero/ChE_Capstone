@@ -1506,6 +1506,13 @@ function [sep_top, sep_btm]= rachford_rice(sep, K)
 
 	phi = fzero(@(phi) f_phi(phi, sep, K), init_cond);
 
+	if phi > 1
+		phi = 1;
+	elseif phi < 0
+		phi = 0;
+	end
+	
+
 	% Liquid compositions 
 	x.hydrogen = sep.x.hydrogen / (1 + phi*(K.hydrogen - 1));
 	x.methane = sep.x.methane / (1 + phi*(K.methane - 1));
@@ -1870,44 +1877,63 @@ function [sep_top, sep_bot] = psa_hydrogen(sep)
 	sep_bot.heat = 0;
 
 	P_max = 35; 		% [ bar ] 
-	P_range = 2:P_max;		% [ bar ]
-	P_high = 20;
-	x = 2:35;
-	y = zeros(length(2:35));
+% 	P_range = 2:P_max;		% [ bar ]
+	P_high = 13;
+	
+	
+% 	
+% 	x = 2:35;
+% 	y = zeros(length(2:35));
+% 
+% 	purchased_cost_compressor = @(bhp) (1800/280) * 517.5 * (2.11 + 1) * bhp^0.82;
+% 	vol_press_ves = @(kg_zeolite) kg_zeolite / 795 * 1.2;
+% 	calculateL = @(V) (4 * V / pi)^(1/3);
+% 	calculateD = @(V) calculateL(V) / 4;
+% 	purchased_cost_pressure_vessel = @(kg_zeolite) 101.9 * (calculateD(vol_press_ves(kg_zeolite)))^1.066 * (calculateL(vol_press_ves(kg_zeolite)))^0.82;
+% 	i = 2;
+% 	if switch_psa_graph
+% 		for P_high = 2:35
+% 			cost_of_bed = cost_bed(sep, P_high);
+% 			cost_of_bed = cost_of_bed * 4;
+% 			
+% 			W_compressor = compressor_work_TJ(sep,P_high);
+% 			bhp_compressor = calculateBHP(W_compressor / SEC_PER_YR, 1);
+% 			
+% % 			cost_compressor = purchased_cost_compressor(bhp_compressor);
+% 			cost_compressor = purchased_cost_compressor(-bhp_compressor);
+% 			cost_vessel = purchased_cost_pressure_vessel(m_bed(sep, P_high));
+% 			
+% 			y(i) = cost_of_bed + cost_compressor + cost_vessel;
+% 			i = i + 1;
+% 		end	
+% 		switch_psa_graph = 0;
+% 		figure
+% 		hold on  
+% 		title("psa h2 cost")
+% 		plot(x,y);
+% 		hold off
+% 
+% 	end
 
-	purchased_cost_compressor = @(bhp) (1800/280) * 517.5 * (2.11 + 1) * bhp^0.82;
-	vol_press_ves = @(kg_zeolite) kg_zeolite / 795 * 1.2;
-	calculateL = @(V) (4 * V / pi)^(1/3);
-	calculateD = @(V) calculateL(V) / 4;
-	purchased_cost_pressure_vessel = @(kg_zeolite) 101.9 * (calculateD(vol_press_ves(kg_zeolite)))^1.066 * (calculateL(vol_press_ves(kg_zeolite)))^0.82;
-	i = 2;
-	if switch_psa_graph
-		for P_high = 2:35
-			cost_of_bed = cost_bed(sep, P_high);
-			cost_of_bed = cost_of_bed * 4;
-			
-			W_compressor = compressor_work_TJ(sep,P_high);
-			bhp_compressor = calculateBHP(W_compressor / SEC_PER_YR, 1);
-			
-% 			cost_compressor = purchased_cost_compressor(bhp_compressor);
-			cost_compressor = purchased_cost_compressor(-bhp_compressor);
-			cost_vessel = purchased_cost_pressure_vessel(m_bed(sep, P_high));
-			
-			y(i) = cost_of_bed + cost_compressor + cost_vessel;
-			i = i + 1;
-		end	
-		switch_psa_graph = 0;
-		figure
-		hold on  
-		title("psa h2 cost")
-		plot(x,y);
-		hold off
-
-	end
+	ft_per_meter = 3.28;
+	vol_press_ves = @(kg_zeolite) (kg_zeolite / 795) * 1.2;
+	calculateL = @(V) (V * 64 / 3.14159)^(1/3);
+	calculateD = @(V) (V / 3.14159)^(1/3);
+	purchased_cost_pressure_vessel = @(kg_zeo, D, H, Fc) (1800/280) * 101.9 * (D^1.066) * (H^0.82) * (3.18 + Fc);
+	
 	cost_of_bed = cost_bed(sep, P_high);
 	cost_of_bed = cost_of_bed * 4; % 4 vessels 
-	sep_top.cost = cost_of_bed;
-	sep_bot.cost = cost_of_bed;
+	
+	mass_bed = m_bed(sep, P_high);
+	V = vol_press_ves(mass_bed);
+	L = calculateL(V);
+	D = calculateD(V);
+	cost_vessels = purchased_cost_pressure_vessel(mass_bed, D *ft_per_meter , L * ft_per_meter, 2.25);
+	cost_vessels = cost_vessels * 4;
+
+
+	sep_top.cost = cost_of_bed + cost_vessels;
+	sep_bot.cost = cost_of_bed + cost_vessels;
 
 end
 
@@ -1938,20 +1964,21 @@ function m = m_bed(sep_feed, P_high)
 	F = total_molar_flowrate(sep_feed.F) * YR_PER_SEC;
 	sep_feed.z = all_mol_fractions(sep_feed.F);
 	
-	sep_feed.F.methane = 0;
-	sep_feed.F.ethane = 0;
-	sep_feed.F.ethylene = 0;
-	sep_feed.F.propane = 0; 
-	sep_feed.F.butane = 0 ;
-	sep_feed.F.water = 0;
-	F_out = total_molar_flowrate(sep_feed.F);
+	sep_out = sep_feed;
+	sep_out.F.methane = 0;
+	sep_out.F.ethane = 0;
+	sep_out.F.ethylene = 0;
+	sep_out.F.propane = 0; 
+	sep_out.F.butane = 0 ;
+	sep_out.F.water = 0;
+	F_out = total_molar_flowrate(sep_out.F) * YR_PER_SEC;
 
 
 	numerator = (F * sep_feed.z.ethane - F_out * y_out) * t_abs;
 	denominator = (q_H - q_L) * f_load ;
 	% g = 
 	m = numerator / denominator;
-	m = m * KG_PER_G;
+	m = m;
 
 end
 
@@ -1998,7 +2025,7 @@ function K = get_flash_K_values(flash_title)
 		K.methane = 1.389;
 		K.propane = 2.281 * 10^-5;
 		K.butane = 2.726 * 10^-6;
-		K.water = 0;
+		K.water = 0.00000001;
 	end
 
 end	

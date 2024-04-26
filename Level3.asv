@@ -1870,42 +1870,59 @@ function [sep_top, sep_bot] = psa_hydrogen(sep)
 	sep_bot.heat = 0;
 
 	P_max = 35; 		% [ bar ] 
-	P_range = 2:P_max;		% [ bar ]
-	P_high = 20;
-	x = 2:35;
-	y = zeros(length(2:35));
+% 	P_range = 2:P_max;		% [ bar ]
+	P_high = 13;
+	
+	
+% 	
+% 	x = 2:35;
+% 	y = zeros(length(2:35));
+% 
+% 	purchased_cost_compressor = @(bhp) (1800/280) * 517.5 * (2.11 + 1) * bhp^0.82;
+% 	vol_press_ves = @(kg_zeolite) kg_zeolite / 795 * 1.2;
+% 	calculateL = @(V) (4 * V / pi)^(1/3);
+% 	calculateD = @(V) calculateL(V) / 4;
+% 	purchased_cost_pressure_vessel = @(kg_zeolite) 101.9 * (calculateD(vol_press_ves(kg_zeolite)))^1.066 * (calculateL(vol_press_ves(kg_zeolite)))^0.82;
+% 	i = 2;
+% 	if switch_psa_graph
+% 		for P_high = 2:35
+% 			cost_of_bed = cost_bed(sep, P_high);
+% 			cost_of_bed = cost_of_bed * 4;
+% 			
+% 			W_compressor = compressor_work_TJ(sep,P_high);
+% 			bhp_compressor = calculateBHP(W_compressor / SEC_PER_YR, 1);
+% 			
+% % 			cost_compressor = purchased_cost_compressor(bhp_compressor);
+% 			cost_compressor = purchased_cost_compressor(-bhp_compressor);
+% 			cost_vessel = purchased_cost_pressure_vessel(m_bed(sep, P_high));
+% 			
+% 			y(i) = cost_of_bed + cost_compressor + cost_vessel;
+% 			i = i + 1;
+% 		end	
+% 		switch_psa_graph = 0;
+% 		figure
+% 		hold on  
+% 		title("psa h2 cost")
+% 		plot(x,y);
+% 		hold off
+% 
+% 	end
 
-	purchased_cost_compressor = @(bhp) (1800/280) * 517.5 * (2.11 + 1) * bhp^0.82;
-	vol_press_ves = @(kg_zeolite) kg_zeolite / 795 * 1.2;
+	vol_press_ves = @(kg_zeolite) (kg_zeolite / 795) * 1.2;
 	calculateL = @(V) (4 * V / pi)^(1/3);
 	calculateD = @(V) calculateL(V) / 4;
-	purchased_cost_pressure_vessel = @(kg_zeolite) 101.9 * ()^1.066 * ()^0.82
-	i = 2;
-	if switch_psa_graph
-		for P_high = 2:35
-			cost_of_bed = cost_bed(sep, P_high);
-			cost_of_bed = cost_of_bed * 4;
-			
-			W_compressor = compressor_work_TJ(sep,P_high);
-			bhp_compressor = calculateBHP(W_compressor / SEC_PER_YR, 1);
-			
-% 			cost_compressor = purchased_cost_compressor(bhp_compressor);
-			cost_compressor = purchased_cost_compressor(-bhp_compressor);
-			cost_vessel = 
-			
-			y(i) = cost_of_bed + cost_compressor;
-			i = i + 1;
-		end	
-		switch_psa_graph = 0;
-		figure
-		hold on  
-		title("psa h2 cost")
-		plot(x,y);
-		hold off
-
-	end
+	purchased_cost_pressure_vessel = @(kg_zeo, D, H, Fc) (1800/280) * 101.9 * (D^1.066) * (H^0.82) * (3.18 + Fc);
+	
 	cost_of_bed = cost_bed(sep, P_high);
 	cost_of_bed = cost_of_bed * 4; % 4 vessels 
+	
+	mass_bed = m_bed(sep, P_high);
+	V = vol_press_ves(mass_bed);
+	L = calculateL(V);
+	D = calculateD(V);
+	cost_vessels = purchased_cost_pressure_vessel(mass_bed, D, L, 1)
+
+
 	sep_top.cost = cost_of_bed;
 	sep_bot.cost = cost_of_bed;
 
