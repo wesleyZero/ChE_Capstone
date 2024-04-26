@@ -969,11 +969,11 @@ if (CALCULATE_REACTOR_FLOWS)
 						info.flowstreams.d2.y
 
 						
-% 						disp("e1" + DIVIDER)
-% 						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
-% 						fprintf("Mass flow rates [kta]\n")
-% 						info.flowstreams.e1.F
-% 						info.flowstreams.e1
+						disp("e1 : after the mixer " + DIVIDER)
+						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.e1.F
+						info.flowstreams.e1
 						
 						% disp("f1" + DIVIDER)
 						% info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
@@ -1761,6 +1761,13 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	% MIXER 101 | STREAM D1 & J1 are inputs
 	sep_i1 = sep_top2; % ?? REPLACE ME WITH THE REAL STREAM 
+	sep_i1.F.hydrogen = 1.7958;
+	sep_i1.F.methane = 0.0059;
+	sep_i1.F.ethylene = 1.9272;
+	sep_i1.F.propane = 0.0;
+	sep_i1.F.butane = 0.0008;
+	sep_i1.F.water = 0;
+	sep_i1.F.ethane = .20;
 	sep_e1 = mixer_101(sep_top2, sep_i1);
 
 	%  HEX E-102 | Cryogenic Distillation Cooler
@@ -1776,7 +1783,7 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 
 	% PSA X-101 | PSA of hydrogen 
 	if TOGGLE_PSA_HYDROGEN_SEP_SYSTEM 
-		[sep_i1, sep_i2] = psa_hydrogen(sep_h1) ;
+		[sep_i1, sep_i1] = psa_hydrogen(sep_h1) ;
 		heat_exchangers = sep_i1.heat;
 		cost = cost + sep_i1.cost;
 		% ?? get the h2 flow rate to get the value
@@ -1793,8 +1800,8 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
 	info.flowstreams.c2 = sep_bot1;
 	info.flowstreams.d1 = sep_top2;
 	info.flowstreams.d2 = sep_bot2;
-	% info.flowstreams
-	% info.flowstreams.e1 = sep_e1;
+	
+	info.flowstreams.e1 = sep_e1;
 	% info.flowstreams.e1 = sep_top3;
 	% info.flowstreams.f1 = sep_top4;
 	% info.flowstreams.f2 = sep_bot4;
