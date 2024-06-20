@@ -65,7 +65,7 @@ end
 
 
 
-## What I learned (not) to do, and do in the second project 
+## What I learned not to do, and do correctly in the second project 
 
 1. I created a huge massive script, I (once again) vastly underestimated the scope of the project (how large it was going to become) so it became a massive mess. 
 
