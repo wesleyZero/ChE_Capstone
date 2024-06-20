@@ -10,4 +10,6 @@ This was the first capstone project, of a two-part series for my chemical engine
 
 3. I did not use structures, and instead [used a TON of constants](https://github.com/wesleyZero/ChE_Capstone/blob/newBranch/Level3.m#L58-L370). At my internship at KARL STORZ I learned (from reading others code) that structures make things so much cleaner in MATLAB code. Why don't people just create classes and objects in MATLAB? I have no idea. The MATLAB-way seem to be to make a bunch of structures. 
 
+4. Use [way too many lambda functions (anonymous functions)](https://github.com/wesleyZero/ChE_Capstone/blob/newBranch/Level3.m#L372-L444). I clearly like lambda functions and they are very nice for making some functions more readable. But the way I used them in this huge script wasn't making things easier to understand, it was making it harder. 
+
 
