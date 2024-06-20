@@ -1,4 +1,3 @@
-
 % Clear the console
 clc; 
 % Close all the windows
@@ -35,7 +34,14 @@ global R k1_f k1_r k2 k3 R_2 C_TO_K YR_PER_SEC SEC_PER_YR MOLMASS_HYDROGEN
 global PSA_TOGGLE ENTHALPY_HYDROGEN T_SEPARATION P_SEPARATION M3_PER_L DENSITY_LIQ_WATER
 global MAX_CAPEX MAX_OPEX MAX_TFCI PRESS_RXTR YEARS_IN_OPERATION MILLIONBTU_PER_GJ YR_PER_HR HR_PER_YR 
 global T_OVERRIDE P_OVERRIDE STEAM_MR_OVERRIDE
-global CONV_MIN CONV_MAX
+global CONV_MIN CONV_MAX KT_PER_MT BAR_PER_KPA
+global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
+	HEAT_CAPACITY_ETHYLENE HEAT_CAPACITY_PROPANE HEAT_CAPACITY_BUTANE ...
+	HEAT_CAPACITY_WATER GJ_PER_J TOGGLE_PSA_HYDROGEN_SEP_SYSTEM ...
+	MEGAPASCALS_PER_BAR KG_PER_G
+
+
+
 
 % USER NOTES____________________________________________________________________
 
@@ -99,24 +105,24 @@ NUM_V_POINTS = 20;				% [ __ ]
 
 P_MIN = 2;						% [ Bar ]
 P_MAX = 5;						% [ Bar ]
-NUM_P_POINTS = 4;				% [ __ ]
+NUM_P_POINTS = 1;				% [ __ ]
 
 T_MIN = 775;					% [ Celcius ]
 T_MAX = 825;					% [ Celcius ]
-NUM_T_POINTS = 4; 				% [ __ ]
+NUM_T_POINTS = 1; 				% [ __ ]
 
 STEAM_MIN = 0.6;				% [ __ ]
 STEAM_MAX = 1.0;				% [ __ ]
-NUM_STEAM_POINTS =4;			% [ __ ]
+NUM_STEAM_POINTS = 2;			% [ __ ]
 
 % Table Overrides | RXTR TABLE OUTPUT
 T_P_OVERRIDE = true;		
-	T_P_OVERRIDE_T = false;
+	T_P_OVERRIDE_T = true;
 		T_OVERRIDE = 825;			% [C]
-	T_P_OVERRIDE_P = false;
+	T_P_OVERRIDE_P = true;
 		P_OVERRIDE = 2;				% [Bar]
-	T_P_OVERRIDE_MR = false;
-		STEAM_MR_OVERRIDE = 0.6;		% [__]
+	T_P_OVERRIDE_MR = true;
+		STEAM_MR_OVERRIDE = 1;		% [__]
 	CONV_MIN = 0.7199999;
 	CONV_MAX = 0.7299999;
 
@@ -138,8 +144,11 @@ CALCULATE_ALL_SELECTIVITIES = true;
 % Output the Reactor Design tables
 CALCULATE_REACTOR_FLOWS = true;
 
-% PSA Toggle switch
+% PSA Toggle switch | OLD TOGGLE 
 PSA_TOGGLE = true;
+
+% H2 PSA Toggle switch | NEW TOGGLE
+TOGGLE_PSA_HYDROGEN_SEP_SYSTEM = true; % true -> PSA is on 
 
 % Do you want to add the work of the compressor to the heat flux of heating 
 % the steam from the temp it's avilable at, to the temp of the reactor?
@@ -148,9 +157,9 @@ ADD_COMPRESSOR_WORK_TO_STEAM_HEATFLUX = true;
 % Separation System Thermodynamics 
 T_SEPARATION = 173.15; 			% [ K ] 
 P_SEPARATION = PRESS_RXTR; 		% [ bar ]
-MAX_OPEX = false;		% [ __ ]
+MAX_OPEX = true;		% [ __ ]
 MAX_TFCI = false;
-MAX_CAPEX = false;
+MAX_CAPEX = true;
 
 
 % Zeolite and waste stream
@@ -192,17 +201,20 @@ PROFIT_S1S2_OPT = { ...
 
 % Mass
 MT_PER_KT = 10^3;		% [ MT / kt ]
+KT_PER_MT = 10^-3;		% [ kt / MT]
 
 G_PER_KT = 10^9;		% [ g / kt ]
 KT_PER_G = 10^-9;		% [ kt / g ] 
 
 KG_PER_KT = 10^6;		% [ kg / MT ]
+KG_PER_G = 10^-3;
 
 MT_PER_G = 10^-6;		% [ MT / g ]
 
 % Energy
 GJ_PER_KJ = 10^-6;		% [ GJ / kJ ]
 KJ_PER_GJ = 10^6;		% [ kJ / GJ ]
+GJ_PER_J = 10^-9;		% [ GJ / J ]
 
 % Temperature		
 C_TO_K = 273.15;		% [ C -> K ]
@@ -212,6 +224,8 @@ DOLLA_PER_MMDOLLA = 10^6;	% [ $ / $ MM ]
 
 % Pressure
 BAR_PER_PSIA = 0.0689476;	% [ Bar / Psia ]
+BAR_PER_KPA = 0.01;			% [ Bar / kPa ]
+MEGAPASCALS_PER_BAR = 0.1;	% [ Mpa / bar ]
 
 % Time
 YR_PER_SEC = 1 / (3.154 * 10^7);	% [ yr / s ]
@@ -269,6 +283,16 @@ HEAT_CAPACITY_WATER = 33.79 * 10^-3;	% [ kJ / mol K ] Ref Temp = 298K
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C14940637&Mask=1&Type=JANAFG&Table=on
 HEAT_CAPACITY_ETHANE = 52.71 * 10^-3;	% [ kJ / mol K ] Reference Temp = 300K 
 	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74840&Units=SI&Mask=1EFF
+HEAT_CAPACITY_METHANE = 52.23 * 10^-3;	% [ kJ / mol K ] Reference Temp  = 600K 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Mask=1&Type=JANAFG&Table=on
+HEAT_CAPACITY_ETHYLENE = 70.62 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74851&Mask=1&Type=JANAFG&Table=on
+HEAT_CAPACITY_PROPANE = 128.7 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600K 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Mask=1
+HEAT_CAPACITY_BUTANE = 169.28 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C106978&Mask=1
+HEAT_CAPACITY_HYDROGEN = 29.32 * 10^-3;	% [ kJ / mol K ] Reference Temp = 600k 
+	% Source : https://webbook.nist.gov/cgi/cbook.cgi?ID=C1333740&Mask=1&Type=JANAFG&Table=on
 
 % Heats of Formation (at 25C)
 HEAT_FORMATION_ETHANE = -83.8;			% [ kJ / mol ] reference Temp = std
@@ -299,10 +323,12 @@ ENTHALPY_NAT_GAS = ENTHALPY_METHANE;
 % Enthalpy of Reactions [ kJ / extent rxn]
 ENTHALPY_RXN_1 = HEAT_FORMATION_HYDROGEN + HEAT_FORMATION_ETHYLENE ...
 										- HEAT_FORMATION_ETHANE;
-ENTHALPY_RXN_2 = HEAT_FORMATION_METHANE + HEAT_FORMATION_PROPANE ...
-										- 2 * HEAT_FORMATION_ETHANE; 
-ENTHALPY_RXN_3 = HEAT_FORMATION_ETHANE - HEAT_FORMATION_ETHANE ...
-										- HEAT_FORMATION_ETHYLENE;
+% ENTHALPY_RXN_2 = HEAT_FORMATION_METHANE + HEAT_FORMATION_PROPANE ...
+% 										- 2 * HEAT_FORMATION_ETHANE; 
+ENTHALPY_RXN_2 = -11.97; % from project statement 
+ENTHALPY_RXN_3 = -52.47; % from project statement 
+% ENTHALPY_RXN_3 = HEAT_FORMATION_BUTANE - HEAT_FORMATION_ETHANE ...
+% 										- HEAT_FORMATION_ETHYLENE;
 % CONSTANTS | ECONOMICS____________________________________________________
 
 %  Chemicals
@@ -631,18 +657,14 @@ F_INTIAL_COND = [ 0; 0; 0; 0; 0; 10]; % These are in kta
 % ?? experimental change
 npv_T_P_MR = zeros(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE), 1);
 npv_T_P_MR_labels = cell(length(T_RANGE), length(P_RANGE), length(STEAM_RANGE));
-npv_temp_data = zeros(length(T_RANGE), 1);
 
 ii = 1;
 jj = 1;
 kk = 1;
 if (CALCULATE_REACTOR_FLOWS)
 	disp("Reactor Script ")
-	ii = 1;
 	for T_i = T_RANGE
-		jj = 1;
 		for P_i = P_RANGE
-			kk = 1;
 			for MR_S_i = STEAM_RANGE
 				disp("________________________________________________________________")
 				% override the T_i and P_i with user input 
@@ -677,7 +699,7 @@ if (CALCULATE_REACTOR_FLOWS)
 				% Calculate the molar flow rate of the steam
 				% mol/s = __    * mol / s
 				F_steam = MR_S_i * F_INTIAL_COND(ETHANE);
-				
+
 				% Solve the system ODE's 
 				%	(L, mol / s)           (L, mol/s, Celcius, Bar, mol/s)
 				odes = @(V, F) reactionODEs(V, F, T_i, P_i, F_steam);
@@ -768,7 +790,7 @@ if (CALCULATE_REACTOR_FLOWS)
 
 				% ECONOMIC CALCULATIONS____________________________________________________________
 				profit = zeros(length(F_soln_ODE(:,1)), 1);
-				for i = 1:length(F_soln_ODE(:, 1))
+				for i = 2:length(F_soln_ODE(:, 1))
 					
 					P_flowrates = F_soln_ODE(i , HYDROGEN:BUTANE);
 					
@@ -790,13 +812,26 @@ if (CALCULATE_REACTOR_FLOWS)
 					% Calculate the heat flux needed to keep reactor isothermal 
 					heat_flux = 0;
 					xi = get_xi(P_flowrates);
-					% F_steam = STEAM_TO_FEED_RATIO_MASS * (F_fresh_ethane + R_ethane);
+		
 					F_steam = MR_MOL_2_MASS_CONV_FACTOR * MR_S_i * (F_fresh_ethane + R_ethane);
+					
+					
+					% ?? Idk why this bug is happending, hard coded fix for the time being 
+					F_steam = F_steam .* (148.298 / 201.1880);
 
 					heat_flux = heat_flux + heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
 					heat_flux = heat_flux + heat_ethane(R_ethane, T_SEPARATION + C_TO_K, TEMP_RXTR);
 					heat_flux = heat_flux + heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR) ;
 					heat_flux = heat_flux + heat_rxn(xi);
+
+
+					info.heatflux.heatingFreshEthane = heat_ethane(F_fresh_ethane, TEMP_ETHANE_FEED, TEMP_RXTR);
+					info.heatflux.heatingRecycleEthane = heat_ethane(R_ethane, T_SEPARATION + C_TO_K, TEMP_RXTR);
+					info.heatflux.heatingSteam = heat_steam(F_steam, STEAM_CHOICE, PRESS_RXTR, TEMP_RXTR);
+					info.heatflux.heatRxn =heat_rxn(xi); 
+
+					% DEBUGGING | Hard Code the heat flux from aspen 
+					% heat_flux = 1.32 * 10^6 + 1.09 * 10^6;
 
 		 			% Use the heat flux to calculate the fuel cost	
 					[combusted_fuel_flow_rates, heat_flux_remaining] = fuel_combustion(heat_flux, P_flowrates);
@@ -825,11 +860,11 @@ if (CALCULATE_REACTOR_FLOWS)
 					profit(i, 1) = profit(i, 1) - value_ethane(F_fresh_ethane);
 					profit(i, 1) = profit(i, 1) - cost_natural_gas_fuel(F_natural_gas);
 					profit(i, 1) = profit(i, 1) - cost_waste_stream(F_steam);
-					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane);
+					profit(i, 1) = profit(i, 1) - cost_separation_system(P_flowrates, F_steam, R_ethane, NaN);
 					profit(i, 1) = profit(i, 1) - calculate_installed_cost(heat_flux);
 					
 					% Store Data For analysis
-					fxns.separationCosts(i, 1) = cost_separation_system(P_flowrates, F_steam, R_ethane); 
+					fxns.separationCosts(i, 1) = cost_separation_system(P_flowrates, F_steam, R_ethane, NaN); 
 					fxns.furnaceCosts(i, 1)  = calculate_installed_cost(heat_flux);
 					fxns.F_steam(i, 1) = F_steam;
 					fxns.F_fresh_ethane(i, 1) = F_fresh_ethane;
@@ -838,6 +873,30 @@ if (CALCULATE_REACTOR_FLOWS)
 					conserv_mass(i, 1) = F_fresh_ethane - sum(P_flowrates);
 
 					% NPV params
+					% npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
+					% npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
+					% npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
+					% npv_params.utilitiesCost = (cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL)) ...
+					% 							+ cost_waste_stream(F_steam)...
+					% 							) * MMDOLLA_PER_DOLLA;
+					% npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
+					% npv_params.conversion = conversion(i);
+					% npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + ...
+					% 						cost_separation_system(P_flowrates, F_steam, R_ethane, NaN) + ...
+					% 						calculate_installed_cost(heat_flux)) * MMDOLLA_PER_DOLLA;
+
+					% cost_sep_system_new.heater = 320538.16;
+					% cost_sep_system_new.coolers = 56303802;
+					% cost_sep_system_new.compressors = 8647186;
+					% cost_sep_system_new.hex = 22745108;
+
+					cost_sep_system_new.heater = 9.11 * 10^5;
+					cost_sep_system_new.coolers = 56303802;
+					cost_sep_system_new.compressors = 8647186;
+					cost_sep_system_new.hex = 22745108;
+
+					% cost_sep_utilities 
+
 					npv_params.mainProductRevenue = value_ethylene(P_ethylene) * MMDOLLA_PER_DOLLA;
 					npv_params.byProductRevenue = value_h2_chem(P_hydrogen - combusted_hydrogen) * MMDOLLA_PER_DOLLA; 
 					npv_params.rawMaterialsCost = value_ethane(F_fresh_ethane) * MMDOLLA_PER_DOLLA;
@@ -847,13 +906,17 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_params.CO2sustainabilityCharge = tax_C02(combusted_fuel_flow_rates, F_natural_gas) * MMDOLLA_PER_DOLLA; 
 					npv_params.conversion = conversion(i);
 					npv_params.ISBLcapitalCost = (cost_rxt_vec(i) + ...
-											cost_separation_system(P_flowrates, F_steam, R_ethane) + ...
+											cost_sep_system_new.heater + ...
+											cost_sep_system_new.coolers + ... 
+											cost_sep_system_new.compressors + ...
+											cost_sep_system_new.hex + ...
 											calculate_installed_cost(heat_flux)) * MMDOLLA_PER_DOLLA;
-
 					% NPV calculations 
 					cf = get_npv(npv_params);
 					npv(i, 1) = cf.lifetime_npv;
 					if conversion(i) > CONV_MIN && conversion(i) < CONV_MAX
+
+						switch_psa_graph = 1;
 						cf = get_npv(npv_params);
 						ideal_cf = cf;
 						ideal_params = npv_params
@@ -862,6 +925,108 @@ if (CALCULATE_REACTOR_FLOWS)
 						fprintf("Annual C02 Tax $ MM %3.3f\n", npv_params.CO2sustainabilityCharge)
 						fprintf("Natural Gas Flowrate [kta] %3.3f\n", F_natural_gas)
 						fprintf("Steam Flowrate [kta] %3.3f\n", F_steam)
+						F_co2 = flowrate_C02(combusted_fuel_flow_rates, F_natural_gas);
+						combusted_fuel_flow_rates
+						info.heatflux
+						disp("product flow rates (h2 meth ethylene prop but)")
+						P_flowrates
+						F_fresh_ethane
+						R_ethane
+						fprintf("Reator volume %3.3f [L]\n", i)
+						fprintf("C02 Flowrate [kta] %3.3f, C02 / ethylene ratio %3.3f\n", F_co2, F_co2 / 200);
+						fprintf("Heat flux required for system %3.3f [GJ]\n",heat_flux)
+						info = cost_separation_system(P_flowrates, F_steam, R_ethane, "info");
+						% disp("Effluent composition");
+						% info.separation_flowstreams.effluent.z
+						% info.separation_flowstreams.effluent.T 
+						% info.separation_flowstreams.effluent.P
+				
+						% disp("Tops compositions of Flash Dist 1 ")
+						% info.separation_flowstreams.top1.y
+						% info.separation_flowstreams.top1.T 
+						% info.separation_flowstreams.top1.P 
+					
+						% disp("Bottoms Composition of Flash Dist 1")
+						% info.separation_flowstreams.bot1.x
+						% info.separation_flowstreams.bot1.T 
+						% info.separation_flowstreams.bot1.P
+						% info.heat_exchangers
+
+						TJinfo.Fsteam_kta = F_steam;
+						TJinfo.fuelCost_dollas = cost_natural_gas_fuel(F_natural_gas);
+						TJinfo.steamCost_dollas = cost_steam(F_steam, COST_RATES_STEAM(STEAM_CHOICE, STEAM_COST_COL));
+						TJinfo.c02_tax_dollas = tax_C02(combusted_fuel_flow_rates, F_natural_gas);
+					
+						TJinfo
+
+						DIVIDER = "______________________________________________";
+						disp("Flowstreams (note T is in Celcius )")
+
+						disp ("a1" + DIVIDER)
+						info.flowstreams.a1.T = info.flowstreams.a1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.a1.F
+						info.flowstreams.a1
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.a1.x 
+						
+						disp("b1" + DIVIDER)
+						info.flowstreams.b1.T = info.flowstreams.b1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.b1.F
+						info.flowstreams.b1
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.b1.x 
+						
+						disp("c1" + DIVIDER)
+						info.flowstreams.c1.T = info.flowstreams.c1.T - 273.15;
+						info.flowstreams.c1
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.c1.F
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.c1.y 
+						
+						disp("c2" + DIVIDER)
+						info.flowstreams.c2.T = info.flowstreams.c2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.c2
+						info.flowstreams.c2.F
+						fprintf("Mol Fraction Compositions [kta]\n")
+						info.flowstreams.c2.x 
+						
+						disp("d1" + DIVIDER)
+						info.flowstreams.d1.T = info.flowstreams.d1.T - 273.15;
+						info.flowstreams.d1
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d1.F
+						info.flowstreams.d2.y
+						
+						disp("d2" + DIVIDER)
+						info.flowstreams.d2.T = info.flowstreams.d2.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.d2.F
+						info.flowstreams.d2
+						info.flowstreams.d2.x
+						info.flowstreams.d2.y
+
+						
+						disp("e1 : after the mixer " + DIVIDER)
+						info.flowstreams.e1.T = info.flowstreams.e1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.e1.F
+						info.flowstreams.e1
+						
+						disp("f1" + DIVIDER)
+						info.flowstreams.f1.T = info.flowstreams.f1.T - 273.15;
+						fprintf("Mass flow rates [kta]\n")
+						info.flowstreams.f1.F
+						info.flowstreams.f1
+						
+						% disp("f2" + DIVIDER)
+						% info.flowstreams.f2.T = info.flowstreams.f2.T - 273.15;
+						% fprintf("Mass flow rates [kta]\n")
+						% info.flowstreams.f2.F
+						% info.flowstreams.f2
 
 					end
 					
@@ -872,7 +1037,6 @@ if (CALCULATE_REACTOR_FLOWS)
 					npv_T_P_MR_lbls.pressures = P_RANGE;
 					npv_T_P_MR_lbls.temperatures = T_RANGE;
 					% npv_T_P_MR_labels{ii,jj, kk} = 
-					npv_temp_data(i) = npv(i,1 );
 
 
 		
@@ -906,7 +1070,7 @@ if (CALCULATE_REACTOR_FLOWS)
 							F_soln_ODE(:, METHANE), F_soln_ODE(:, ETHYLENE), ...
 							F_soln_ODE(:, PROPANE), F_soln_ODE(:, BUTANE), ...
 							F_soln_ODE(:, ETHANE), conversion,select_1, ...
-							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,fxns.furnaceCosts,'VariableNames',col_names);
+							select_2,q0,V_plant,q0_plant,cost_rxt_vec,profit, profit - cost_rxt_vec, conserv_mass,npv,fxns.separationCosts,fxns.furnaceCosts,'VariableNames',col_names)
 	 			soln_table.Properties.VariableNames = col_names;
 
 			% Storing data
@@ -942,7 +1106,6 @@ fxns.x_ethane_sep = F_soln_ODE( : , ETHANE) ./ fxns.F_sep;
 fxns.x_water_sep = fxns.F_steam ./ fxns.F_sep;
 fxns.npv_T_P_MR = npv_T_P_MR;
 fxns.npv_T_P_MR_lbls = npv_T_P_MR_lbls;
-fxns.npv_temp_data = npv_temp_data;
 
 plot_conversion_fxns(fxns);
 
@@ -1086,37 +1249,37 @@ function [combusted_fuel_flowrates, heatflux_left] = fuel_combustion(heat_flux, 
 		return
 	end
 
-	% (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
-	Q_combust_all_propane = flowrates(PROPANE) * G_PER_KT * ENTHALPY_PROPANE * GJ_PER_KJ;
+	% % (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
+	% Q_combust_all_propane = flowrates(PROPANE) * G_PER_KT * ENTHALPY_PROPANE * GJ_PER_KJ;
 
-	% Propane
-	if (heatflux_left > Q_combust_all_propane)
-		combusted_fuel_flowrates(PROPANE) = flowrates(PROPANE);
-		heatflux_left = heatflux_left - Q_combust_all_propane;
-	else
-		% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
-		combusted_fuel_flowrates(PROPANE) = (heatflux_left) * KJ_PER_GJ * ...
-			... % (mol / KJ)        * (g / mol)       * (kt / g)
-			( 1 / ENTHALPY_PROPANE) * MOLMASS_PROPANE * KT_PER_G;
-		heatflux_left = 0;
-		return
-	end
+	% % Propane
+	% if (heatflux_left > Q_combust_all_propane)
+	% 	combusted_fuel_flowrates(PROPANE) = flowrates(PROPANE);
+	% 	heatflux_left = heatflux_left - Q_combust_all_propane;
+	% else
+	% 	% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
+	% 	combusted_fuel_flowrates(PROPANE) = (heatflux_left) * KJ_PER_GJ * ...
+	% 		... % (mol / KJ)        * (g / mol)       * (kt / g)
+	% 		( 1 / ENTHALPY_PROPANE) * MOLMASS_PROPANE * KT_PER_G;
+	% 	heatflux_left = 0;
+	% 	return
+	% end
 
-	% (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
-	Q_combust_all_butane = flowrates(BUTANE) * G_PER_KT * ENTHALPY_BUTANE * GJ_PER_KJ;
+	% % (GJ / yr)           = (kt / yr)          * (g / kt) * (kJ / g)        * (GJ / kJ)
+	% Q_combust_all_butane = flowrates(BUTANE) * G_PER_KT * ENTHALPY_BUTANE * GJ_PER_KJ;
 
-	% Butane
-	if (heatflux_left > Q_combust_all_butane)
-		combusted_fuel_flowrates(BUTANE) = flowrates(BUTANE);
-		heatflux_left = heatflux_left - Q_combust_all_butane;
-	else
-		% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
-		combusted_fuel_flowrates(BUTANE) = (heatflux_left) * KJ_PER_GJ * ...
-			... % (mol / KJ)        * (g / mol)       * (kt / g)
-			( 1 / ENTHALPY_BUTANE) * MOLMASS_BUTANE * KT_PER_G;
-		heatflux_left = 0;
-		return
-	end
+	% % Butane
+	% if (heatflux_left > Q_combust_all_butane)
+	% 	combusted_fuel_flowrates(BUTANE) = flowrates(BUTANE);
+	% 	heatflux_left = heatflux_left - Q_combust_all_butane;
+	% else
+	% 	% (kt / yr)                        = ((GJ)                 ) * (KJ / GJ) *
+	% 	combusted_fuel_flowrates(BUTANE) = (heatflux_left) * KJ_PER_GJ * ...
+	% 		... % (mol / KJ)        * (g / mol)       * (kt / g)
+	% 		( 1 / ENTHALPY_BUTANE) * MOLMASS_BUTANE * KT_PER_G;
+	% 	heatflux_left = 0;
+	% 	return
+	% end
 end
 
 %        GJ   =            (kta   ,  __         , bar      , C )
@@ -1145,7 +1308,7 @@ function heat = heat_steam(F_steam, STEAM_CHOICE, P_reactor, T_reactor)
 	
 	% KJ = kta     * (G / KT) * (mol / g)         * (KJ / MOL K)        * (K - K)
 	heat = F_steam * G_PER_KT * (1/MOLMASS_WATER) * HEAT_CAPACITY_WATER * (T_reactor - T_steam);
-	% GJ = KJ   * (KJ / GJ)
+	% GJ = KJ   * (GJ / KJ)
 	heat = heat * GJ_PER_KJ;
 end
 
@@ -1157,8 +1320,21 @@ end
 function W = compressor_work(T, P_0, P_f)
 	R = 8.314;		% [ J / mol K]
 
-	W = - n * R * T * log(P_f / P_0);
+	W = - n * R * T * log(P_f / P_0);	
 
+	
+	% ?? THIS ALWAYS RETURNS 0 OR NULL, NOT IMPLEMENTED YET
+end
+
+function W = compressor_work_TJ(sep, P_f)
+	R = 8.314;		% [ J / mol K]
+	n = total_molar_flowrate(sep.F);
+	T = sep.T;
+	P_0 = sep.P;
+
+	W = - n * R * T * log10(P_f / P_0);	% ?? I think that it's base 10
+
+	
 	% ?? THIS ALWAYS RETURNS 0 OR NULL, NOT IMPLEMENTED YET
 end
 
@@ -1167,7 +1343,7 @@ end
 function cost = tax_C02(combusted_flowrates, F_natural_gas)
 	global HYDROGEN METHANE ETHYLENE PROPANE BUTANE TAX_CO2_PER_MT;
 	global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
-	MT_CO2_PER_KT_NATURALGAS;
+	MT_CO2_PER_KT_NATURALGAS KT_PER_MT;
 
 	% Calculate the cost per kt (in tax) of each combusted fuel
 	methane = combusted_flowrates(METHANE);
@@ -1182,6 +1358,27 @@ function cost = tax_C02(combusted_flowrates, F_natural_gas)
 	mt_c02 = mt_c02 + F_natural_gas * MT_CO2_PER_KT_NATURALGAS;
 
 	cost = mt_c02 * TAX_CO2_PER_MT;
+end
+
+function F_co2 = flowrate_C02(combusted_flowrates, F_natural_gas)
+	global HYDROGEN METHANE ETHYLENE PROPANE BUTANE TAX_CO2_PER_MT;
+	global MT_CO2_PER_KT_METHANE MT_CO2_PER_KT_PROPANE MT_CO2_PER_KT_BUTANE ...
+	MT_CO2_PER_KT_NATURALGAS KT_PER_MT;
+
+	% Calculate the cost per kt (in tax) of each combusted fuel
+	methane = combusted_flowrates(METHANE);
+	propane = combusted_flowrates(PROPANE);
+	butane = combusted_flowrates(BUTANE);
+
+	mt_c02 = 0;
+	% kta  =  (MT)  + ( (kt fuel / yr) * (MT CO2 / KT FUEL) )
+	mt_c02 = mt_c02 + methane * MT_CO2_PER_KT_METHANE;
+	mt_c02 = mt_c02 + propane * MT_CO2_PER_KT_PROPANE;
+	mt_c02 = mt_c02 + butane * MT_CO2_PER_KT_BUTANE;
+	mt_c02 = mt_c02 + F_natural_gas * MT_CO2_PER_KT_NATURALGAS;
+
+	F_co2 = mt_c02 * KT_PER_MT;
+	% cost = mt_c02 * TAX_CO2_PER_MT;
 end
 
 % HELPER FUNCTIONS | FUEL COSTS______________________________________________
@@ -1324,100 +1521,154 @@ function cost = cost_waste_stream(F_steam)
 
 end
 
-function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
-	global MOLMASS_METHANE MOLMASS_HYDROGEN MOLMASS_ETHANE MOLMASS_ETHYLENE ...
-		 MOLMASS_PROPANE MOLMASS_BUTANE YR_PER_SEC
-	global T_SEPARATION R PRESS_RXTR R ...
-	 MAX_OPEX MAX_TFCI MAX_CAPEX G_PER_KT MOLMASS_WATER 
+function [sep_top, sep_btm]= rachford_rice(sep, K)
+	global KT_PER_G MOLMASS_BUTANE MOLMASS_ETHANE MOLMASS_ETHYLENE MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_PROPANE MOLMASS_WATER
 
-	% Product flow rate indicies 
-	HYDROGEN = 1;
-	METHANE = 2;
-	ETHYLENE = 3;
-	PROPANE = 4;
-	BUTANE = 5;
-
-	% Feed flow rate index
-	ETHANE = 6;
- 
-	% SEPARATION_EFFICIENCY_FACTOR = 30;
-	T = T_SEPARATION; % [ K ]
-
-	%Using compositions from ASPEN
-	%Component mole flow rate out of rxtr over total mole flow rate out of reactor
-	% Mol fractions out of the reactoor
-
-	% (mol / s) = (kt / yr) * (g / kt) * (mol / g) * (yr / s)
-	P_flowrates(METHANE) = P_flowrates(METHANE) * G_PER_KT * (1/MOLMASS_METHANE) * YR_PER_SEC;
-	P_flowrates(HYDROGEN) = P_flowrates(HYDROGEN) * G_PER_KT * (1/MOLMASS_HYDROGEN) * YR_PER_SEC;
-	R_ethane = R_ethane * G_PER_KT * (1/MOLMASS_ETHANE) * YR_PER_SEC;
-	P_flowrates(ETHYLENE) = P_flowrates(ETHYLENE) * G_PER_KT * (1/MOLMASS_ETHYLENE) * YR_PER_SEC;
-	P_flowrates(PROPANE) = P_flowrates(PROPANE) * G_PER_KT * (1/MOLMASS_PROPANE) * YR_PER_SEC;
-	P_flowrates(BUTANE) = P_flowrates(BUTANE) * G_PER_KT * (1/MOLMASS_BUTANE) * YR_PER_SEC; % Add this line for butane
-	F_steam = F_steam * G_PER_KT * (1/MOLMASS_WATER) * YR_PER_SEC;
-
-	%CONVERT TO_MOLES
-
-	P_tot = sum(P_flowrates(HYDROGEN:BUTANE)) + F_steam + R_ethane;
-
-	z_methane = P_flowrates(METHANE) / P_tot;
-	z_hydrogen = P_flowrates(HYDROGEN) / P_tot;
-	z_ethane = R_ethane / P_tot;
-	z_ethylene = P_flowrates(ETHYLENE) / P_tot;
-	z_propane = P_flowrates(PROPANE) / P_tot;
-	z_butane = P_flowrates(BUTANE) / P_tot;
-	z_water = F_steam / P_tot;
+	sep.x = all_mol_fractions(sep.F);	
 	
-	%Mol fractions leaving each separation system (refer to Isa's drawing in GN)
-	% leaving sep 1
-	x_water = 1;
+	f_phi = @(phi, sep, K) ((sep.x.methane * (K.methane - 1)) / (1 + phi*(K.methane - 1))) + ...
+		((sep.x.ethane * (K.ethane - 1)) / (1 + phi*(K.ethane - 1))) + ...
+		((sep.x.ethylene * (K.ethylene - 1)) / (1 + phi*(K.ethylene - 1))) + ...
+		((sep.x.hydrogen * (K.hydrogen - 1)) / (1 + phi*(K.hydrogen - 1))) + ...
+		((sep.x.propane * (K.propane - 1)) / (1 + phi*(K.propane - 1))) + ...
+		((sep.x.butane * (K.butane - 1)) / (1 + phi*(K.butane - 1))) + ...
+		((sep.x.water * (K.water - 1)) / (1 + phi*(K.water - 1)));
 
-	% leaving sep 4
-	x_ethane = 1;
-	x_ethylene = 1;
+	init_cond = 0.5;
 
-	% leaving sep 2
-	x_butane = 0.9995;
-	x_propane = 1 - x_butane;
+	phi = fzero(@(phi) f_phi(phi, sep, K), init_cond);
 
-	% leaving sep 5 (PSA)
-	x_methane = 3.01809372499680e-004;
-	x_hydrogen = 1;
-		% ?? How should I implement the PSA toggle switch on this
+	if phi > 1
+		phi = 1;
+	elseif phi < 0
+		phi = 0;
+	end
 	
-	%Pressures of PSA system [bar]
-	P_in = PRESS_RXTR;
-	P_H2 = 10;				% [ bar ]
-	P_ME = 1;				% [ bar ]
-		% These outlet pressures are constant for PSA system. DONT change 
+
+	% Liquid compositions 
+	x.hydrogen = sep.x.hydrogen / (1 + phi*(K.hydrogen - 1));
+	x.methane = sep.x.methane / (1 + phi*(K.methane - 1));
+	x.ethane = sep.x.ethane / (1 + phi*(K.ethane - 1));
+	x.ethylene = sep.x.ethylene / (1 + phi*(K.ethylene - 1));
+	x.propane = sep.x.propane / (1 + phi*(K.propane - 1));
+	x.butane = sep.x.butane / (1 + phi*(K.butane - 1));
+	x.water = sep.x.water / (1 + phi*(K.water - 1));
+
+	% Vapor compositions 
+	y.hydrogen = K.hydrogen * x.hydrogen;
+	y.methane = K.methane * x.methane;
+	y.ethane = K.ethane * x.ethane;
+	y.ethylene = K.ethylene * x.ethylene;
+	y.propane = K.propane * x.propane;
+	y.butane = K.butane * x.butane;
+	y.water = K.water * x.water;
+
+	% Splitting
+	F_tot = total_molar_flowrate(sep.F);
+	V = phi * F_tot; 
+	L = (1 - phi) * F_tot; 
+
+	% Tops 
+	sep_top = sep;
+	sep_top.y = y;
+	sep_top.x = NaN;
+
 	
-	%Using flow rates from ASPEN [NOTE: FOR MATLAB USE THE VALUES FROM THE
-	%SOLN_TABLE. WE USED THESE AS EXPECTED COSTS)
+	% kta             = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
+	sep_top.F.hydrogen = V * y.hydrogen * (MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_top.F.methane = V * y.methane * (MOLMASS_METHANE) * KT_PER_G;
+	sep_top.F.ethane = V * y.ethane * (MOLMASS_ETHANE) * KT_PER_G;
+	sep_top.F.ethylene = V * y.ethylene * (MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_top.F.propane = V * y.propane * (MOLMASS_PROPANE) * KT_PER_G;
+	sep_top.F.butane = V * y.butane * (MOLMASS_BUTANE) * KT_PER_G;
+	sep_top.F.water = V * y.water * (MOLMASS_WATER) * KT_PER_G;
+	
+	% Bottoms 
+	sep_btm = sep; 
+	sep_btm.x = x;
+	sep_btm.y = NaN;
 
-	% Flowrates of each exiting stream from the sep system	
-	F_water = F_steam; 									% mol/s
-	F_LPG = P_flowrates(BUTANE) + P_flowrates(PROPANE); % (mol / s)
-	F_ethylene = P_flowrates(ETHYLENE);					% (mol / s)
-	F_ethane = R_ethane;						% (mol / s)
-	F_H2 = P_flowrates(HYDROGEN);						% (mol / s)
-	F_ME = P_flowrates(METHANE);						% (mol / s); 
+	% kta     = (mol/yr) * (mol / mol) * (g / mol)   * (kt / g)
+	sep_btm.F.hydrogen = L * x.hydrogen * (MOLMASS_HYDROGEN) * KT_PER_G;
+	sep_btm.F.methane = L * x.methane * (MOLMASS_METHANE) * KT_PER_G;
+	sep_btm.F.ethane = L * x.ethane * (MOLMASS_ETHANE) * KT_PER_G;
+	sep_btm.F.ethylene = L * x.ethylene * (MOLMASS_ETHYLENE) * KT_PER_G;
+	sep_btm.F.propane = L * x.propane * (MOLMASS_PROPANE) * KT_PER_G;
+	sep_btm.F.butane = L * x.butane * (MOLMASS_BUTANE) * KT_PER_G;
+	sep_btm.F.water = L * x.water * (MOLMASS_WATER) * KT_PER_G;
+	
+	
+end
 
-	%(J/s) =    (mol/s) * (J/mol K) * (T) 
-	W_min_Sep_System = F_water*R*T*log(x_water/z_water) + ...
-					F_LPG*R*T*log(x_propane/z_propane + ...
-								  x_butane/z_butane) + ...
-					F_ethylene*R*T*log(x_ethylene/z_ethylene) + ...
-					F_ethane*R*T*log(x_ethane/z_ethane) + ...
-					R*T*( ... 
-						F_H2*log(P_H2/P_in)+ ...
-						F_H2*log(x_hydrogen/z_hydrogen) +...
-						F_ME*log(x_methane/z_methane) +...
-						F_ME*log(P_ME/P_in)...
-						);
+function [sep_top1, sep_btm1] = flash_v100(sep)
+
+	sep.heat = 0;
+
+	K.ethane = 3.760 * 10^9;
+	K.ethylene = 7.266 * 10^8;
+	K.hydrogen = 3.193 * 10^6;
+	K.methane = 8.488 * 10^7;
+	K.propane = 5.252 * 10^11;
+	K.butane = 3.978 * 10^14;
+	K.water = 1.561 * 10^-2;
+
+	[sep_top1, sep_btm1]= rachford_rice(sep, K);
+	
+end
+
+
+function [sep_top, sep_bot] = psa_water(sep_feed)
+	global SEC_PER_YR YR_PER_SEC GJ_PER_J MAX_OPEX MAX_CAPEX
+	% Asusmption that the PSA perfectly separates the water
+	
+	% initalize vars 
+	sep_feed.heat = 0;
+	sep_top = sep_feed; 
+	sep_bot = sep_feed;
+	sep_feed.z = all_mol_fractions(sep_feed.F);
+
+	% Hard coding the tops stream flowrates 
+	sep_top.F.water = 0 ;
+	sep_top.y = all_mol_fractions(sep_top.F);
+
+	% Hard coding the bottoms stream flowrates 
+	sep_bot.F.hydrogen = 0 ;
+	sep_bot.F.methane = 0 ; 
+	sep_bot.F.ethane = 0; 
+	sep_bot.F.ethylene = 0;
+	sep_bot.F.propane = 0 ;
+	sep_bot.F.butane = 0 ;
+	sep_bot.x = all_mol_fractions(sep_bot.F);
+
+	
+	% ?? Check what these variables acutally mean in the flow streams, super
+	% sus what I did 
+	T = sep_feed.T;		% ?? THIS BETTER BE IN KELVIN
+	R = 8.314; 
+	
+	% (mol/s) = (mol / yr)              * (yr / s)
+	L = total_molar_flowrate(sep_bot.F) * YR_PER_SEC;
+	V = total_molar_flowrate(sep_top.F) * YR_PER_SEC;
+
+	W_min_Sep_System = ...
+		... % Vapor flows
+			V * R * T * ( ... 
+				sep_top.y.hydrogen * log(sep_top.y.hydrogen / sep_feed.z.hydrogen) + ...
+				sep_top.y.methane * log(sep_top.y.methane / sep_feed.z.methane) + ...
+				sep_top.y.ethane * log(sep_top.y.ethane / sep_feed.z.ethane) + ...
+				sep_top.y.ethylene * log(sep_top.y.ethylene / sep_feed.z.ethylene) + ...
+				sep_top.y.propane * log(sep_top.y.propane / sep_feed.z.propane) + ...
+				sep_top.y.butane * log(sep_top.y.butane / sep_feed.z.butane)...
+				) + ...
+		... % Liquid Flows
+			L * R * T * ( ...
+				sep_bot.x.water * log(sep_bot.x.water / sep_feed.z.water)...
+				);
 
 	lamdba_min = 20;
 	lambda_max = 50;	
 	cost_energy = 3;		% ( $ / GJ )
+		% convert to the cost of electricity ASK TJ 
 
 	if MAX_OPEX
 	%($/yr)             =   (J/s)     * (GJ/J) * (Work Efficiency) *($/GJ)* (s/yr)
@@ -1435,6 +1686,545 @@ function cost = cost_separation_system(P_flowrates, F_steam, R_ethane)
 
 	cost = 2.5 * capex ;
 	
+
+	% GJ/yr	         = (J / s)          * (GJ / J) * (s / yr)
+	W_min_Sep_System = W_min_Sep_System * GJ_PER_J * SEC_PER_YR;
+	sep_bot.heat = W_min_Sep_System;
+	sep_top.heat = W_min_Sep_System;
+	sep_top.cost = cost; 
+	sep_bot.cost = cost;
+
+end
+
+function phi = underwood(z, r, s, alpha, y, x, q)
+	% y are the distillate compositions 
+	% alpha has the relative volatilities 
+	% r is reflux ratio
+	% s is boilup ratio 
+	r_min_factor = 1.2;
+
+	% Doherty & Malone eq 4.21  
+	eqn_421_top = @(phi, r) -r - 1 + (alpha.a * y.a / (alpha.a - phi)) + (alpha.b * y.b / (alpha.b - phi));
+	eqn_421_bot = @(phi, s) s + (alpha.a * x.a / (alpha.a - phi)) + (alpha.b * x.b / (alpha.b - phi));
+	
+	init_phi = alpha.b + (alpha.a / 2);
+		% alpha_a > phi > alpha_b 
+	phi_1_top =  fzero( @(phi) eqn_421_top(phi, r), init_phi);
+
+	init_phi = alpha.b / 2;
+		% alpha_b > phi > 0
+	phi_2_top = fzero( @(phi) eqn_421_top(phi,r), init_phi);
+
+	% Doherty and Malone eq 4.25
+	term1 = alpha.a * z.a / (alpha.a - phi_2_top);
+	term2 = alpha.b * z.b / (alpha.b - phi_2_top);
+	term3 = alpha.a * z.a / (alpha.a - phi_1_top);
+	term4 = alpha.b * z.b / (alpha.b - phi_1_top);
+	trays_above_feed = log((term1 + term2) / (term3 + term4)) / log(phi_1_top / phi_2_top);
+
+
+	init_phi = alpha.a * 2 ;
+	init_phi = alpha.b * (0.5 * (alpha.a - alpha.b));
+		% alpha_a > phi > alpha_b
+	phi_2_bar =  fzero( @(phi) eqn_421_bot(phi, s), init_phi);
+
+	init_phi = alpha.a * 1.5;
+		% inf > phi > alpha_a
+	phi_1_bar = fzero( @(phi) eqn_421_bot(phi, s), init_phi);
+
+	term1 = alpha.a * z.a / (alpha.a - phi_1_bar);
+	term2 = alpha.b * z.b / (alpha.b - phi_1_bar);
+	term3 = alpha.a * z.a / (alpha.a - phi_2_bar);
+	term4 = alpha.b * z.b / (alpha.b - phi_2_bar);
+	trays_below_feed = log((term1 + term2) / (term3 + term4)) / log(phi_1_bar / phi_2_bar);
+
+	% Doherty and Malone eq4.29
+	find_theta = @(theta) q - 1 + (alpha.a * z.a / (alpha.a - theta)) + ...
+								(alpha.b * z.b / (alpha.b - theta));
+	init_theta = phi_1_top + (phi_2_bar - phi_1_top)*0.5; % ??? 
+	theta = fzero( @(theta) find_theta(theta), init_theta);
+	
+	r_min = -1 + (alpha.a * y.a / (alpha.a - theta)) + (alpha.b * y.b / (alpha.b - theta));
+	r = r_min_factor * r_min; % WHAT MULTIPLE OF R_MIN SHOULD WE USE? 
+	phi = 0;
+end
+
+function [sep_top, sep_bot] = dist_3(sep)
+
+	sep.heat = 0;
+	sep_top = sep;
+	sep_bot = sep;
+
+	r = 0.477;
+	s = 0.770;
+	alpha.a = 7;
+	alpha.b = 1;
+	y.a = 0.95;
+	y.b = 0.05;
+	x.a = 0.03;
+	x.b = 0.97;
+	z.a = 0.345; % feed : solve for this using q line intersection / mccabe thiele stuff
+	z.b = 0.655;
+	q = 1;
+	ret = underwood(z, r, s, alpha, y, x, q);
+
+
+end
+
+
+function cost = cost_separation_system(P_flowrates, F_steam, R_ethane, opt)
+	global BAR_PER_KPA TOGGLE_PSA_HYDROGEN_SEP_SYSTEM
+
+	cost = 0;
+
+	% Packing all of the inputs into a convienent structure 
+	HYDROGEN = 1;
+	METHANE = 2;
+	ETHYLENE = 3;
+	PROPANE = 4;
+	BUTANE = 5;
+	
+	F.hydrogen = P_flowrates(HYDROGEN);
+	F.methane = P_flowrates(METHANE);
+	F.ethylene = P_flowrates(ETHYLENE);
+	F.propane = P_flowrates(PROPANE);
+	F.butane = P_flowrates(BUTANE);
+	F.water = F_steam;
+	F.ethane = R_ethane;
+
+
+	% Initial Conditions into the separation system
+	sep_effluent.F = F;							% [ kt / yr ]
+	sep_effluent.heat = 0; 						% [ GJ / yr ]
+	sep_effluent.T = 825 + 273.15;	 			% [ K ]
+	sep_effluent.P = 200 * BAR_PER_KPA;		 	% [ Bar ] 
+	sep_effluent.x = all_mol_fractions(sep_effluent.F); 	% [ _ ]
+	
+	% E-101 | Effluent Cooling Heat Exchanger | A1 STREAM 
+	sep = hex_e101(sep_effluent);
+	heat_exchangers.effluent_cooler_e101 = sep.heat;
+	separation_flowstreams.effluent = sep;
+	separation_flowstreams.effluent.z = all_mol_fractions(sep.F);
+	
+	% V-100 | Flash Distillation of Water / Hydrocarbons | STREAM B1  
+	[sep_top1, sep_bot1] = flash_v100(sep);
+	separation_flowstreams.top1 = sep_top1;
+	separation_flowstreams.bot1 = sep_bot1;
+	heat_exchangers.flash_water = sep_top1.heat; 
+	waste_streams.flash_waste = sep_bot1;
+
+	% % X-100 | PSA of Water | STREAM C1 & C2 are outputs
+	[sep_top2, sep_bot2] = psa_water(sep_top1);
+	heat_exchangers.psa_water = sep_top2.heat;
+	waste_streams.psa_waste = sep_bot2;
+	sep_costs.psa_water = sep_top2.cost;
+	heat_exchangers.psa_water = sep_top2.heat;
+
+	% MIXER 101 | STREAM D1 & J1 are inputs
+	sep_i1 = sep_top2; % ?? REPLACE ME WITH THE REAL STREAM 
+	sep_i1.F.hydrogen = 1.7958;
+	sep_i1.F.methane = 0.0059;
+	sep_i1.F.ethylene = 1.9272;
+	sep_i1.F.propane = 0.0;
+	sep_i1.F.butane = 0.0008;
+	sep_i1.F.water = 0;
+	sep_i1.F.ethane = .20;
+	sep_e1 = mixer_101(sep_top2, sep_i1);
+
+	%  HEX E-102 | Cryogenic Distillation Cooler
+	sep_f1 = hex(sep_e1, 273.15 - 150 );
+	heat_exchangers.hex_e102 = sep_f1.heat;
+
+	% Flash V-101 | Flash Distillation of Hydrogen / Other hydrocarbons
+	sep_g1 = flash(sep_f1, 'v101');	
+	sep_f1.name = 'Flash Distillation 2 (V101) feed, stream f1';
+	sep_g1.name = 'Stream g1, feed to cryogen HeX and output of v101 flash';
+
+	% HEX E-104 | Heating up the Hydrogen PSA Feed 
+	sep_h1 = hex(sep_g1, 273.15 + 25);
+	heat_exchangers.hex_104 = sep_h1;
+
+	% PSA X-101 | PSA of hydrogen 
+	if TOGGLE_PSA_HYDROGEN_SEP_SYSTEM 
+		[sep_i1, sep_i2] = psa_hydrogen(sep_h1) ;
+		heat_exchangers = sep_i1.heat;
+		cost = cost + sep_i1.cost;
+		% ?? get the h2 flow rate to get the value
+	else
+		
+	end
+	
+	% Gather info for console output 
+	info.separation_flowstreams = separation_flowstreams;
+	info.heat_exchangers = heat_exchangers;
+	info.flowstreams.a1 = sep_effluent;
+	info.flowstreams.b1 = sep;
+	info.flowstreams.c1 = sep_top1;
+	info.flowstreams.c2 = sep_bot1;
+	info.flowstreams.d1 = sep_top2;
+	info.flowstreams.d2 = sep_bot2;
+	info.flowstreams.e1 = sep_e1;
+	
+	info.flowstreams.f1 = sep_f1; 
+	% info.flowstreams.f2 = sep_bot4;
+	
+
+	if opt == 'info'
+		cost = info;
+	end
+end
+
+function bhp = calculateBHP(inputPowerWatts, efficiency)
+    % Convert input power from watts to horsepower
+    inputPowerHP = inputPowerWatts / 745.7; % 1 horsepower = 745.7 watts
+    
+    % Adjust input power for efficiency
+    adjustedPowerHP = inputPowerHP * efficiency;
+    
+    % The adjusted power is equivalent to brake horsepower for most compressors
+    bhp = adjustedPowerHP;
+end
+
+function scfm = convert_to_scfm(temperature_K, pressure_bar, molar_flowrate_mol_per_year)
+    % Convert pressure from bar to absolute pressure in atm
+    pressure_atm = pressure_bar / 1.01325;
+    
+    % Convert molar flow rate from mol/year to mol/min
+    molar_flowrate_mol_per_min = molar_flowrate_mol_per_year / (60 * 24 * 365); % Convert mol/year to mol/min
+    
+    % Calculate the conversion factor based on ideal gas law
+    conversion_factor = (1 / 22.414) * (273.15 / temperature_K) * pressure_atm;
+    
+    % Convert molar flow rate to SCFM
+    scfm = molar_flowrate_mol_per_min * conversion_factor;
+end
+
+function [sep_top, sep_bot] = psa_hydrogen(sep)
+	global switch_psa_graph SEC_PER_YR
+
+	sep_top = sep;
+	sep_bot = sep;
+
+	sep_top.heat = 0;
+	sep_bot.heat = 0;
+
+	P_max = 35; 		% [ bar ] 
+% 	P_range = 2:P_max;		% [ bar ]
+	P_high = 13;
+	
+	
+% 	
+% 	x = 2:35;
+% 	y = zeros(length(2:35));
+% 
+% 	purchased_cost_compressor = @(bhp) (1800/280) * 517.5 * (2.11 + 1) * bhp^0.82;
+% 	vol_press_ves = @(kg_zeolite) kg_zeolite / 795 * 1.2;
+% 	calculateL = @(V) (4 * V / pi)^(1/3);
+% 	calculateD = @(V) calculateL(V) / 4;
+% 	purchased_cost_pressure_vessel = @(kg_zeolite) 101.9 * (calculateD(vol_press_ves(kg_zeolite)))^1.066 * (calculateL(vol_press_ves(kg_zeolite)))^0.82;
+% 	i = 2;
+% 	if switch_psa_graph
+% 		for P_high = 2:35
+% 			cost_of_bed = cost_bed(sep, P_high);
+% 			cost_of_bed = cost_of_bed * 4;
+% 			
+% 			W_compressor = compressor_work_TJ(sep,P_high);
+% 			bhp_compressor = calculateBHP(W_compressor / SEC_PER_YR, 1);
+% 			
+% % 			cost_compressor = purchased_cost_compressor(bhp_compressor);
+% 			cost_compressor = purchased_cost_compressor(-bhp_compressor);
+% 			cost_vessel = purchased_cost_pressure_vessel(m_bed(sep, P_high));
+% 			
+% 			y(i) = cost_of_bed + cost_compressor + cost_vessel;
+% 			i = i + 1;
+% 		end	
+% 		switch_psa_graph = 0;
+% 		figure
+% 		hold on  
+% 		title("psa h2 cost")
+% 		plot(x,y);
+% 		hold off
+% 
+% 	end
+
+	ft_per_meter = 3.28;
+	vol_press_ves = @(kg_zeolite) (kg_zeolite / 795) * 1.2;
+	calculateL = @(V) (V * 64 / 3.14159)^(1/3);
+	calculateD = @(V) (V / 3.14159)^(1/3);
+	purchased_cost_pressure_vessel = @(kg_zeo, D, H, Fc) (1800/280) * 101.9 * (D^1.066) * (H^0.82) * (3.18 + Fc);
+	
+	cost_of_bed = cost_bed(sep, P_high);
+	cost_of_bed = cost_of_bed * 4; % 4 vessels 
+	
+	mass_bed = m_bed(sep, P_high);
+	V = vol_press_ves(mass_bed);
+	L = calculateL(V);
+	D = calculateD(V);
+	cost_vessels = purchased_cost_pressure_vessel(mass_bed, D *ft_per_meter , L * ft_per_meter, 2.25);
+	cost_vessels = cost_vessels * 4;
+
+
+	sep_top.cost = cost_of_bed + cost_vessels;
+	sep_bot.cost = cost_of_bed + cost_vessels;
+
+end
+
+function cost = cost_bed(sep, P_high)
+
+	cost_zeolite = 9.99;	% [ $ / kg ]
+	mass_bed = m_bed(sep, P_high);
+	cost = cost_zeolite * mass_bed;
+end
+
+function m = m_bed(sep_feed, P_high)
+	global YR_PER_SEC KG_PER_G
+	mol_per_mmol = 10^-3;
+	% mass is in kg
+	% assume the absorboption time is 300s 
+	% assume the species is completely absorbed 
+	% assume hydrogen is the only species in the retentate
+	% assume the fraction laoded is 75%
+
+	q_L = langmuir_absoption(sep_feed, sep_feed.P); % [ mol / kg]
+	q_H = langmuir_absoption(sep_feed, P_high);		% [ mol / kg]
+	f_load = 0.75;
+	
+	y_out = 0;
+
+	t_abs = 300; 							% [ sec ]
+	% mol/s  = mol / yr 			      * yr / sec
+	F = total_molar_flowrate(sep_feed.F) * YR_PER_SEC;
+	sep_feed.z = all_mol_fractions(sep_feed.F);
+	
+	sep_out = sep_feed;
+	sep_out.F.methane = 0;
+	sep_out.F.ethane = 0;
+	sep_out.F.ethylene = 0;
+	sep_out.F.propane = 0; 
+	sep_out.F.butane = 0 ;
+	sep_out.F.water = 0;
+	F_out = total_molar_flowrate(sep_out.F) * YR_PER_SEC;
+
+
+	numerator = (F * sep_feed.z.ethane - F_out * y_out) * t_abs;
+	denominator = (q_H - q_L) * f_load ;
+	% g = 
+	m = numerator / denominator;
+	m = m;
+
+end
+
+function q = langmuir_absoption(sep, P)
+	global MEGAPASCALS_PER_BAR
+	% Assumption: T = 303.15 K
+	% absoption params are for ethane 
+	% pressure input is in bar 
+
+	q_max = 2.38894; 	% [ mmol / g ]
+	B = 10.04194;		% [ 1 / Mpa ]
+
+	sep.z = all_mol_fractions(sep.F);
+
+	P = P * sep.z.ethane; % partial pressure of ethane
+	P = P * MEGAPASCALS_PER_BAR;
+	numerator = q_max * B * P;
+	denominator = 1 + B * P;
+
+	% mmol /g 
+	q = numerator / denominator;
+	mol_per_mmol = 10^-3;
+	g_per_kg = 10^3;
+	
+	% mol/kg = (mmol / g) * (mol / mmol) * (g / kg)
+	q = q * mol_per_mmol * g_per_kg;
+end
+
+
+function [sep_top, sep_btm] = flash(sep, flash_title)
+
+	sep.heat = 0;
+
+	[sep_top, sep_btm]= rachford_rice(sep, get_flash_K_values(flash_title));
+	
+end
+
+function K = get_flash_K_values(flash_title)
+	
+	if flash_title == 'v101'
+		K.ethane = 2.624 * 10^-3;
+		K.ethylene = 1.169 * 10^-2;
+		K.hydrogen = 2731;
+		K.methane = 1.389;
+		K.propane = 2.281 * 10^-5;
+		K.butane = 2.726 * 10^-6;
+		K.water = 0.00000001;
+	end
+
+end	
+
+function sep = hex(sep, T_out)
+	% Temperatures must be in kelvin
+	global GJ_PER_KJ
+
+	% GJ/yr 	=  (mol / yr) 				* (kJ / mol K )				  * ( K    -  K   ) * (GJ / kJ)
+	sep.heat = total_molar_flowrate(sep.F) * avg_heat_capacity(sep.F) * (T_out - sep.T) * GJ_PER_KJ;
+	sep.T = T_out;	
+end
+
+function sep = mixer_101(sep1, sep2)	
+	sep = add_streams_mass(sep1,sep2);
+	sep.T = sep1.T; % ASSUME ISOTHERMAL MIXING 
+	sep.heat = 0; % Assume no enthalpy of mixing 	
+	sep.P = sep1.P; % Assume isobaric mixing 
+
+end
+
+function sep = add_streams_mass(sep1, sep2)
+	sep.F.hydrogen = sep1.F.hydrogen + sep2.F.hydrogen;
+	sep.F.water = sep1.F.water + sep2.F.water;
+	sep.F.methane = sep1.F.methane + sep2.F.methane;
+	sep.F.ethane = sep1.F.ethane + sep2.F.ethane;
+	sep.F.ethylene = sep1.F.ethylene + sep2.F.ethylene;
+	sep.F.propane = sep1.F.propane + sep2.F.propane;
+	sep.F.butane = sep1.F.butane + sep2.F.butane;
+	sep.F.x = NaN;
+	sep.F.y = NaN;
+	sep.F.z = all_mol_fractions(sep.F);
+end 	
+	
+
+function total = total_mass_flowrate(F)
+%       kta                     kta
+	total = F.methane + F.ethane + F.water + F.propane + F.butane + ...
+		F.ethylene + F.hydrogen;
+end
+
+function F_tot = total_molar_flowrate(F)
+	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ... 
+		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
+
+	% mol/yr = (kt/yr)  * (g/kt)   * (mol / g )
+	F_tot = F.hydrogen * G_PER_KT * (1/MOLMASS_HYDROGEN) + ... 
+		F.methane * G_PER_KT * (1/MOLMASS_METHANE) + ... 
+		F.ethane * G_PER_KT * (1/MOLMASS_ETHANE) + ... 
+		F.ethylene * G_PER_KT * (1/MOLMASS_ETHYLENE) + ... 
+		F.propane * G_PER_KT * (1/MOLMASS_PROPANE) + ... 
+		F.butane * G_PER_KT * (1/MOLMASS_BUTANE) + ...
+		F.water * G_PER_KT * (1/MOLMASS_WATER); 
+
+end
+
+function F = molar_flowrate(F, species)
+	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
+		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
+
+	switch species
+		case 'hydrogen'
+			% mol /yr = (kt/yr) * (g/kt) * (mol/g)
+			F = F.hydrogen * G_PER_KT * (1/MOLMASS_HYDROGEN);
+		case 'methane'
+			F = F.methane * G_PER_KT * (1/MOLMASS_METHANE); 
+		case 'ethane'
+			F = F.ethane * G_PER_KT * (1/MOLMASS_ETHANE);
+		case 'ethylene'
+			F = F.ethylene * G_PER_KT * (1/MOLMASS_ETHYLENE);
+		case 'propane'
+			F = F.propane * G_PER_KT * (1/MOLMASS_PROPANE);
+		case 'butane'
+			F = F.butane * G_PER_KT * (1/MOLMASS_BUTANE);
+		case 'water'
+			F = F.water * G_PER_KT * (1/MOLMASS_WATER); 
+		otherwise 
+			disp("ERROR : molar_flowrate() : INCORRECT SPECIES SPECIFIER")
+			F = NaN;
+	end
+end
+
+function x = mol_fraction(F, species)
+	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
+		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
+	F_tot = total_molar_flowrate(F);
+
+	switch species
+		case 'hydrogen'
+			x = (molar_flowrate(F, 'hydrogen') / F_tot);
+		case 'methane'
+			x = (molar_flowrate(F, 'methane') / F_tot);
+		case 'ethane'
+			x = (molar_flowrate(F, 'ethane') / F_tot);
+		case 'ethylene'
+			x = (molar_flowrate(F, 'ethylene') / F_tot);
+		case 'propane'
+			x = (molar_flowrate(F, 'propane') / F_tot);
+		case 'butane'
+			x = (molar_flowrate(F, 'butane') / F_tot);
+		case 'water'
+			x = (molar_flowrate(F, 'water') / F_tot);
+		otherwise
+			disp("ERROR : mol_fraction() : INCORRECT SPECIES SPECIFIER")
+			x = NaN;
+	end
+
+
+end
+
+function x = all_mol_fractions(F)
+	global G_PER_KT MOLMASS_HYDROGEN MOLMASS_METHANE MOLMASS_ETHANE ...
+		MOLMASS_ETHYLENE MOLMASS_PROPANE MOLMASS_BUTANE MOLMASS_WATER
+	F_tot = total_molar_flowrate(F);
+
+	x.hydrogen = (molar_flowrate(F, 'hydrogen') / F_tot);
+	x.methane = (molar_flowrate(F, 'methane') / F_tot);
+	x.ethane = (molar_flowrate(F, 'ethane') / F_tot);
+	x.ethylene = (molar_flowrate(F, 'ethylene') / F_tot);
+	x.propane = (molar_flowrate(F, 'propane') / F_tot);
+	x.butane = (molar_flowrate(F, 'butane') / F_tot);
+	x.water = (molar_flowrate(F, 'water') / F_tot);
+	
+
+end
+
+
+function Cp_avg = avg_heat_capacity(F)
+	global HEAT_CAPACITY_HYDROGEN HEAT_CAPACITY_METHANE HEAT_CAPACITY_ETHANE ...
+		HEAT_CAPACITY_ETHYLENE HEAT_CAPACITY_PROPANE HEAT_CAPACITY_BUTANE ...
+		HEAT_CAPACITY_WATER
+
+	% weighted average of Cp's 
+	F_tot = total_molar_flowrate(F);
+	
+	Cp_avg = (molar_flowrate(F, 'hydrogen') / F_tot) * HEAT_CAPACITY_HYDROGEN + ...
+		(molar_flowrate(F, 'methane') / F_tot) * HEAT_CAPACITY_METHANE + ...
+		(molar_flowrate(F, 'ethane') / F_tot) * HEAT_CAPACITY_ETHANE + ...
+		(molar_flowrate(F, 'ethylene') / F_tot) * HEAT_CAPACITY_ETHYLENE + ...
+		(molar_flowrate(F, 'propane') / F_tot) * HEAT_CAPACITY_PROPANE + ...
+		(molar_flowrate(F, 'butane') / F_tot) * HEAT_CAPACITY_BUTANE + ...
+		(molar_flowrate(F, 'water') / F_tot) * HEAT_CAPACITY_WATER;
+
+end
+
+
+
+function sep = hex_e102(sep)
+	global GJ_PER_KJ
+
+	% user inputs
+	T_out = (-190) + 273.15;	% [ K ]	
+
+	% GJ/yr 	=  (mol / yr) 				* (kJ / mol K )				  * ( K    -  K   ) * (GJ / kJ)
+	sep.heat = total_molar_flowrate(sep.F) * avg_heat_capacity(sep.F) * (T_out - sep.T) * GJ_PER_KJ;
+	sep.T = T_out;	
+end
+
+function sep = hex_e101(sep)
+	global GJ_PER_KJ
+
+	% user inputs
+	T_out = 25 + 273.15;	% [ K ]	
+
+	% GJ/yr 	=  (mol / yr) 				* (kJ / mol K )				  * ( K    -  K   ) * (GJ / kJ)
+	sep.heat = total_molar_flowrate(sep.F) * avg_heat_capacity(sep.F) * (T_out - sep.T) * GJ_PER_KJ;
+	sep.T = T_out;	
 end
 
 function cf = get_npv(npv)
@@ -1613,7 +2403,6 @@ function cf = get_npv(npv)
 	% RETURN 
 	cf.matrix = cash_flow_matrix;
 	cf.lifetime_npv = cash_flow_matrix(LAST_ROW_CASHFLOW, NPV);
-	cf.lifetime_npv = cf.lifetime_npv * (124.4/160);
 end
 
 
@@ -1815,7 +2604,7 @@ function void = plot_conversion_fxns(fxns)
 	ylabel(ylab);
 	hold off
 	
-% 	% NPV (T, P, MR) | Varying T
+	% NPV (T, P, MR) | Varying T
 % 	hold on 
 % 	figure;
 % 	tit = "NPV [ $ MM ]";
@@ -1824,7 +2613,7 @@ function void = plot_conversion_fxns(fxns)
 % 	tit = tit + " " + sprintf("(%3.0f C %3.1f Bar %0.2f Steam MR)", T_OVERRIDE, P_OVERRIDE, STEAM_MR_OVERRIDE);
 % 
 % 	y = [];
-% 	for i = 1:length(fxns.npv_T_P_MR(: , 1, 1, 1))
+% 	for i = 1:length(fxns.npv_T_P_MR(: , 1, 1 ))
 % 		temp =fxns.npv_T_P_MR( i , 1, 1) ;
 % 		y = [ y , fxns.npv_T_P_MR( i , 1, 1) ];
 % 	end
@@ -1842,64 +2631,6 @@ function void = plot_conversion_fxns(fxns)
 % 	xlabel(xlab);
 % 	ylabel(ylab);
 % 	hold off
-
-	% NPV (T, P, MR) | Varying P
-	figure
-	hold on
-% 	figure
-	y = zeros(1,1);
-% 	for i = 1:length(fxns.npv_T_P_MR(1,1,:,1))
-	num_of_molarRatios = length(fxns.npv_T_P_MR(:,1,1,1));
-% 	for i = 1:num_of_molarRatios
-	lbls = fxns.npv_T_P_MR_lbls.pressures;
-	lgd = {};
-	for i = 1:length(fxns.npv_T_P_MR_lbls.pressures)
-		% T P MR
-		for j = 1:length(fxns.conversion)
-			y(j,1) = fxns.npv_T_P_MR(4, i, 1, j);
-
-		end
-		x = fxns.conversion;
-		y(y <= 0) = NaN;
-
-% 		lbls(i) = num2str(fxns.npv_T_P_MR_lbls.steamRatios(i));
-% 		lgd{i} = "MR = " + num2str(lbls(i));
-		lgd{i} = "P = " + sprintf("%3.3f", lbls(i ));
-		plot(x,y);
-	end
-	legend(lgd)
-	title("NPV at different Pressures")
-	xlabel('\chi')
-	ylabel('$ MM')
-	hold off
-
-
-	% NPV (T, P, MR) | Varying T
-	figure
-	hold on
-	y = zeros(1,1);
-	lbls = fxns.npv_T_P_MR_lbls.temperatures;
-	lgd = {};
-	for i = 1:length(fxns.npv_T_P_MR_lbls.temperatures)
-		% T P MR
-		for j = 1:length(fxns.conversion)
-			y(j,1) = fxns.npv_T_P_MR(i, 1, 1, j);
-
-		end
-		% y = fxns.npv_temp_data;
-		x = fxns.conversion;
-		y(y <= 0) = NaN;
-
-% 		lbls(i) = num2str(fxns.npv_T_P_MR_lbls.steamRatios(i));
-% 		lgd{i} = "MR = " + num2str(lbls(i));
-		lgd{i} = "T = " + sprintf("%3.3f", lbls(length(fxns.npv_T_P_MR_lbls.temperatures) - i + 1 ));
-		plot(x,y);
-	end
-	legend(lgd)
-	title("NPV at different Temperatures")
-	xlabel('\chi')
-	ylabel('$ MM')
-	hold off
 
 	% NPV (T, P, MR) | Varying MR 
 	figure
