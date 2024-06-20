@@ -6,4 +6,8 @@ This was the first capstone project, of a two-part series for my chemical engine
 
 1. I created a huge massive script, I (once again) vastly underestimated the scope of the project (how large it was going to become) so it became a massive mess. 
 
-2. 
+2. I put all of the files in the same directory (why???). I learned to put images in the /img folder and pdfs in the /pdf folder.
+
+3. I did not use structures, and instead [used a TON of constants](https://github.com/wesleyZero/ChE_Capstone/blob/newBranch/Level3.m#L191-L344). At my internship at KARL STORZ I learned (from reading others code) that structures make things so much cleaner in MATLAB code. Why don't people just create classes and objects in MATLAB? I have no idea. The MATLAB way seem to be to make a bunch of structures. 
+
+
