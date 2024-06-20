@@ -1,6 +1,6 @@
 # Capstone I 
 
-This was the first capstone project, of a two-part series for my chemical engineering senior design class. I learned a lot on this first project and as a result, I cleaned up the code massively when doing the second project. All of the code was in a single script, as well as the the code being not very modular. Since the capstone II project has the same concepts, but with a better code base. Please look at my [Capstone II project](https://github.com/wesleyZero/capstone_II/tree/main) to evaluate my coding abilities. For this project, I would like to simply write what I learned to do better in the second project. 
+This was the first capstone project, of a two-part series for my chemical engineering senior design class. I learned a lot on this first project and as a result, I cleaned up the code massively when doing the second project. Since the capstone II project has the same concepts, but with a better code base. Please look at my [Capstone II project](https://github.com/wesleyZero/capstone_II/tree/main) to evaluate my coding abilities. For this project, I would like to simply write what I learned to do better in the second project. 
 
 ## One cool thing I would like to point out on this project. 
 
