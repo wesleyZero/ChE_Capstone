@@ -12,4 +12,4 @@ This was the first capstone project, of a two-part series for my chemical engine
 
 4. Use [way too many lambda functions (anonymous functions)](https://github.com/wesleyZero/ChE_Capstone/blob/newBranch/Level3.m#L372-L444). I clearly like lambda functions and they are very nice for making some functions more readable. But the way I used them in this huge script wasn't making things easier to understand, it was making it harder. 
 
-
+5. Did not make modular code. [Look at this disaster I created!!! omg](https://github.com/wesleyZero/ChE_Capstone/blob/newBranch/Level3.m#L640-L1110) This really should have been a collection of functions in a few different scripts. I kept digging a deeper grave instead of just putting parts of this monster into other functions. It's completely unreadable and impossible to maintain. I feel ashamed for creating it, but sometimes the best way to learn a lesson is to torture yourself by doing it the wrong way.... Never forget
